@@ -59,24 +59,41 @@ End-state framing: "Hi I/O Fund — here's a tool we built around your subscript
 | Chat UI | Next.js + AI SDK v6 + Vercel AI Gateway | Polished, mobile-friendly, fits the Vercel stack already implied by the session context |
 | Auth | Real IOF Firebase auth from day one | "Sign in with your IOF account" is the hero demo moment |
 | Cron | GitHub Actions | Free, observable, commits results back to repo as state |
-| Storage | Repo-as-database initially | CSV / JSON / markdown committed back; DB later if/when needed |
-| Data freshness contract | Push-to-main triggers Vercel auto-redeploy | Cron commits new `data/` → Vercel rebuild → live in ~30s–2min. Acceptable for chat (no sub-minute freshness need). |
-| User-uploaded data (portfolio CSVs) | Ephemeral, not committed | Holdings uploaded in chat app are processed in-memory per session and **never written to `data/` or committed**. Phase 0 single-user scope = browser memory or session-scoped server state. Phase 3 multi-tenant adds per-user encrypted store (Vercel KV with per-user keys, or Neon row-level security). |
+| Storage — structured rows | Neon Postgres via Vercel Marketplace (Phase 0) | One-click provision, auto-injected `DATABASE_URL`. Trades + article metadata go here from day one. Adding pgvector for RAG (Phase 1) is then "ALTER TABLE add column," not a migration. Multi-tenant path is "add user_id + RLS," not a rewrite. Repo-as-DB was rejected on second look — see [Data architecture re-decision](#data-architecture-re-decision-2026-05-18). |
+| Storage — prose | Git (markdown, PR-reviewed) | `data/io-fund-strategy.md`, `data/io-fund-thesis.md`, distilled article bodies (`data/articles/*.md`), digests (`data/digests/*.md`). Prose is human-edited and reviewed via PR; version control is the right tool. The chat system prompt reads from these at build time. |
+| Data freshness contract | Two paths, by data type | (a) Structured writes (trades, article metadata) → Postgres → live instantly, no rebuild. (b) Prose edits (strategy/thesis updates, new distilled articles) → git commit → Vercel rebuild → live in ~30s–2min. Each kind of change triggers a rebuild exactly when it should. |
+| User-uploaded data (portfolio CSVs) | Ephemeral, not committed, not persisted | Holdings uploaded in the chat app are processed in-memory per session, never written to `data/` and never persisted in Postgres in Phase 0. Phase 3 multi-tenant adds per-user encrypted store via Postgres RLS. |
 | Digest delivery | Email via Resend | Free tier covers personal use; persistent + searchable |
-| Doc-update flow | Auto-PR to a branch | LLM proposes edits as a reviewable diff; Hunter approves manually |
+| Doc-update flow | Auto-PR to a branch | LLM proposes edits to prose docs as a reviewable diff; Hunter approves manually. (Postgres-side writes from cron — new trade rows, article-metadata rows — go straight to DB; no PR.) |
 | Chat access | Private URL + IOF auth | POC; not deployed publicly without IOF's blessing |
-| Personal data location | Keep in `data/` for now | Iteration speed wins; refactor before pitching |
-| LLM routing | Vercel AI Gateway with `"provider/model"` strings | Single observable entry point, easy provider fallback |
-| Agent patterns | AI SDK multi-step tool use for chat | Built-in via `maxSteps`. No durable workflow framework yet. |
+| LLM routing | Vercel AI Gateway with `"provider/model"` strings | Locked 2026-05-18. Single observable entry point, easy provider fallback. `AI_GATEWAY_API_KEY` provisioned in `.env` + GH secrets. |
+| Per-task model picks (Phase 0) | Opus distillation · Sonnet chat · Haiku reserved | Decided 2026-05-18. Sonnet end-to-end for chat — no Haiku intent classifier yet. Defer routing layer until traffic/cost makes it worth a real seam. |
+| Agent patterns | AI SDK v6 multi-step tool use for chat | Loop control via `stopWhen: stepCountIs(N)` or `ToolLoopAgent`. v5's `maxSteps` is deprecated — see Library notes in `pickup.md`. |
 | Durable workflows | Defer Vercel Workflow DevKit | Add when actual durability needs emerge (digest pipeline, onboarding) |
+
+### Data architecture re-decision (2026-05-18)
+
+Original plan locked in "repo-as-DB initially," motivated by "no infra to provision." Re-examined and reversed:
+
+- **The infra cost is illusory.** Neon via Vercel Marketplace is one click, free tier (3 GB / 191 compute hrs), auto-injects env vars. Zero ops cost in Phase 0.
+- **The migration was inevitable.** The plan already triggered pgvector RAG at ~30 distilled articles — that's 3–6 months out at planned ingest rate. Committing to CSV / JSON until then is pure migration debt against the eventual Postgres schema.
+- **Repo-as-DB has real query/concurrency/coupling costs** even at single-user scale: every cron-detected trade triggers a Vercel rebuild for what should be one row insert; "trades in last 90 days" requires loading the whole CSV; concurrent cron pushes can collide.
+- **The hybrid is the architecture every grown-up app converges on:** Postgres for things you'd ever want to filter/sort/aggregate; git for prose humans edit and review.
+
+Affects Tasks #2 (writes rows, not CSV), #3 (article metadata to Postgres, body stays as markdown), #5 (`query_trades` tool hits Postgres), #6 (gap-analysis trade replay from Postgres). Existing `data/iofund-trades.csv` + `.json` get seed-imported once, then become historical artifacts.
 
 ## Open decisions (defer until needed)
 
-- **AI Gateway vs direct Anthropic API** — Hunter to decide before Task #3 (first LLM call). Gateway is the recommended default. Direct API trades observability for ~no markup.
-- **Per-task model selection** — Opus for distillation, Sonnet for chat, Haiku for intent classification. Concrete defaults set when Task #3 begins.
 - **Prompt caching strategy** — critical for chat economics (~10× cost reduction). Surface in Task #5.
 - **Branding / product name** — placeholder `iofund-agent`. Options floated: IOF Companion, IOF Compass, IOF Brief.
-- **When to refactor `data/` for multi-tenant** — before pitching to IOF.
+- **When to refactor for multi-tenant** — schema is already Postgres so this is "add user_id + RLS," not a data migration. Trigger before pitching to IOF.
+- **Haiku intent classifier** — deferred. Add when (a) traffic justifies per-turn cost optimization, (b) tool list has grown enough that filtering by intent meaningfully reduces noise, or (c) you want product analytics on intent distribution. None apply yet.
+
+### Recently closed (kept for context)
+
+- **AI Gateway vs direct Anthropic API** — closed 2026-05-18 in favor of AI Gateway. `AI_GATEWAY_API_KEY` provisioned. Reasoning: unified provider API + observability + per-call cost tracking + zero-retention default outweigh the marginal markup at POC scale.
+- **Repo-as-DB vs Postgres for Phase 0** — closed 2026-05-18 in favor of hybrid (Postgres for structured rows, git for prose). See [Data architecture re-decision](#data-architecture-re-decision-2026-05-18).
+- **Per-task model picks** — closed 2026-05-18: Opus for distillation (#3), Sonnet end-to-end for chat (#5). Haiku deferred. See Phase-0 model row above.
 
 ## Cost shape (back-of-envelope, 2026 pricing ballparks)
 
@@ -86,6 +103,7 @@ End-state framing: "Hi I/O Fund — here's a tool we built around your subscript
 | Weekly digest (Sonnet) | 1/wk | ~$0.20–0.30 |
 | Chat (Sonnet, w/ prompt caching) | per turn | ~$0.02 |
 | Chat (no caching) | per turn | ~$0.10 |
+| Neon Postgres | ongoing | $0 (free tier: 3 GB / 191 compute hrs) |
 | **Monthly total during active POC use** | | **~$30–50** |
 
 ## IP / legal posture
@@ -121,21 +139,23 @@ End-state framing: "Hi I/O Fund — here's a tool we built around your subscript
 
 ### Task #2 — Trade poll cron
 
-**Status:** pending. **Depends on:** #1.
+**Status:** pending. **Depends on:** #1 + Neon provisioned.
 
 **Work:**
-- `scripts/ingest_trades.py` — uses `iofund-fetch` skill; parses trades page (FIX the notes-column parser bug from earlier session — notes like `"3% trim"`, `"Close"`, `"1% Add"` were being dropped); dedupes against `data/iofund-trades.csv`; appends new rows; commits.
-- Workflow `.github/workflows/poll-trades.yml`: cron `*/30 * * * 1-5` (every 30 min, weekdays).
-- Notification on new trades (channel TBD — likely email via Resend or GitHub commit notification).
+- One-time `scripts/seed_trades.py` — read existing `data/iofund-trades.csv` and bulk-insert into Postgres `trades` table. Run locally; the CSV/JSON files then become historical artifacts (kept in git for provenance).
+- `scripts/ingest_trades.py` — uses `iofund-fetch` skill; parses trades page (FIX the notes-column parser bug from earlier session — notes like `"3% trim"`, `"Close"`, `"1% Add"` were being dropped because they carry the position-sizing signal); upserts rows into Postgres with `ON CONFLICT DO NOTHING` for dedupe.
+- Schema (initial): `trades(id, trade_date, ticker, side, notes, price, raw_row_hash, ingested_at)`. `raw_row_hash` is the dedup key. Drizzle migrations in `chat/db/` (chat app owns the schema; scripts import from there).
+- Workflow `.github/workflows/poll-trades.yml`: cron `*/30 * * * 1-5` (every 30 min, weekdays). No git commit on no-op runs; emit a notification (Resend) only when N>0 new trades land.
 
 ### Task #3 — Article discovery + ingest
 
-**Status:** pending. **Depends on:** #1, AI Gateway decision.
+**Status:** pending. **Depends on:** #1 + Neon provisioned.
 
 **Work:**
-- `scripts/discover_articles.py` — polls `https://io-fund.com/rss.xml` daily; diffs against `data/articles/index.json`; emits new URLs.
-- `scripts/ingest_article.py` — fetches a URL (premium via `iofund-fetch` skill, free via plain fetch); LLM-distills to `data/articles/YYYY-MM-DD-slug.md` with frontmatter (`url`, `pubDate`, `title`, `premium`, `category`).
-- Workflows: `discover-articles.yml` daily at 14:00 UTC (9am ET); `ingest-articles.yml` triggered via `repository_dispatch` from the discovery workflow.
+- `scripts/discover_articles.py` — polls `https://io-fund.com/rss.xml` daily; diffs against `articles` table in Postgres (existence by URL); emits new URLs via `repository_dispatch`.
+- `scripts/ingest_article.py` — fetches a URL (premium via `iofund-fetch` skill, free via plain fetch); Opus distills to a structured markdown body; writes body to `data/articles/YYYY-MM-DD-slug.md` (PR for human review) and inserts metadata row into Postgres (`articles(id, url, pub_date, title, slug, premium, category, tickers[], distilled_path, ingested_at)`).
+- The split is deliberate: prose body in git (reviewable, diff-able, version history), structured metadata in Postgres (queryable, joinable to trades by ticker, embeddable in Phase 1).
+- Workflows: `discover-articles.yml` daily at 14:00 UTC (9am ET); `ingest-articles.yml` triggered via `repository_dispatch` from discovery.
 - RSS feed observed to have ~40 items mixed free + premium. Free URLs: `/ai-stocks/*`, `/blogs/*`, `/artificial-intelligence/*` etc. Premium URLs: `/premium/*`.
 
 ### Task #4 — Weekly digest + auto-PR for doc updates
@@ -150,13 +170,15 @@ End-state framing: "Hi I/O Fund — here's a tool we built around your subscript
 
 ### Task #5 — Chat app (Next.js + AI SDK + AI Gateway)
 
-**Status:** pending. **Depends on:** #1 minimally; visible value after auth + chat scaffold even before #2-4 are running.
+**Status:** pending. **Depends on:** #1 minimally; visible value after auth + chat scaffold even before #2-4 are running. **Location:** `chat/` subdirectory (same repo, decided 2026-05-18).
 
 **Work:**
-- Scaffold Next.js App Router app under `chat/` directory (or separate repo — decide at start).
+- Scaffold Next.js 16 App Router app under `chat/`. Minimal first commit is just a placeholder page so Vercel deploys green; UI work iterates from there.
+- **Evals harness in parallel.** `evals/` at repo root: `golden.jsonl` (~30 questions Hunter writes over time), `run_evals.py` (deterministic checks + Sonnet-as-judge for response quality), `judge_prompt.md`. Runs locally and as a GH Actions gate on PRs that touch chat prompts/tools/models. Started empty; populated as Hunter uses the app. Built before UI work so every chat change has a regression gate from day one.
 - IOF Firebase auth flow: `/api/auth` calls `identitytoolkit.googleapis.com/v1/accounts:signInWithPassword` with user creds → JWT in encrypted httpOnly cookie → session cookie for API calls.
-- `/api/chat` route: AI SDK v6 multi-step tool use over `streamText` with system prompt seeded from `strategy.md` + `thesis.md` + recent trades summary. Tools: `read_doc`, `query_trades`, `search_articles`, `read_article`. Loop control: `stopWhen: stepCountIs(5)` (v5's `maxSteps` is deprecated). Consider `ToolLoopAgent` from `ai` for automatic loop management — it's the cleaner pattern for chat agents that may iterate over several tool calls per turn.
-- **Design `search_articles` as a swap-in seam.** Phase 0 implementation = grep-over-markdown-files; Phase 1 implementation = vector search (see Future phases → RAG). Same function signature, same return shape — chat app doesn't change when retrieval swaps. This is the load-bearing detail for forward compatibility.
+- `/api/chat` route: AI SDK v6 multi-step tool use over `streamText` with system prompt seeded from `strategy.md` + `thesis.md` + recent trades summary (Postgres query). Tools: `read_doc`, `query_trades` (Postgres), `search_articles`, `read_article`. Loop control: `stopWhen: stepCountIs(5)` or `ToolLoopAgent`. Sonnet end-to-end — no intent classifier (deferred).
+- **Design `search_articles` as a swap-in seam.** Phase 0 implementation = grep over `data/articles/*.md` bodies + Postgres metadata filter; Phase 1 implementation = vector search (pgvector column on the existing `articles` table — schema doesn't change, just adds a column). Same function signature, same return shape.
+- Drizzle ORM for Postgres access (Vercel-friendly, TypeScript-first). Schema in `chat/db/schema.ts`; migrations via `drizzle-kit`.
 - UI: chat pane (AI SDK `useChat`), digest viewer, portfolio gap upload + view.
 - Brand: dark + gold palette to fit IOF's visual language. shadcn/ui components.
 - Onboarding flow: 3-screen first-time experience (welcome → sign in → "we're fetching your latest" → first chat).
@@ -168,10 +190,10 @@ End-state framing: "Hi I/O Fund — here's a tool we built around your subscript
 **Status:** pending. **Depends on:** #5 (UI surface), trade-log replay logic from #2.
 
 **Work:**
-- CSV upload UI in the chat app.
-- Diff engine: replay `iofund-trades.csv` to compute IOF current book → diff against uploaded holdings.
+- CSV upload UI in the chat app. User CSVs are ephemeral — held in server-side session memory for the turn, never persisted.
+- Diff engine: replay `trades` table (Postgres query, ordered by trade_date) to compute IOF current book → diff against uploaded holdings.
 - Output: gaps (IOF holds, user doesn't) ranked by IOF position size + recency of accumulation; reverse gaps (user holds, IOF doesn't); size deltas where both hold.
-- Conviction context per ticker pulled from `data/io-fund-thesis.md`.
+- Conviction context per ticker pulled from `data/io-fund-thesis.md` (prose in git).
 - LLM narrative explanation per top-N gaps.
 
 ## Recommended build sequence
@@ -190,9 +212,9 @@ End-state framing: "Hi I/O Fund — here's a tool we built around your subscript
 
 - **Alpaca read-only integration** (paper account first), real-time portfolio sync replacing CSV upload.
 - **Faster IOF-alert ingest** via email→webhook (Resend inbound parse → `repository_dispatch`), eliminating 15-min poll lag.
-- **RAG over the IOF article library.** Context-stuffing works for Phase 0 (<30 distilled articles, ~250KB total corpus). As the article archive grows, swap to retrieval. Implementation swap, not architectural rewrite — the `search_articles` tool stays as the seam (see Task #5 note).
+- **RAG over the IOF article library.** Context-stuffing works for Phase 0 (<30 distilled articles, ~250KB total corpus). As the article archive grows, swap to retrieval. Implementation swap, not architectural rewrite — the `search_articles` tool stays as the seam (see Task #5 note). Neon is already provisioned (Phase 0), so this becomes "add pgvector extension + embedding column on `articles`," not a new infra setup.
   - **Trigger:** ~30–50 distilled articles OR chat latency >3s OR per-turn cost noticeably climbing.
-  - **Stack:** Neon Postgres + pgvector (via Vercel Marketplace; gives us a real Postgres for non-vector data too).
+  - **Stack:** pgvector on existing Neon Postgres (already provisioned in Phase 0).
   - **Embedding model:** Voyage `voyage-finance-2` (finance-domain-tuned, Anthropic-blessed for Claude apps); fallback OpenAI `text-embedding-3-small`.
   - **Reranking:** Cohere Rerank or Voyage Rerank — retrieve K=20 by vector similarity, rerank to top 5.
   - **Chunking:** section-level using markdown structure already present in distilled docs; metadata per chunk = `{article_url, section, tickers, themes, pub_date, premium}`.

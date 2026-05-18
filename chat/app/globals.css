@@ -71,7 +71,52 @@ body {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.6;
+}
+
+.auth-state {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   border-top: 1px solid var(--border);
-  padding-top: 1rem;
+  padding-top: 1.25rem;
   margin-top: 0.5rem;
+}
+
+.auth-state strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.cta {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent);
+  color: #1a1100;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  transition: filter 120ms ease;
+}
+
+.cta:hover {
+  filter: brightness(1.08);
+}
+
+.link {
+  align-self: flex-start;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  color: var(--fg);
+}
+
+.auth-container {
+  max-width: 28rem;
 }

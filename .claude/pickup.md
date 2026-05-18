@@ -34,7 +34,7 @@
 | 2 | Trade poll cron (Postgres ingest, fix notes-column bug, Resend notify on N>0 new trades) | pending | #1, Neon provisioned |
 | 3 | Article discovery + ingest (Opus distill via AI Gateway → metadata to Postgres, body to `data/articles/*.md`) | pending | #1, Neon provisioned |
 | 4 | Weekly digest + auto-PR for doc updates | pending | #2, #3 |
-| 5 | Chat app (Next.js + AI SDK v6 + AI Gateway, Sonnet end-to-end, Drizzle ORM, IOF auth proxy) | in_progress | #1 |
+| 5 | Chat app (Next.js + AI SDK v6 + AI Gateway, Sonnet end-to-end, Drizzle ORM, Neon Auth + encrypted IOF creds) | in_progress | #1 |
 | 6 | Portfolio gap analysis (CSV upload, replay Postgres trades → diff) | pending | #5, #2 |
 
 ## Decisions locked in (durable)
@@ -45,20 +45,41 @@
 | Per-task models | Opus distillation · Sonnet end-to-end for chat · Haiku deferred (no intent classifier in Phase 0) | 2026-05-18 |
 | Storage — structured | Neon Postgres via Vercel Marketplace (trades, article metadata, eventually pgvector embeddings, eventually per-user RLS) | 2026-05-18 |
 | Storage — prose | Git (strategy.md, thesis.md, distilled article bodies, digests) | 2026-05-18 |
+| Auth | Two-layer: Neon Auth (app) + encrypted `iof_credentials` table (integration). Standard SaaS pattern. Multi-tenant from day one. | 2026-05-18 |
 | Chat app location | `chat/` subdir same repo | 2026-05-18 |
 | ORM | Drizzle (Vercel-friendly, TypeScript-first) | 2026-05-18 |
 | RAG / vector search | Deferred to Phase 1; `search_articles` is the swap-in seam | original |
 | Durable workflows (Vercel Workflow DevKit) | Defer | original |
 
-## IOF creds in Vercel — NO
+## Auth architecture — two-layer (revised 2026-05-18 with Neon Auth)
 
-The chat-app auth flow is "user types IOF email+password at sign-in; app passes them through to IOF Firebase to get a session JWT." So Vercel never needs `IO_FUND_USERNAME` / `IO_FUND_PASSWORD` as env vars even in Phase 0 — those are the deployer's personal creds, and the chat app is designed around per-user creds from day one.
+Original Task #5 design had one auth layer ("user types IOF creds → app proxies to IOF Firebase"). Replaced with the standard SaaS two-layer pattern when Neon Auth was enabled during Marketplace provisioning:
 
-- **Vercel env vars needed:** `AI_GATEWAY_API_KEY` (LLM calls), `DATABASE_URL` (auto-injected by Neon Marketplace), `RESEND_API_KEY` *only if* an email-send endpoint runs in Vercel (digest can run entirely from GH Actions where the secret already exists, so likely not needed in Vercel).
-- **GH Actions secrets needed (already set):** `IO_FUND_USERNAME`, `IO_FUND_PASSWORD` (cron ingest only — these are Hunter's creds, used only to fetch his subscription content via cron), `AI_GATEWAY_API_KEY` (article distillation), `RESEND_API_KEY` (digest email).
-- **After Neon provisioned, copy `DATABASE_URL` from Vercel to a GH secret** so cron ingest scripts can write rows.
+| Layer | What | Where |
+|---|---|---|
+| **App account** | "Who is this user of our app" | Neon Auth (Stack Auth) — auto-syncs to `neon_auth.users_sync` table |
+| **IOF account** | "What IOF subscription do they own" | `iof_credentials(user_id PK, encrypted_email, encrypted_password, last_verified_at)` — keyed to Neon Auth user_id |
 
-This means the architecture is multi-tenant-clean from day one. Phase 3 multi-tenant doesn't need a creds-storage rewrite — it adds per-user `iof_credentials` table rows (encrypted with a Vercel-env-stored key), but the runtime "user types creds → call IOF Firebase" flow is the same.
+**Auth flow:**
+1. User signs up via Neon Auth (recommend Google OAuth as primary; email+password as fallback)
+2. First-run onboarding prompts "Connect your IOF subscription"
+3. User enters IOF creds once → app exchanges for Firebase JWT to verify → AES-encrypts with `IOF_CREDS_ENCRYPTION_KEY` → stores in `iof_credentials`
+4. Subsequent sessions: Neon Auth identifies user → backend decrypts stored IOF creds → exchanges for fresh Firebase JWT per request (or short cache) → `/api/chat` uses that JWT for IOF Firebase calls
+
+**Vercel env vars needed:**
+- `AI_GATEWAY_API_KEY` — LLM calls (paste from .env)
+- `DATABASE_URL` + Neon's standard PG vars — auto-injected by Neon Marketplace
+- **Neon Auth vars** — auto-injected when Neon Auth enabled. Names likely `NEXT_PUBLIC_STACK_PROJECT_ID`, `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY`, `STACK_SECRET_SERVER_KEY`. Confirm actual names after Hunter completes Neon setup and update this section.
+- `IOF_CREDS_ENCRYPTION_KEY` — **manually added.** Generate: `openssl rand -base64 32`. Production + Preview + Development. **NEVER rotate without a re-encrypt migration** — losing this key bricks every stored IOF cred.
+- `RESEND_API_KEY` — only if an in-app email send endpoint exists (digest already sends from GH Actions where the secret already lives). Likely not needed in Vercel for Phase 0.
+
+**GH Actions secrets (already set):** `IO_FUND_USERNAME`, `IO_FUND_PASSWORD` (cron ingest only — Hunter's creds for his own subscription), `AI_GATEWAY_API_KEY`, `RESEND_API_KEY`. After Neon provisioned, also add `DATABASE_URL` for cron writes.
+
+**Why two-layer:**
+- Multi-tenant from day one becomes literal — every app table keyed by `user_id`, RLS is just a policy add in Phase 3
+- Standard SaaS pattern (Stripe, Linear, anything with integrations) — credible demo posture vs "type your IOF password here"
+- IOF creds at rest are encrypted, not in cookies, not in env vars
+- Phase 3 multi-tenant rollout is a feature-add (signup page + billing), not an auth rewrite
 
 ## Open threads (defer)
 
@@ -86,6 +107,7 @@ This means the architecture is multi-tenant-clean from day one. Phase 3 multi-te
 - **Vercel + push-to-main triggers redeploy** (~30s–2min). Prose edits (digest, distilled article bodies) commit → Vercel rebuild → live system prompt updates. Structured-data writes (trades, article metadata rows) go to Postgres → no rebuild.
 - **User-uploaded data (portfolio CSVs) is ephemeral.** Server-side session memory for the turn only — never written to `data/`, never persisted in Postgres in Phase 0. Affects Task #6.
 - **pnpm 11 requires explicit build-script approval.** `chat/pnpm-workspace.yaml` has `allowBuilds: { sharp: true }` so Next image-opt builds correctly. Add new build-scripted deps the same way.
+- **Neon Auth uses Stack Auth under the hood.** Use the official Neon Auth Next.js SDK (search "neon auth nextjs" — package likely `@stackframe/stack` or `@neon/auth`, confirm at integration time). The `neon_auth.users_sync` table is auto-maintained by Neon — declare it in Drizzle schema as read-only / reference only. Never INSERT/UPDATE it directly.
 
 ## Session-recovery checklist
 

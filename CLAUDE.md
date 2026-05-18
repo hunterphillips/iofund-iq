@@ -29,6 +29,7 @@ Phase 0 build underway. Task #1 (repo + GH Actions foundation) is done; Task #5 
 - **Frontend / chat:** Next.js 16 App Router + AI SDK v6 + Vercel AI Gateway + Drizzle ORM
 - **Backend / ingest:** GitHub Actions cron + Python scripts (using `iofund-fetch` skill)
 - **Storage:** Hybrid — **Neon Postgres** for structured rows (trades, article metadata; eventually pgvector embeddings + per-user RLS) + **git** for prose (strategy.md, thesis.md, distilled article bodies, digests).
+- **Auth (two-layer):** **Neon Auth** (Stack Auth under the hood) for app accounts — handles signup/OAuth/sessions, auto-syncs user records to `neon_auth.users_sync` table for JOIN-ability. Plus an encrypted `iof_credentials` row per app user, holding their IOF email+password (AES-encrypted with `IOF_CREDS_ENCRYPTION_KEY`). Standard SaaS pattern: app account + integration credentials.
 - **Email:** Resend (weekly digest, ingest notifications)
 - **LLM routing:** Vercel AI Gateway with `"provider/model"` strings — Opus for distillation, Sonnet end-to-end for chat, Haiku deferred (no intent classifier in Phase 0)
 - **Durable workflows (later):** Vercel Workflow DevKit if/when the digest pipeline outgrows GH Actions
@@ -38,7 +39,7 @@ Phase 0 build underway. Task #1 (repo + GH Actions foundation) is done; Task #5 
 - **IOF subscription content is paid material.** Never reproduce article prose verbatim. The two distilled docs in `data/` are transformative summaries (frontmatter + structured tables, not copied prose). New article ingestion follows the same rule.
 - **The trade log (Postgres) is the source of truth** for IOF positions, not the stale portfolio PDF. The CSV/JSON files in `data/` are the seed import only.
 - **The distilled markdown docs in `data/` have frontmatter** (`load_priority`, `companion_docs`) and are optimized for agent consumption. Treat them as the project's knowledge backbone.
-- **Hunter has an active IOF subscription.** Cron ingest uses his credentials (`IO_FUND_USERNAME` / `IO_FUND_PASSWORD` in GH Actions secrets) to fetch his subscription content. The chat app, by contrast, expects each user to type their own IOF creds at sign-in — those creds are never stored in env vars.
+- **Hunter has an active IOF subscription.** Cron ingest uses his credentials (`IO_FUND_USERNAME` / `IO_FUND_PASSWORD` in GH Actions secrets) to fetch his subscription content. The chat app, by contrast, uses the two-layer auth pattern: each user signs into the app via Neon Auth, then connects their own IOF subscription (creds encrypted at rest, never in env vars or cookies).
 - **Durable session state lives in `.claude/pickup.md`** (not at repo root). The `/pickup` skill writes there.
 
 ## End-goal product (Phase 0+ target)
@@ -56,7 +57,7 @@ Architecture is designed for single-user POC but **multi-tenant-clean from day o
 - **Phase 0** (current): read-only intelligence + chat app
 - **Phase 1**: live broker integration (Alpaca paper → live), real-time portfolio sync, pgvector RAG (Neon already provisioned in Phase 0 — RAG becomes "add column" not "add infra")
 - **Phase 2**: semi-auto execution (one-tap approve → broker)
-- **Phase 3**: multi-tenant refactor (per-user `iof_credentials` table + Postgres RLS, no architecture rewrite) + formal pitch to IOF team
+- **Phase 3**: multi-tenant rollout — already structurally ready (Neon Auth + per-user `user_id` columns from day one). This phase adds Postgres RLS policies, public sign-up, billing, and the formal pitch to IOF.
 
 ## Orientation for new sessions
 
@@ -68,5 +69,6 @@ Architecture is designed for single-user POC but **multi-tenant-clean from day o
 
 - Do **not** auto-commit changes to the distilled docs (`data/io-fund-strategy.md`, `data/io-fund-thesis.md`) without Hunter's approval. The weekly digest workflow should auto-PR to a branch.
 - Do **not** deploy the chat app to a public URL without explicit go-ahead. Calling IOF's Firebase from a third-party server is fine for a POC shown TO IOF, but a public deploy without their blessing is bad IP posture.
-- Do **not** put `IO_FUND_USERNAME` / `IO_FUND_PASSWORD` in Vercel env vars. The chat app gets IOF creds from the user at sign-in. Cron jobs that use Hunter's creds run in GH Actions, where the secrets already live.
+- Do **not** put `IO_FUND_USERNAME` / `IO_FUND_PASSWORD` in Vercel env vars. The chat app gets IOF creds from each user during onboarding ("Connect your IOF subscription"), AES-encrypts them, and stores them in the `iof_credentials` table. Cron jobs that use Hunter's creds run in GH Actions, where the secrets already live.
+- Do **not** rotate `IOF_CREDS_ENCRYPTION_KEY` without a re-encrypt migration. Losing or changing this key bricks every stored IOF credential.
 - Do **not** propose CSV-append patterns for new structured data — that goes to Postgres. Prose still goes to git.

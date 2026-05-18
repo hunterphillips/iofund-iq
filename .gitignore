@@ -36,3 +36,5 @@ tmp/
 AGENTS.md
 .agents/
 thoughts/
+.vercel
+.env*.local

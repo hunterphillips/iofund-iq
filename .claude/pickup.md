@@ -21,10 +21,17 @@
 - **Task #5 — Chat scaffold (subtask)** ✓
   - `chat/` — Next.js 16 + React 19 + TypeScript, dark/gold placeholder page, local `pnpm build` + dev-server smoke test both green.
   - `evals/` — README sketch; `golden.jsonl` + `run_evals.py` land with first `/api/chat`.
+- **Task #5 — DB foundation (subtask)** ✓
+  - Neon Postgres provisioned via Vercel Marketplace; Neon Auth (Better Auth) enabled with Google OAuth + email/password.
+  - Drizzle ORM wired: `chat/db/schema.ts` (iof_credentials, trades, articles), `chat/db/index.ts` (Neon HTTP client), `chat/db/encryption.ts` (AES-256-GCM with `IOF_CREDS_ENCRYPTION_KEY`, tamper-detection verified), `chat/drizzle.config.ts` (schemaFilter: ["public"] excludes Neon Auth tables).
+  - First migration `0000_pink_shinko_yamashiro.sql` applied to Neon. All 3 public tables + 9 `neon_auth.*` tables live.
+  - Vercel env vars confirmed live: `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `IOF_CREDS_ENCRYPTION_KEY`, `DATABASE_URL` (+ 15 other `DATABASE_*` from Neon Marketplace, prod+preview scoped only).
 
-## What's in flight (waiting on Hunter)
+## What's next (next chunk of Task #5)
 
-- **Vercel project setup.** Hunter is provisioning. Specifics: Root Directory = `chat`, env var `AI_GATEWAY_API_KEY` only (see "IOF creds in Vercel" below — they should NOT go in Vercel env). After first deploy: Storage tab → Connect Database → Neon (Marketplace) → auto-injects `DATABASE_URL`.
+**Wire `@neondatabase/auth` SDK into the chat app.** Install package, add `lib/auth/server.ts` (`createNeonAuth` using `NEON_AUTH_BASE_URL` + `NEON_AUTH_COOKIE_SECRET`), add catch-all auth API route, build minimal signup + signin pages (or use Neon's UI components). Use Google OAuth as primary CTA. After signup works, add the "Connect IOF account" onboarding step that uses `chat/db/encryption.ts` to write to `iof_credentials`.
+
+**Then:** Vercel deploy (first real green deploy beyond the placeholder), and verify the IOF Firebase auth exchange round-trip works server-side.
 
 ## Phase 0 task list (durable record)
 
@@ -57,8 +64,8 @@ Original Task #5 design had one auth layer ("user types IOF creds → app proxie
 
 | Layer | What | Where |
 |---|---|---|
-| **App account** | "Who is this user of our app" | Neon Auth (Stack Auth) — auto-syncs to `neon_auth.users_sync` table |
-| **IOF account** | "What IOF subscription do they own" | `iof_credentials(user_id PK, encrypted_email, encrypted_password, last_verified_at)` — keyed to Neon Auth user_id |
+| **App account** | "Who is this user of our app" | Neon Auth (**Better Auth** — Stack Auth is the deprecated/legacy path as of Jan 2026). Creates `neon_auth.user` (canonical user — singular, NOT `users_sync`) plus 8 other tables in the `neon_auth` schema. |
+| **IOF account** | "What IOF subscription do they own" | `public.iof_credentials(user_id PK, encrypted_email bytea, encrypted_password bytea, last_verified_at)` — keyed to Neon Auth user_id, AES-256-GCM encrypted with `IOF_CREDS_ENCRYPTION_KEY`. FK to `neon_auth.user(id)` enforced at app layer for now; deferred raw migration once SDK wiring confirms id column type. |
 
 **Auth flow:**
 1. User signs up via Neon Auth (recommend Google OAuth as primary; email+password as fallback)
@@ -66,14 +73,15 @@ Original Task #5 design had one auth layer ("user types IOF creds → app proxie
 3. User enters IOF creds once → app exchanges for Firebase JWT to verify → AES-encrypts with `IOF_CREDS_ENCRYPTION_KEY` → stores in `iof_credentials`
 4. Subsequent sessions: Neon Auth identifies user → backend decrypts stored IOF creds → exchanges for fresh Firebase JWT per request (or short cache) → `/api/chat` uses that JWT for IOF Firebase calls
 
-**Vercel env vars needed:**
-- `AI_GATEWAY_API_KEY` — LLM calls (paste from .env)
-- `DATABASE_URL` + Neon's standard PG vars — auto-injected by Neon Marketplace
-- **Neon Auth vars** — auto-injected when Neon Auth enabled. Names likely `NEXT_PUBLIC_STACK_PROJECT_ID`, `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY`, `STACK_SECRET_SERVER_KEY`. Confirm actual names after Hunter completes Neon setup and update this section.
-- `IOF_CREDS_ENCRYPTION_KEY` — **manually added.** Generate: `openssl rand -base64 32`. Production + Preview + Development. **NEVER rotate without a re-encrypt migration** — losing this key bricks every stored IOF cred.
-- `RESEND_API_KEY` — only if an in-app email send endpoint exists (digest already sends from GH Actions where the secret already lives). Likely not needed in Vercel for Phase 0.
+**Vercel env vars (confirmed live as of 2026-05-18):**
+- `AI_GATEWAY_API_KEY` — LLM calls
+- `DATABASE_URL` + 15 other `DATABASE_*` vars — auto-injected by Neon Marketplace, **scoped Production+Preview only.** For local dev: `vercel env pull .env.local --environment=production` picks them up.
+- `NEON_AUTH_BASE_URL` — manually added. Value is the Auth URL from the Neon console (`https://ep-quiet-wind-aqdcewde.neonauth.c-8.us-east-1.aws.neon.tech/neondb/auth`).
+- `NEON_AUTH_COOKIE_SECRET` — manually added, `openssl rand -base64 32`.
+- `IOF_CREDS_ENCRYPTION_KEY` — manually added, `openssl rand -base64 32` (different value than cookie secret). **NEVER rotate without a re-encrypt migration.**
+- `DATABASE_VITE_NEON_AUTH_URL` — auto-injected by Neon Auth, Vite naming — unused; Next.js code reads `NEON_AUTH_BASE_URL` instead.
 
-**GH Actions secrets (already set):** `IO_FUND_USERNAME`, `IO_FUND_PASSWORD` (cron ingest only — Hunter's creds for his own subscription), `AI_GATEWAY_API_KEY`, `RESEND_API_KEY`. After Neon provisioned, also add `DATABASE_URL` for cron writes.
+**GH Actions secrets (already set):** `IO_FUND_USERNAME`, `IO_FUND_PASSWORD` (cron ingest only — Hunter's creds for his own subscription), `AI_GATEWAY_API_KEY`, `RESEND_API_KEY`. **TODO:** mirror `DATABASE_URL` from Vercel into a GH secret so cron ingest can write — one-liner once we start Task #2.
 
 **Why two-layer:**
 - Multi-tenant from day one becomes literal — every app table keyed by `user_id`, RLS is just a policy add in Phase 3

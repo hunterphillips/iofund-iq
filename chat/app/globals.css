@@ -237,6 +237,36 @@ body {
   flex-direction: column;
   gap: 1rem;
   padding-right: 0.25rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 180ms ease;
+}
+
+.chat-messages:hover {
+  scrollbar-color: rgba(138, 138, 146, 0.35) transparent;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 180ms ease;
+}
+
+.chat-messages:hover::-webkit-scrollbar-thumb {
+  background: rgba(138, 138, 146, 0.35);
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(138, 138, 146, 0.6);
 }
 
 .chat-empty {

@@ -16,6 +16,9 @@ node_modules/
 .vercel/
 *.tsbuildinfo
 
+# Chat app: prebuild-materialized data copy (source of truth is /data/)
+chat/_data/
+
 # Python
 __pycache__/
 *.pyc

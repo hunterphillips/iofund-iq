@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
+import { ChatThread } from "@/components/chat-thread";
 
 export const dynamic = "force-dynamic";
 
@@ -38,29 +39,19 @@ export default async function Home() {
   }
 
   return (
-    <main className="page">
-      <div className="container">
-        <span className="badge">Phase 0 · scaffold</span>
-        <h1 className="title">
+    <main className="page chat-page">
+      <header className="chat-header">
+        <div className="chat-brand">
           io<span className="accent">fund</span>-agent
-        </h1>
-        <p className="subtitle">
-          Personal AI assistant over an I/O Fund subscription.
-        </p>
-        <div className="auth-state">
-          <p className="status">
-            Signed in as <strong>{session.user.email}</strong>. I/O Fund
-            account connected.
-          </p>
-          <p className="status">
-            Chat lands in the next build chunk. Until then, this is a working
-            auth + credentials shell.
-          </p>
+        </div>
+        <div className="chat-meta">
+          <span className="chat-user">{session.user.email}</span>
           <Link href="/auth/sign-out" className="link">
             Sign out
           </Link>
         </div>
-      </div>
+      </header>
+      <ChatThread />
     </main>
   );
 }

@@ -89,7 +89,7 @@ Architecture is **multi-tenant-clean from day one** — every per-user table key
 ## Phases
 
 - **Phase 0** (current): read-only intelligence + chat app. Tasks #1, #2, #5 ✓ done · Tasks #3, #4, #6 pending.
-- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus crosses ~30 articles. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency.
+- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus crosses ~30 articles. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency. **Read-only broker portfolio sync** (Alpaca paper first) as the upgrade path to Task #6's CSV-upload flow — same diff/conviction-context tool, automatic data source.
 - **Phase 2**: multi-tenant rollout (RLS policies + per-user `iof_credentials` already in schema + public sign-up + billing) + formal pitch to I/O Fund team.
 
-> Broker integration / semi-auto execution is **out of scope** for this product. If pursued at all, it would be a separate app — the IOF-team-pitchable product is read-only intelligence + chat.
+> **Write-side broker integration is out of scope** — no auto-trade, no semi-auto execution, no approve-and-submit-to-broker flows. Different liability/compliance/brand-association posture; not IOF-pitchable. If pursued at all later, it would be a separate app. **Read-side broker integration (portfolio pull) IS in scope** as the Phase 1 upgrade to Task #6 — the chat needs to compare the user's actual holdings against IOF's current book; CSV upload is the Phase 0 stand-in.

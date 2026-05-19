@@ -33,9 +33,8 @@ venv/
 /tmp/
 tmp/
 
-# Claude Code — local-only settings
-.claude/settings.local.json
-.claude/.claude/
+# Claude Code — local-only workspace (skills, agents, slash commands, pickup, plans)
+.claude/
 AGENTS.md
 .agents/
 thoughts/

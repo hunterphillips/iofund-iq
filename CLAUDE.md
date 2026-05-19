@@ -1,74 +1,94 @@
 # iofund-agent
 
-Personal AI assistant for getting more value out of an I/O Fund subscription. Long-term goal: a polished POC that can be pitched to the I/O Fund team as a member-facing product they could license or release to subscribers.
+Personal AI assistant for getting more value out of an I/O Fund subscription. Long-term goal: a polished POC pitchable to the I/O Fund team as a member-facing product.
 
-## Current state
+## Stack
 
-Phase 0 build underway. Task #1 (repo + GH Actions foundation) is done; Task #5 (chat app) has a deploy-green scaffold and is in flight. See `.claude/pickup.md` for the durable task list and what to pick up next.
+- **App:** Next.js 16 App Router · React 19 · TypeScript · pnpm
+- **Auth:** Neon Auth (powered by Better Auth) — Google OAuth + email/password
+- **DB:** Neon Postgres via Vercel Marketplace · Drizzle ORM · `@neondatabase/serverless`
+- **LLM:** Vercel AI Gateway routes `"anthropic/claude-sonnet-4-6"` for chat (Opus reserved for future distillation). AI SDK v6 (`streamText` + `stepCountIs(5)`).
+- **Storage:** Hybrid — Postgres for structured rows (trades, article metadata, encrypted IOF credentials); git for prose (strategy/thesis docs, distilled article bodies, digests).
+- **Email (planned):** Resend, for Tasks #2/#4.
+- **Cron (planned):** GitHub Actions + Python `scripts/` for Tasks #2-#4 (not yet built).
 
-## Repository layout
+## Structure
 
-| Path | Purpose |
-|---|---|
-| `chat/` | Next.js 16 App Router app. Chat UI, IOF auth proxy, `/api/chat` (Task #5). Deploys to Vercel with Root Directory = `chat`. |
-| `evals/` | Lightweight regression harness for the chat app — `golden.jsonl` + `run_evals.py` + LLM-as-judge. PR gate on prompt/tool/model changes. |
-| `scripts/` | Python ingest scripts (Task #2 trades poll, Task #3 article ingest, Task #4 weekly digest). Run from GH Actions. |
-| `data/io-fund-strategy.md` | Alert decoding, sizing rules, hedging framework. Load-bearing for interpreting any IOF trade signal. |
-| `data/io-fund-thesis.md` | Current IOF thesis state, per-ticker conviction history, theme evolution, decision-reasoning patterns. |
-| `data/articles/` | Distilled article bodies (markdown). Metadata rows live in Postgres. |
-| `data/digests/` | Weekly digest markdown archives. |
-| `data/iofund-trades.csv` / `.json` | Historical trade log (~1,044 rows Jan 2021 – May 2026). Seed-imported into Postgres once; kept in git for provenance. **Trades source of truth going forward is Postgres.** |
-| `data/io-fund-portfolio.pdf` | Historical snapshot — stale, reference only. |
-| `.claude/skills/iofund-fetch/` | Python skill: authenticates against io-fund.com Firebase, fetches premium articles. |
-| `.claude/pickup.md` | Where the next agent session should start. |
-| `.github/workflows/` | GH Actions for cron ingest + hello smoke test. |
-| `.env` | Local secrets (NOT committed). |
+- `chat/` — Next.js app.
+  - `app/` — App Router pages (`/`, `/auth/[path]`, `/onboarding/connect-iof`) + API routes (`/api/auth/[...path]`, `/api/chat`, `/api/onboarding/connect-iof`).
+  - `db/` — Drizzle `schema.ts`, `migrations/`, Neon HTTP client (`index.ts`), AES-256-GCM encryption helper (`encryption.ts`).
+  - `lib/auth/` — Neon Auth server + client config.
+  - `lib/iof/` — IOF Firebase verifier (`firebase.ts`) + encrypted credentials read/write (`credentials.ts`).
+  - `lib/chat/` — Chat system prompt, AI SDK tools, prose-doc readers.
+  - `components/chat-thread.tsx` — `useChat` hook + message thread with transient tool-call indicators + react-markdown rendering.
+  - `scripts/seed-trades.ts` — one-shot CSV → Postgres seeder.
+  - `scripts/copy-data.sh` — predev/prebuild step copying repo-root `data/*.md` → `chat/_data/` (Turbopack rejects parent-dir globs in `outputFileTracingIncludes`).
+  - `_data/` — materialized at build time from repo-root `data/` (gitignored).
+- `data/` — Knowledge corpus, canonical source.
+  - `io-fund-strategy.md` — alert decoding, sizing rules, hedging framework. Load-bearing for the chat system prompt.
+  - `io-fund-thesis.md` — per-ticker conviction history, theme evolution, decision-reasoning patterns.
+  - `iofund-trades.csv` / `.json` — historical IOF trade log. Seed-imported once into Postgres; **source of truth going forward is `public.trades`**.
+  - `io-fund-portfolio.pdf` — stale snapshot, reference only.
+  - `articles/`, `digests/` — populated by future ingest cron (Tasks #3, #4).
+- `evals/` — Regression harness for chat behavior (README sketch; landing alongside the first regression-eligible change).
+- `.github/workflows/hello.yml` — secrets smoke test. Cron workflows land with Tasks #2-#4.
 
-## Tech stack
+## Development
 
-- **Frontend / chat:** Next.js 16 App Router + AI SDK v6 + Vercel AI Gateway + Drizzle ORM
-- **Backend / ingest:** GitHub Actions cron + Python scripts (using `iofund-fetch` skill)
-- **Storage:** Hybrid — **Neon Postgres** for structured rows (trades, article metadata; eventually pgvector embeddings + per-user RLS) + **git** for prose (strategy.md, thesis.md, distilled article bodies, digests).
-- **Auth (two-layer):** **Neon Auth** (Stack Auth under the hood) for app accounts — handles signup/OAuth/sessions, auto-syncs user records to `neon_auth.users_sync` table for JOIN-ability. Plus an encrypted `iof_credentials` row per app user, holding their IOF email+password (AES-encrypted with `IOF_CREDS_ENCRYPTION_KEY`). Standard SaaS pattern: app account + integration credentials.
-- **Email:** Resend (weekly digest, ingest notifications)
-- **LLM routing:** Vercel AI Gateway with `"provider/model"` strings — Opus for distillation, Sonnet end-to-end for chat, Haiku deferred (no intent classifier in Phase 0)
-- **Durable workflows (later):** Vercel Workflow DevKit if/when the digest pipeline outgrows GH Actions
+### Setup
+
+```bash
+cd chat
+pnpm install
+npx vercel link                              # one-time: links chat/ to the iofund-agent Vercel project
+npx vercel env pull .env.local --environment=production
+```
+
+Required env vars in `chat/.env.local`: `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `IOF_CREDS_ENCRYPTION_KEY`, `AI_GATEWAY_API_KEY`. Neon Marketplace auto-injects the `DATABASE_*` vars; the others were added manually to the Vercel project.
+
+### Running
+
+```bash
+cd chat && pnpm dev
+```
+
+predev copies `data/*.md` → `chat/_data/` so chat tools can read them. Hits port 3000 or next free.
+
+### DB schema changes
+
+```bash
+cd chat
+pnpm db:generate                              # diff db/schema.ts → new migration SQL
+pnpm db:migrate                               # apply to Neon
+```
+
+### Verification
+
+- `cd chat && pnpm build` — type-check + production build.
+- For UI changes, hit dev server in a browser. Type-check passes but doesn't catch rendering issues.
 
 ## Conventions and guardrails
 
-- **IOF subscription content is paid material.** Never reproduce article prose verbatim. The two distilled docs in `data/` are transformative summaries (frontmatter + structured tables, not copied prose). New article ingestion follows the same rule.
-- **The trade log (Postgres) is the source of truth** for IOF positions, not the stale portfolio PDF. The CSV/JSON files in `data/` are the seed import only.
-- **The distilled markdown docs in `data/` have frontmatter** (`load_priority`, `companion_docs`) and are optimized for agent consumption. Treat them as the project's knowledge backbone.
-- **Hunter has an active IOF subscription.** Cron ingest uses his credentials (`IO_FUND_USERNAME` / `IO_FUND_PASSWORD` in GH Actions secrets) to fetch his subscription content. The chat app, by contrast, uses the two-layer auth pattern: each user signs into the app via Neon Auth, then connects their own IOF subscription (creds encrypted at rest, never in env vars or cookies).
-- **Durable session state lives in `.claude/pickup.md`** (not at repo root). The `/pickup` skill writes there.
+- **IOF subscription content is paid material.** Never reproduce article prose verbatim in code, docs, or chat output. The distilled docs in `data/` are transformative summaries; new article ingestion follows the same rule (system prompt enforces this for the chat agent).
+- **Trades source of truth is Postgres (`public.trades`)**, not the seed CSV/JSON files in `data/`.
+- **Two-layer auth:** Neon Auth identifies the app user; `public.iof_credentials` stores their AES-encrypted IOF email+password keyed to `neon_auth.user.id`. **Never put `IO_FUND_USERNAME`/`IO_FUND_PASSWORD` in Vercel env vars.** They live only in GH Actions secrets (for cron jobs that run as Hunter) and in encrypted DB rows (for end-user IOF subscriptions).
+- **`IOF_CREDS_ENCRYPTION_KEY` is unrotatable** — losing or changing it bricks every stored IOF credential. Rotation requires a re-encrypt migration.
+- **Don't auto-commit changes to `data/io-fund-strategy.md` or `data/io-fund-thesis.md`.** Weekly digest workflow (Task #4) opens an auto-PR to a branch; Hunter approves manually.
+- **Don't deploy publicly without IOF's blessing.** Private Vercel URL only until the pitch lands.
 
-## End-goal product (Phase 0+ target)
+## End-goal product
 
-Three hero features, all demo-ready:
+Three hero features (Phase 0 target):
 
-1. **Natural-language chat** over the user's IOF subscription content
-2. **Weekly auto-digest** of new IOF activity (email + in-app archive), with auto-PR proposing updates to the distilled docs when content drift is detected
-3. **Personal portfolio gap analysis** (CSV upload → diff vs IOF current book, with conviction context)
+1. **Natural-language chat** over IOF subscription content (functional locally as of 2026-05-18).
+2. **Weekly auto-digest** of new IOF activity (Task #4).
+3. **Personal portfolio gap analysis** (CSV upload → diff vs IOF current book) (Task #6).
 
-Architecture is designed for single-user POC but **multi-tenant-clean from day one** — per-user auth and per-user data scoping via Postgres RLS, so the eventual shareable version is not a rewrite.
+Architecture is **multi-tenant-clean from day one** — every per-user table keyed by `user_id`. Phase 3 multi-tenant rollout adds Postgres RLS policies, not an auth/data-model rewrite.
 
 ## Phases
 
-- **Phase 0** (current): read-only intelligence + chat app
-- **Phase 1**: live broker integration (Alpaca paper → live), real-time portfolio sync, pgvector RAG (Neon already provisioned in Phase 0 — RAG becomes "add column" not "add infra")
-- **Phase 2**: semi-auto execution (one-tap approve → broker)
-- **Phase 3**: multi-tenant rollout — already structurally ready (Neon Auth + per-user `user_id` columns from day one). This phase adds Postgres RLS policies, public sign-up, billing, and the formal pitch to IOF.
-
-## Orientation for new sessions
-
-1. This file (you're here)
-2. `.claude/pickup.md` — concrete next actions, durable task list, locked-in decisions
-3. `data/io-fund-strategy.md` + `data/io-fund-thesis.md` — what IOF actually is and how they trade
-
-## Important constraints
-
-- Do **not** auto-commit changes to the distilled docs (`data/io-fund-strategy.md`, `data/io-fund-thesis.md`) without Hunter's approval. The weekly digest workflow should auto-PR to a branch.
-- Do **not** deploy the chat app to a public URL without explicit go-ahead. Calling IOF's Firebase from a third-party server is fine for a POC shown TO IOF, but a public deploy without their blessing is bad IP posture.
-- Do **not** put `IO_FUND_USERNAME` / `IO_FUND_PASSWORD` in Vercel env vars. The chat app gets IOF creds from each user during onboarding ("Connect your IOF subscription"), AES-encrypts them, and stores them in the `iof_credentials` table. Cron jobs that use Hunter's creds run in GH Actions, where the secrets already live.
-- Do **not** rotate `IOF_CREDS_ENCRYPTION_KEY` without a re-encrypt migration. Losing or changing this key bricks every stored IOF credential.
-- Do **not** propose CSV-append patterns for new structured data — that goes to Postgres. Prose still goes to git.
+- **Phase 0** (current): read-only intelligence + chat app. Task #1 ✓ done · Task #5 functional locally · Tasks #2, #3, #4, #6 pending.
+- **Phase 1**: live broker integration (Alpaca paper → live); pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra).
+- **Phase 2**: semi-auto execution (one-tap approve → broker).
+- **Phase 3**: multi-tenant rollout (RLS policies + public sign-up + billing) + formal pitch to IOF team.

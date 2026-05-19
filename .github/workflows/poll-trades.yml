@@ -32,5 +32,4 @@ jobs:
           IO_FUND_USERNAME: ${{ secrets.IO_FUND_USERNAME }}
           IO_FUND_PASSWORD: ${{ secrets.IO_FUND_PASSWORD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: python3 scripts/ingest_trades.py

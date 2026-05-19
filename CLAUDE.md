@@ -88,7 +88,8 @@ Architecture is **multi-tenant-clean from day one** — every per-user table key
 
 ## Phases
 
-- **Phase 0** (current): read-only intelligence + chat app. Task #1 ✓ done · Task #5 functional locally · Tasks #2, #3, #4, #6 pending.
-- **Phase 1**: live broker integration (Alpaca paper → live); pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra).
-- **Phase 2**: semi-auto execution (one-tap approve → broker).
-- **Phase 3**: multi-tenant rollout (RLS policies + public sign-up + billing) + formal pitch to IOF team.
+- **Phase 0** (current): read-only intelligence + chat app. Tasks #1, #2, #5 ✓ done · Tasks #3, #4, #6 pending.
+- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus crosses ~30 articles. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency.
+- **Phase 2**: multi-tenant rollout (RLS policies + per-user `iof_credentials` already in schema + public sign-up + billing) + formal pitch to I/O Fund team.
+
+> Broker integration / semi-auto execution is **out of scope** for this product. If pursued at all, it would be a separate app — the IOF-team-pitchable product is read-only intelligence + chat.

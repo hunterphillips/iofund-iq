@@ -17,10 +17,13 @@ Required env (loaded from .env when present, falls back to process env):
     IO_FUND_USERNAME      — IOF email (Hunter's subscription)
     IO_FUND_PASSWORD      — IOF password
     DATABASE_URL          — Neon Postgres connection string
-    RESEND_API_KEY        — for sending the new-trade notification email
-    RESEND_FROM_EMAIL     — sender (defaults to onboarding@resend.dev — test only)
-    RESEND_TO_EMAIL       — recipient (defaults to hkphillips42@gmail.com)
     IOF_FIREBASE_API_KEY  — override (defaults to the value baked into IOF's web app)
+
+No outbound notifications: IOF already sends users SMS + email alerts on
+every trade. This script's only job is to ingest those trades into our
+Postgres so the chat tools can reason over them. The Phase 1 upgrade is
+to replace polling with an email→webhook trigger (IOF alert email →
+forwarder → webhook → immediate ingest) — same data flow, lower latency.
 """
 from __future__ import annotations
 
@@ -231,49 +234,12 @@ def reconcile_legacy_rows(conn: psycopg.Connection, analyst: str | None) -> tupl
     return purged, fixed
 
 
-def send_resend_email(api_key: str, sender: str, recipient: str, subject: str, text: str) -> None:
-    body = json.dumps(
-        {"from": sender, "to": [recipient], "subject": subject, "text": text}
-    ).encode()
-    req = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=body,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            resp.read()
-        log("notify: resend email sent")
-    except urllib.error.HTTPError as e:
-        log(f"notify: resend failed ({e.code}) — {e.read().decode(errors='replace')}")
-
-
-def summarize_new(rows: list[dict]) -> str:
-    """Compact one-line-per-trade summary, newest first."""
-    rows_sorted = sorted(rows, key=lambda r: r["trade_date"], reverse=True)
-    lines = []
-    for r in rows_sorted[:25]:
-        price = f"${r['price']:.2f}" if r["price"] is not None else "—"
-        note = f" ({r['note']})" if r.get("note") else ""
-        lines.append(f"{r['trade_date']} · {r['ticker']} · {r['action']} @ {price}{note}")
-    if len(rows_sorted) > 25:
-        lines.append(f"...and {len(rows_sorted) - 25} more")
-    return "\n".join(lines)
-
-
 def main() -> int:
     load_dotenv_if_present()
 
     user = require_env("IO_FUND_USERNAME")
     password = require_env("IO_FUND_PASSWORD")
     db_url = require_env("DATABASE_URL")
-    resend_key = os.environ.get("RESEND_API_KEY")
-    resend_from = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
-    resend_to = os.environ.get("RESEND_TO_EMAIL", "hkphillips42@gmail.com")
 
     log("auth: signing in to Firebase")
     id_token = sign_in(user, password)
@@ -298,31 +264,9 @@ def main() -> int:
             log(f"reconcile: purged {purged} legacy hash-ID rows")
         if fixed:
             log(f"reconcile: backfilled analyst on {fixed} rows → {analyst!r}")
-
-        # Detect new rows BEFORE the upsert so the email summary lists only
-        # genuinely new trades.
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM trades")
-            existing_ids = {r[0] for r in cur.fetchall()}
-        new_rows = [r for r in rows if r["id"] not in existing_ids]
-
         inserted = upsert_rows(conn, rows)
 
     log(f"upsert: {inserted} new rows · {len(rows) - inserted} already present")
-
-    if new_rows and resend_key:
-        send_resend_email(
-            api_key=resend_key,
-            sender=resend_from,
-            recipient=resend_to,
-            subject=f"IOF trade alert · {len(new_rows)} new",
-            text=summarize_new(new_rows),
-        )
-    elif new_rows:
-        log("notify: skipping email — RESEND_API_KEY not set")
-    else:
-        log("notify: no new trades, no email sent")
-
     return 0
 
 

@@ -1,0 +1,57 @@
+name: discover-articles
+
+on:
+  schedule:
+    # Daily at 14:00 UTC (9am ET).
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      max_per_run:
+        description: 'Cap on new distillations this run (blank = unlimited)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: discover-articles
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: Ingest articles
+        env:
+          IO_FUND_USERNAME: ${{ secrets.IO_FUND_USERNAME }}
+          IO_FUND_PASSWORD: ${{ secrets.IO_FUND_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+          INGEST_MAX_PER_RUN: ${{ inputs.max_per_run }}
+        run: python3 scripts/ingest_articles.py
+
+      - name: Commit new distillations
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/articles/
+          if git diff --staged --quiet; then
+            echo "No new articles"
+            exit 0
+          fi
+          n=$(git diff --staged --name-only | wc -l | tr -d ' ')
+          git commit -m "Ingest $n distilled IOF article(s)"
+          git push

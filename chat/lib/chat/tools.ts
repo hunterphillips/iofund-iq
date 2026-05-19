@@ -93,29 +93,77 @@ export const chatTools = {
 
   search_articles: tool({
     description:
-      "Search distilled summaries of I/O Fund articles by keyword. Returns matching article titles + URLs. NOTE: in this Phase 0 build the article index is empty until the ingest cron lands; this tool will return an empty result until then.",
+      "Search distilled summaries of I/O Fund articles by topic, ticker, or theme. Returns matching titles + URLs, newest first. Use whenever the user asks about IOF's analysis or commentary on a stock, sector, or theme. Pair with read_article to fetch the full distilled summary.",
     inputSchema: z.object({
-      query: z.string().describe("Keyword(s) to search for."),
+      query: z
+        .string()
+        .optional()
+        .describe(
+          "Free-text keyword(s) for theme/topic search (e.g. 'optical networking', 'AI energy', 'CPO'). Omit when filtering by ticker only.",
+        ),
+      ticker: z
+        .string()
+        .optional()
+        .describe(
+          "Stock ticker (e.g. 'NVDA', 'BE'). Case-insensitive. Use when the user mentions a specific company; prefer this over query when you know the ticker.",
+        ),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .default(10)
+        .describe("Max rows to return (1-50). Default 10."),
     }),
-    execute: async ({ query: _q }: { query: string }) => {
+    execute: async ({
+      query,
+      ticker,
+      limit,
+    }: {
+      query?: string;
+      ticker?: string;
+      limit: number;
+    }) => {
+      const conditions = [];
+      if (ticker) {
+        conditions.push(
+          drizzleSql`${ticker.toUpperCase()} = ANY(${tables.articles.tickers})`,
+        );
+      }
+      if (query) {
+        conditions.push(
+          drizzleSql`${tables.articles.title} ILIKE ${"%" + query + "%"}`,
+        );
+      }
       const rows = await db
         .select({
           url: tables.articles.url,
           title: tables.articles.title,
           pubDate: tables.articles.pubDate,
+          tickers: tables.articles.tickers,
+          category: tables.articles.category,
         })
         .from(tables.articles)
-        .limit(1);
-      if (rows.length === 0) {
-        return "No distilled articles indexed yet. Article ingest (Task #3) hasn't run. Answer from the strategy/thesis docs and trade log for now.";
-      }
-      return "Article search not yet implemented; returning no matches.";
+        .where(conditions.length ? and(...conditions) : undefined)
+        .orderBy(desc(tables.articles.pubDate))
+        .limit(limit);
+
+      if (rows.length === 0) return "No matching articles.";
+
+      return rows
+        .map(
+          (r) =>
+            `${r.pubDate} · ${r.title}${
+              r.tickers?.length ? ` [${r.tickers.join(", ")}]` : ""
+            } → ${r.url}`,
+        )
+        .join("\n");
     },
   }),
 
   read_article: tool({
     description:
-      "Read the full distilled summary of a specific I/O Fund article by URL. NOTE: in this Phase 0 build the article corpus is empty until the ingest cron lands.",
+      "Read the full distilled summary of a specific I/O Fund article by URL. Use after search_articles to get the actual content.",
     inputSchema: z.object({
       url: z.string().url().describe("Article URL returned by search_articles."),
     }),
@@ -126,7 +174,7 @@ export const chatTools = {
         .where(eq(tables.articles.url, url))
         .limit(1);
       if (!row?.distilledPath) {
-        return `No distilled article for ${url}. The article corpus is empty in Phase 0.`;
+        return `No distilled article for ${url}.`;
       }
       return readDocFile(row.distilledPath);
     },

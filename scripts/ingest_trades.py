@@ -4,7 +4,10 @@
 Source of truth is the JSON embedded in the page's __NEXT_DATA__ script tag
 (io-fund.com is a Next.js app). We extract `pageProps.notifications` — a
 1k+ item list of trade alerts — and upsert each into Postgres keyed by
-`iof:<notification.id>`.
+`iof:<notification.id>`. Analyst is taken from `pageProps.author.data.name`
+(currently Knox Ridley — the human attribution shown next to each alert in
+the IOF UI; the per-notification `user.name` is the system service account
+that pushes alerts via the API and is NOT what we want).
 
 Run locally:
     pip install -r scripts/requirements.txt
@@ -104,24 +107,39 @@ def fetch_trades_html(id_token: str) -> str:
         return resp.read().decode("utf-8", errors="replace")
 
 
-def extract_notifications(html: str) -> list[dict]:
+def extract_page(html: str) -> tuple[list[dict], str | None]:
+    """Returns (notifications, page_author_name).
+
+    page_author_name is the human attribution shown on each row in the UI
+    (currently "Knox Ridley"). Falls back to None if the author field is
+    absent or shaped unexpectedly.
+    """
     match = NEXT_DATA_RE.search(html)
     if not match:
         sys.exit("ERROR: __NEXT_DATA__ script tag not found on trades page")
     payload = json.loads(match.group(1))
-    notifications = payload.get("props", {}).get("pageProps", {}).get("notifications")
+    page_props = payload.get("props", {}).get("pageProps", {})
+    notifications = page_props.get("notifications")
     if not isinstance(notifications, list):
         sys.exit("ERROR: pageProps.notifications missing or wrong shape")
-    return notifications
+    author = page_props.get("author") or {}
+    analyst = (author.get("data") or {}).get("name")
+    # `name` is sometimes a rich-text block — collapse if so.
+    if isinstance(analyst, list):
+        analyst = "".join(
+            seg.get("text", "")
+            for seg in analyst
+            if isinstance(seg, dict)
+        ).strip() or None
+    return notifications, analyst
 
 
-def notification_to_row(item: dict) -> dict | None:
+def notification_to_row(item: dict, analyst: str | None) -> dict | None:
     """Map one __NEXT_DATA__ entry to a trades-table row.
 
     Returns None if the row is malformed.
     """
     n = item.get("notification") or {}
-    user = item.get("user") or {}
     nid = n.get("id")
     created_at = n.get("created_at")
     ticker = n.get("ticker")
@@ -146,7 +164,7 @@ def notification_to_row(item: dict) -> dict | None:
         "action": action,
         "price": price,
         "note": n.get("stop_notes"),
-        "analyst": user.get("name"),
+        "analyst": analyst,
     }
 
 
@@ -186,18 +204,31 @@ def upsert_rows(conn: psycopg.Connection, rows: list[dict]) -> int:
     return len(inserted)
 
 
-def purge_legacy_hash_ids(conn: psycopg.Connection) -> int:
-    """One-shot: remove the 1,035 hash-ID rows seeded from the historical CSV
-    so the live ingest can repopulate them with the correct schema (server
-    IDs + Beth Technology analyst + rich stop_notes).
+def reconcile_legacy_rows(conn: psycopg.Connection, analyst: str | None) -> tuple[int, int]:
+    """Two one-shot cleanups. Both idempotent (no-op once converged).
 
-    Safe to run repeatedly: matches rows whose id does NOT start with 'iof:'.
+    Returns (purged_hash_id_rows, analyst_fixed_rows).
+
+    1. Drop hash-ID rows from the original seed-trades.ts import — they're
+       replaced by `iof:<server-id>` PKs from the live source.
+    2. Backfill analyst on any rows that pre-date the page-level author
+       extraction (system-account values like "Beth Technology" or
+       "Nate Soria"). Once cleared, future inserts already have the
+       correct analyst so this matches zero rows on subsequent runs.
     """
     with conn.cursor() as cur:
         cur.execute("DELETE FROM trades WHERE id NOT LIKE 'iof:%' RETURNING id")
-        deleted = cur.fetchall()
+        purged = len(cur.fetchall())
+
+        fixed = 0
+        if analyst:
+            cur.execute(
+                "UPDATE trades SET analyst = %s WHERE analyst <> %s RETURNING id",
+                (analyst, analyst),
+            )
+            fixed = len(cur.fetchall())
     conn.commit()
-    return len(deleted)
+    return purged, fixed
 
 
 def send_resend_email(api_key: str, sender: str, recipient: str, subject: str, text: str) -> None:
@@ -251,20 +282,22 @@ def main() -> int:
     html = fetch_trades_html(id_token)
 
     log("parse: extracting __NEXT_DATA__")
-    notifications = extract_notifications(html)
-    log(f"parse: {len(notifications)} notifications in payload")
+    notifications, analyst = extract_page(html)
+    log(f"parse: {len(notifications)} notifications · analyst={analyst!r}")
 
     rows: list[dict] = []
     for item in notifications:
-        row = notification_to_row(item)
+        row = notification_to_row(item, analyst)
         if row is not None:
             rows.append(row)
     log(f"parse: {len(rows)} valid rows")
 
     with psycopg.connect(db_url) as conn:
-        purged = purge_legacy_hash_ids(conn)
+        purged, fixed = reconcile_legacy_rows(conn, analyst)
         if purged:
-            log(f"purge: removed {purged} legacy hash-ID rows (one-shot)")
+            log(f"reconcile: purged {purged} legacy hash-ID rows")
+        if fixed:
+            log(f"reconcile: backfilled analyst on {fixed} rows → {analyst!r}")
 
         # Detect new rows BEFORE the upsert so the email summary lists only
         # genuinely new trades.
@@ -275,7 +308,7 @@ def main() -> int:
 
         inserted = upsert_rows(conn, rows)
 
-    log(f"upsert: {inserted} new rows inserted, {len(rows) - inserted} already present")
+    log(f"upsert: {inserted} new rows · {len(rows) - inserted} already present")
 
     if new_rows and resend_key:
         send_resend_email(

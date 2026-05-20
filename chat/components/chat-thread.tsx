@@ -73,6 +73,7 @@ function Message({
 }) {
   const textParts = message.parts.filter((part) => part.type === "text");
   const combinedText = textParts.map((part) => part.text).join("");
+  const sources = extractSources(message.parts);
 
   return (
     <div className={`chat-message chat-message-${message.role}`}>
@@ -96,7 +97,57 @@ function Message({
           : combinedText
             ? <Markdown>{combinedText}</Markdown>
             : null}
+        {!showThinking && sources.length > 0 ? (
+          <Sources sources={sources} />
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+type Source = { url: string; title: string; pubDate: string | null };
+
+function extractSources(parts: UIMessage["parts"]): Source[] {
+  const seen = new Set<string>();
+  const sources: Source[] = [];
+  for (const part of parts) {
+    if (part.type !== "tool-read_article") continue;
+    if (part.state !== "output-available") continue;
+    const output = part.output as
+      | { found: true; title: string; pub_date: string | null; body: string }
+      | { found: false; message: string }
+      | undefined;
+    if (!output || !output.found) continue;
+    const input = part.input as { url?: string } | undefined;
+    const url = input?.url;
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    sources.push({ url, title: output.title, pubDate: output.pub_date });
+  }
+  return sources;
+}
+
+function Sources({ sources }: { sources: Source[] }) {
+  return (
+    <div className="chat-sources">
+      <div className="chat-sources-label">Sources</div>
+      <ul className="chat-sources-list">
+        {sources.map((s) => (
+          <li key={s.url}>
+            <a
+              className="chat-sources-link"
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {s.title}
+            </a>
+            {s.pubDate ? (
+              <span className="chat-sources-date">{s.pubDate}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

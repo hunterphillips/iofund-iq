@@ -335,6 +335,47 @@ body {
   50%      { opacity: 1; transform: scale(1.05); }
 }
 
+/* Sources block — render-layer citation attached to assistant messages */
+.chat-sources {
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.chat-sources-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.chat-sources-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.chat-sources-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.chat-sources-link:hover {
+  border-bottom-color: var(--accent);
+}
+
+.chat-sources-date {
+  margin-left: 0.5rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 /* Markdown rendering inside chat messages */
 .markdown {
   display: contents;

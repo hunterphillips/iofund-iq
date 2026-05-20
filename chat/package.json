@@ -12,7 +12,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "preeval": "scripts/copy-data.sh",
+    "eval": "tsx --env-file=.env.local evals/run.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.186",
@@ -35,6 +37,7 @@
     "csv-parse": "^6.2.1",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.3",
     "typescript": "^5.7.0"
   }
 }

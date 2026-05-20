@@ -145,6 +145,10 @@ export const chatTools = {
         ? drizzleSql<number>`ts_rank(body_tsv, ${tsq})`
         : drizzleSql<number>`0`;
 
+      const orderExprs = tsq
+        ? [drizzleSql`ts_rank(body_tsv, ${tsq}) DESC`, desc(tables.articles.pubDate)]
+        : [desc(tables.articles.pubDate)];
+
       const rows = await db
         .select({
           url: tables.articles.url,
@@ -156,10 +160,7 @@ export const chatTools = {
         })
         .from(tables.articles)
         .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(
-          tsq ? drizzleSql`ts_rank(body_tsv, ${tsq}) DESC` : drizzleSql`0`,
-          desc(tables.articles.pubDate),
-        )
+        .orderBy(...orderExprs)
         .limit(limit);
 
       if (rows.length === 0) return "No matching articles.";
@@ -177,20 +178,32 @@ export const chatTools = {
 
   read_article: tool({
     description:
-      "Read the full distilled summary of a specific I/O Fund article by URL. Use after search_articles to get the actual content.",
+      "Read the full distilled summary of a specific I/O Fund article by URL. Use after search_articles to get the actual content. Returns { found: true, title, pub_date, body } on success; { found: false } when the URL isn't in the index. URLs the agent has read are surfaced to the user as clickable sources automatically — don't paste URLs inline in the response.",
     inputSchema: z.object({
       url: z.string().url().describe("Article URL returned by search_articles."),
     }),
     execute: async ({ url }: { url: string }) => {
       const [row] = await db
-        .select({ distilledPath: tables.articles.distilledPath })
+        .select({
+          title: tables.articles.title,
+          pubDate: tables.articles.pubDate,
+          distilledPath: tables.articles.distilledPath,
+        })
         .from(tables.articles)
         .where(eq(tables.articles.url, url))
         .limit(1);
       if (!row?.distilledPath) {
-        return `No distilled article for ${url}.`;
+        return {
+          found: false as const,
+          message: `No distilled article for ${url}.`,
+        };
       }
-      return readDocFile(row.distilledPath);
+      return {
+        found: true as const,
+        title: row.title,
+        pub_date: row.pubDate,
+        body: readDocFile(row.distilledPath),
+      };
     },
   }),
 };

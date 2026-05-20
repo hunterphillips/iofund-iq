@@ -1,8 +1,28 @@
+Looking at this week's activity against the current thesis doc:
+
+**Trades:**
+- RDDT closed (was listed as ✓ held in Q2 2026)
+- PLTR sold half (was listed as ✓ held in Q2 2026)
+
+**Articles:**
+- MaxLinear article: covers a ticker (MXLF/MXL) not currently in the doc at all — but this is one article, not 2+, so it doesn't meet the "2+ articles" threshold for a new theme. The optical networking theme is already represented. No doc change warranted from this article alone.
+- Bloom Energy article: updates numbers (Q1 rev $751M, +130% YoY; FY2026 guidance $3.4B–$3.8B; ~1,300% return from entry; April return ~109%) but doesn't contradict the thesis — it reinforces it. The numbers in the doc are now stale (doc says "2GW capacity by Dec 2026 → ~4× 2025 rev" and "+1000% from entry").
+
+**Assessment of drift:**
+1. **RDDT closed** — doc lists it as ✓ held with thesis "scarce asset." The trade log shows it closed 2026-05-18. This is a demonstrable contradiction.
+2. **PLTR sold half** — doc lists it as ✓ held. A 50% trim is a meaningful conviction change that should be reflected (not a full close, but "sold half" is load-bearing).
+3. **BE numbers** — doc says "+1000% from entry" and "2GW capacity by Dec 2026 → ~4× 2025 rev." Article gives ~1,300% from entry, Q1 rev $751M (+130% YoY), FY2026 guidance raised to $3.4B–$3.8B. These are materially stale numbers in a load-bearing row.
+
+These three items are demonstrably wrong/stale. Proceeding with targeted replacement.
+
+---
+
+```markdown
 ---
 purpose: I/O Fund's current investment thesis, per-ticker conviction history, theme evolution, and observed decision-reasoning patterns. Distilled from quarterly "Top 15" reports.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-17
+last_distilled: 2026-05-20
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -33,7 +53,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 ### Headline move
 - **Closed Nvidia.** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack).
 
-### Current picks (held as of Q2 2026)
+### Current picks (held as of Q2 2026, updated for post-Q2 trade activity through 2026-05-20)
 
 | Category | Ticker | One-line thesis | Risk |
 |---|---|---|---|
@@ -50,16 +70,16 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | Networking | **VRT** | Facility-level cooling for Rubin's warm-water design. New entrant | Newer position, limited trade history |
 | Big Tech | **META** | Tied for best Mag 7. AI rec models tailwinding ad ROI | Capex spend |
 | Big Tech | **GOOG** | Tied for first Mag 7. TPU/Ironwood. Gemini diffusion +300% partner-AI rev YoY | Antitrust |
-| Software | **RDDT** | "Scarce asset" — human-data farm. Strong cash flows | Google relationship risk |
-| Software | **PLTR** | Commercial surges (Q4 GAAP EPS +700%). Cash $7.18B, zero debt | "Software stocks will be tested" — IOF cautious on category |
+| Software | **PLTR** | Commercial surges (Q4 GAAP EPS +700%). Cash $7.18B, zero debt. **Position halved 2026-05-18 @ $133.51** — partial trim, thesis not closed | "Software stocks will be tested" — IOF cautious on category |
 | Software | **NET** | Edge inference positioning unique. Timing the open question | Not GAAP profitable after 16 yrs |
-| Energy | **BE** | Time-to-power thesis. 2GW capacity by Dec 2026 → ~4× 2025 rev | Premium valuation (13.8 fwd PS) |
+| Energy | **BE** | Time-to-power thesis. Oracle Project Jupiter deal (2.45 GW, 100% Bloom-powered campus) validates product-market fit. Q1 2026 rev $751M (+130% YoY); FY2026 guidance raised to $3.4B–$3.8B (~78% YoY growth). ~1,300% return from initial entries ($16.64–$17.04, April 2025) | Debt ($2.60B) slightly exceeds cash ($2.49B); cash flow inflection new and unproven across multiple quarters; repeat outperformance requires continued large contract wins |
 | Energy | **GEV** | Order book sold out through 2028. Gas-turbine supply locked through 2030 | Slower growth profile |
 
-### Closed / removed in Q2 2026
-- **NVDA** — closed (see headline move)
+### Closed / removed in Q2 2026 or since
+- **NVDA** — closed April 27 2026 @ $209.67 (see headline move)
 - **APP** — removed/de-emphasized from list (was held Q4-Q1)
 - **CRWV** — not in Q2 list (held in Q4-Q1 with outsized-risk caveat)
+- **RDDT** — **closed 2026-05-18 @ $158.85.** Was held across all three quarters as "scarce asset / human-data farm." Full exit; thesis no longer active.
 
 ### Thematic but not held (utilities + miners)
 - **Talen / Constellation / Vistra** — discussed thematically given PJM auction surge (clearing prices +11× over 2 yrs); Talen = purest PJM play.
@@ -85,16 +105,16 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | **COHR** | — | + Added (InP capacity doubling) | ✓ slow and steady | New Q1; held |
 | **AAOI** | — | — | + **Added** | New Q2 entrant after ~300% YTD move |
 | **VRT** | — | — | + **Added** | New Q2 entrant on cooling thesis |
-| **RDDT** | ✓ #1 software/data | ✓ contextual high-intent data | ✓ scarce asset | Consistent hold; thesis stable |
+| **RDDT** | ✓ #1 software/data | ✓ contextual high-intent data | ✓ scarce asset | **✗ Closed 2026-05-18 @ $158.85.** Held all 3 quarters; full exit. |
 | **CRWV** | ✓ #2 software (thematic 11/10) | ✓ legacy IaaS wasn't built for AI | ✗ **removed from list** | Debt trajectory (D/C ratio ~12× projected for 2026) finally too much |
 | **ORCL** | ✓ #3 software | ✗ **dropped** | — | Dropped Q1 |
 | **APP** | ✓ #4 software | ✓ sentiment doesn't match fundamentals | ✗ **dropped/de-emphasized** | Held Q4-Q1, exit by Q2 |
 | **NET** | ✓ #5 software | ✓ early but unique | ✓ timing main question | Consistent placeholder/speculation hold |
-| **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges | New Q1; held |
+| **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges → **↓ halved 2026-05-18 @ $133.51** | New Q1; held but position halved post-Q2; thesis intact, sizing reduced |
 | **META** | — (honorable mention) | (honorable mention) | ✓ **added** (Mag 7) | Promoted from honorable mention to held |
 | **GOOG** | — | — | + **Added** (Mag 7) | New Q2 entrant |
 | **ARM** | — | — | + **Added** (AGI CPU) | New Q2 entrant |
-| **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1000% from entry | Consistent hold; capacity ramping into 2026-2027 |
+| **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1,300% from entry | Consistent hold; Q1 2026 rev $751M (+130% YoY); FY2026 guidance $3.4B–$3.8B |
 | **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold |
 | Bitcoin Miner | ✓ #3 energy (Discovery) | ✓ Discovery only | ✓ Discovery only | Gated to Discovery tier across all 3 |
 
@@ -173,3 +193,5 @@ Worth probing whether a Discovery upgrade is justified — these picks tend to b
 - **"Held" in Q2 2026 doesn't mean still held today.** This doc dates to April 21 2026. Always cross-reference against trade log for activity since.
 - **CoreWeave + Nvidia exits are the loudest signals in this 3-quarter window** — note how IOF telegraphed both via thesis weakening across quarters before fully exiting. Watch for similar gradual thesis erosion as an exit-prediction pattern.
 - **The "Discovery tier" picks are the speculation slots.** When you see thematic discussion without a held ticker (e.g., utilities, miners), the actionable name is gated.
+- **RDDT closed and PLTR halved on 2026-05-18** — both were Q2 2026 holds. RDDT is a full exit after 3 quarters of consistent holding. PLTR trim is a sizing reduction, not a thesis break; monitor for further reduction.
+```

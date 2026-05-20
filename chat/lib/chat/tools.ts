@@ -124,17 +124,27 @@ export const chatTools = {
       ticker?: string;
       limit: number;
     }) => {
+      // Postgres FTS on title + body via the body_tsv generated column.
+      // ts_rank ordering surfaces the most relevant article first; ties
+      // break on recency. When no query is given, fall back to recency.
+      const tsq = query
+        ? drizzleSql`websearch_to_tsquery('english', ${query})`
+        : null;
+
       const conditions = [];
       if (ticker) {
         conditions.push(
           drizzleSql`${ticker.toUpperCase()} = ANY(${tables.articles.tickers})`,
         );
       }
-      if (query) {
-        conditions.push(
-          drizzleSql`${tables.articles.title} ILIKE ${"%" + query + "%"}`,
-        );
+      if (tsq) {
+        conditions.push(drizzleSql`body_tsv @@ ${tsq}`);
       }
+
+      const rankExpr = tsq
+        ? drizzleSql<number>`ts_rank(body_tsv, ${tsq})`
+        : drizzleSql<number>`0`;
+
       const rows = await db
         .select({
           url: tables.articles.url,
@@ -142,10 +152,14 @@ export const chatTools = {
           pubDate: tables.articles.pubDate,
           tickers: tables.articles.tickers,
           category: tables.articles.category,
+          rank: rankExpr,
         })
         .from(tables.articles)
         .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(desc(tables.articles.pubDate))
+        .orderBy(
+          tsq ? drizzleSql`ts_rank(body_tsv, ${tsq}) DESC` : drizzleSql`0`,
+          desc(tables.articles.pubDate),
+        )
         .limit(limit);
 
       if (rows.length === 0) return "No matching articles.";

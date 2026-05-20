@@ -66,6 +66,7 @@ export const articles = pgTable(
     category: text("category"),
     tickers: text("tickers").array(),
     distilledPath: text("distilled_path"),
+    body: text("body"),
     ingestedAt: timestamp("ingested_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

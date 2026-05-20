@@ -20,8 +20,10 @@ Required env (loaded from .env when present, falls back to process env):
     AI_GATEWAY_API_KEY                   — Vercel AI Gateway
 
 Optional env:
-    INGEST_MAX_PER_RUN  — int cap on new distillations per run (default unlimited)
-    INGEST_DRY_RUN      — "1" skips DB writes and LLM calls; prints what would distill
+    INGEST_MAX_PER_RUN     — int cap on new distillations per run (default unlimited)
+    INGEST_DRY_RUN         — "1" skips DB writes and LLM calls; prints what would distill
+    INGEST_BACKFILL_BODY   — "1" reads existing data/articles/*.md and UPDATEs the body
+                             column for rows where body IS NULL. Skips RSS/LLM entirely.
 """
 from __future__ import annotations
 
@@ -343,6 +345,7 @@ def insert_article_row(
     item: dict,
     distilled_path: str,
     tickers: list[str],
+    body: str,
 ) -> bool:
     """Returns True if a new row was inserted, False on conflict."""
     article_id = f"iof-article:{item['slug']}"
@@ -350,8 +353,8 @@ def insert_article_row(
         cur.execute(
             """
             INSERT INTO articles
-                (id, url, pub_date, title, slug, premium, category, tickers, distilled_path)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, url, pub_date, title, slug, premium, category, tickers, distilled_path, body)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (url) DO NOTHING
             RETURNING id
             """,
@@ -365,6 +368,7 @@ def insert_article_row(
                 item["category"],
                 tickers,
                 distilled_path,
+                body,
             ),
         )
         row = cur.fetchone()
@@ -372,22 +376,63 @@ def insert_article_row(
     return row is not None
 
 
+def backfill_bodies(conn: psycopg.Connection, repo_root: Path) -> int:
+    """One-shot: read each data/articles/*.md off disk and UPDATE body where NULL.
+    Returns count of rows updated. Idempotent — re-running after success is a no-op.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT url, distilled_path FROM articles WHERE body IS NULL AND distilled_path IS NOT NULL"
+        )
+        rows = cur.fetchall()
+
+    if not rows:
+        log("backfill: 0 rows need body")
+        return 0
+
+    log(f"backfill: {len(rows)} rows need body")
+    updated = 0
+    for url, distilled_path in rows:
+        md_path = repo_root / distilled_path
+        if not md_path.is_file():
+            log(f"backfill: skip {url} — file missing at {md_path}")
+            continue
+        try:
+            raw = md_path.read_text()
+            _, body = parse_frontmatter(raw)
+        except Exception as e:
+            log(f"backfill: skip {url} — parse error: {e!r}")
+            continue
+        with conn.cursor() as cur:
+            cur.execute("UPDATE articles SET body = %s WHERE url = %s", (body, url))
+        updated += 1
+    conn.commit()
+    log(f"backfill: updated {updated} rows")
+    return updated
+
+
 def main() -> int:
     load_dotenv_if_present()
 
     dry_run = os.environ.get("INGEST_DRY_RUN") == "1"
+    backfill_only = os.environ.get("INGEST_BACKFILL_BODY") == "1"
     max_per_run_raw = os.environ.get("INGEST_MAX_PER_RUN", "").strip()
     max_per_run = int(max_per_run_raw) if max_per_run_raw else None
 
+    db_url = require_env("DATABASE_URL")
+    repo_root = Path(__file__).resolve().parent.parent
+
+    if backfill_only:
+        with psycopg.connect(db_url) as conn:
+            backfill_bodies(conn, repo_root)
+        return 0
+
     user = require_env("IO_FUND_USERNAME")
     password = require_env("IO_FUND_PASSWORD")
-    db_url = require_env("DATABASE_URL")
     if not dry_run:
         ai_key = require_env("AI_GATEWAY_API_KEY")
     else:
         ai_key = ""
-
-    repo_root = Path(__file__).resolve().parent.parent
 
     log("fetch: GET /rss.xml")
     xml_bytes = fetch_rss()
@@ -447,7 +492,9 @@ def main() -> int:
 
                 tickers = normalize_tickers(fm.get("tickers"))
                 rel_path = write_markdown(item, distilled_md, repo_root)
-                inserted = insert_article_row(conn, item, str(rel_path), tickers)
+                inserted = insert_article_row(
+                    conn, item, str(rel_path), tickers, body
+                )
                 if not inserted:
                     log(f"{label}: row conflict (already inserted by concurrent run)")
                 else:

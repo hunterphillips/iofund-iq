@@ -8,6 +8,13 @@
       "when": 1779146676315,
       "tag": "0000_pink_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779287914758,
+      "tag": "0001_tearful_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

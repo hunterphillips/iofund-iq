@@ -7,8 +7,9 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
 ## What it does today
 
 - **Chat that knows IOF.** Ask "what's IOF's view on optical networking?" or "why did they close NVDA?" — the agent searches distilled summaries of IOF articles, looks up positions in the live trade log, and answers with citations linking back to the source article.
-- **Auto-ingests trades.** A GitHub Actions cron polls IOF's `/premium/trades` page every 30 minutes on weekdays and upserts new trade alerts into Postgres. 1,250+ historical trades currently indexed.
+- **Auto-ingests trades.** A GitHub Actions cron polls IOF's `/premium/trades` page every 30 minutes on weekdays and upserts new trade alerts into Postgres. 1,250+ historical trades currently indexed. Each new trade also state-transitions a `positions` row (BUY → held, SELL+close → closed, trim → held), keeping a live snapshot of IOF's current book.
 - **Auto-distills articles.** A daily cron polls IOF's RSS feed, fetches each new article behind the paywall, and produces a structured distillation (thesis · key numbers · takeaways · risks) via Claude Sonnet 4.6. ~$0.05/article. Stored as markdown in git and searchable metadata in Postgres.
+- **Weekly auto-digest.** A Friday cron generates a 5-section summary of the past week's trades + articles via Sonnet 4.6, commits it to `data/digests/`, and runs a second LLM pass to detect whether the new activity supersedes anything in the running thesis doc — opening a PR against `thesis.md` when drift is found. Summary delivered via Resend.
 - **Render-layer source attribution.** Every chat response shows a `Sources` block built deterministically from which articles the agent actually read — no hallucinated URLs possible.
 - **Regression evals.** A small TypeScript harness runs natural-language queries against the chat code and asserts on tool-call traces, catching retrieval and citation regressions before they ship.
 
@@ -23,8 +24,9 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
                              ▼
        ┌──────────────────────────────────────────────────┐
        │   GitHub Actions crons (scripts/*.py)            │
-       │   • poll-trades.yml   — */30 weekdays            │
+       │   • poll-trades.yml       — */30 weekdays        │
        │   • discover-articles.yml — 0 14 * * *           │
+       │   • weekly-digest.yml     — 0 21 * * 5           │
        └────────┬─────────────────────────────┬───────────┘
                 │                             │
                 ▼                             ▼
@@ -33,6 +35,7 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
        │  • trades      │         │     distills article     │
        │  • articles    │         └───────────┬──────────────┘
        │  + body_tsv FTS│                     │
+       │  • positions   │                     │
        │  • iof_creds   │                     ▼
        └────────┬───────┘         data/articles/YYYY-MM-DD-*.md
                 │                  (committed to main)
@@ -74,7 +77,7 @@ For the cron workflows to run, the GitHub repo needs `IO_FUND_USERNAME`, `IO_FUN
 
 | Phase | Status | Scope |
 |---|---|---|
-| **0 — read-only intelligence + chat** | in progress | Trade poll ✓ · Article ingest ✓ · Chat ✓ · Weekly digest ☐ · Portfolio gap analysis ☐ |
+| **0 — read-only intelligence + chat** | in progress | Trade poll ✓ · Article ingest ✓ · Chat ✓ · Weekly digest ✓ · Positions table ✓ · Portfolio gap analysis ☐ |
 | **1 — RAG + broker read + email→webhook** | planned | pgvector hybrid with FTS · Alpaca paper read-only portfolio pull · IOF alert email → forwarder → webhook (replaces polling) |
 | **2 — multi-tenant + pitch** | planned | Postgres RLS · public sign-up · billing · formal pitch to IOF team |
 

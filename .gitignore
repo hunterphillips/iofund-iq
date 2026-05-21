@@ -19,6 +19,10 @@ node_modules/
 # Chat app: prebuild-materialized data copy (source of truth is /data/)
 chat/_data/
 
+# Next.js auto-generated type reference — toggles between dev/types and
+# types/ paths depending on which command ran last; not meant to be checked in.
+chat/next-env.d.ts
+
 # Python
 __pycache__/
 *.pyc

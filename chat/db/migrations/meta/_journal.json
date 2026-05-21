@@ -15,6 +15,13 @@
       "when": 1779287914758,
       "tag": "0001_tearful_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779363426395,
+      "tag": "0002_great_sunfire",
+      "breakpoints": true
     }
   ]
 }

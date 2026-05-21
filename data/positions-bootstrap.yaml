@@ -1,0 +1,33 @@
+# Bootstrap snapshot for the `positions` table.
+# Manually edited when Hunter refreshes the portfolio PDF (quarterly-ish).
+# Per-ticker weight_pct is the slice value in the pie chart; category total
+# below should approximately equal the sum of weights in that category.
+
+snapshot_date: 2026-05-19
+source: data/io-fund-portfolio-pie.pdf
+
+categories:
+  AI Accelerators: 6
+  AI Memory: 23
+  AI Networking: 35
+  AI Energy: 24
+  AI Software: 10
+  Cryptocurrency: 2
+
+positions:
+  - { ticker: AMD,     company: "Advanced Micro Devices Inc",  category: "AI Accelerators", weight_pct: 6 }
+  - { ticker: NVDA,    company: "NVIDIA Corp",                 category: "AI Accelerators", weight_pct: 0 }
+  - { ticker: MU,      company: "Micron Technology Inc",       category: "AI Memory",       weight_pct: 14 }
+  - { ticker: SNDK,    company: "SanDisk Corp",                category: "AI Memory",       weight_pct: 9 }
+  - { ticker: AAOI,    company: "Applied Optoelectronics Inc", category: "AI Networking",   weight_pct: 12 }
+  - { ticker: COHR,    company: "Coherent Corp",               category: "AI Networking",   weight_pct: 7 }
+  - { ticker: LITE,    company: "Lumentum Holdings Inc",       category: "AI Networking",   weight_pct: 6 }
+  - { ticker: ALAB,    company: "Astera Labs, Inc",            category: "AI Networking",   weight_pct: 10 }
+  - { ticker: BE,      company: "Bloom Energy Corp",           category: "AI Energy",       weight_pct: 12 }
+  - { ticker: NEE,     company: "NextEra Energy Inc",          category: "AI Energy",       weight_pct: 6 }
+  - { ticker: GEV,     company: "GE Vernova Inc",              category: "AI Energy",       weight_pct: 7 }
+  - { ticker: GOOGL,   company: "Alphabet Inc Class A",        category: "AI Software",     weight_pct: 5 }
+  - { ticker: META,    company: "Meta Platforms Inc",          category: "AI Software",     weight_pct: 4 }
+  - { ticker: PLTR,    company: "Palantir Technologies Inc",   category: "AI Software",     weight_pct: 1 }
+  - { ticker: BTCUSD,  company: "Bitcoin",                     category: "Cryptocurrency",  weight_pct: 1 }
+  - { ticker: LINKUSD, company: "Chainlink",                   category: "Cryptocurrency",  weight_pct: 1 }

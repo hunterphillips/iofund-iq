@@ -38,6 +38,9 @@ from pathlib import Path
 
 import psycopg
 
+POSITION_CLOSE_RE = re.compile(r"close|stop hit", re.IGNORECASE)
+POSITION_TRIM_RE = re.compile(r"trim|half", re.IGNORECASE)
+
 FIREBASE_API_KEY = os.environ.get(
     "IOF_FIREBASE_API_KEY", "AIzaSyBbWVb0wkR8tHpNezOqdU49hpgjjzzU6k0"
 )
@@ -171,14 +174,12 @@ def notification_to_row(item: dict, analyst: str | None) -> dict | None:
     }
 
 
-def upsert_rows(conn: psycopg.Connection, rows: list[dict]) -> int:
-    """Bulk INSERT ... ON CONFLICT DO NOTHING. Returns count of newly-inserted rows."""
+def upsert_rows(conn: psycopg.Connection, rows: list[dict]) -> list[dict]:
+    """Bulk INSERT ... ON CONFLICT DO NOTHING. Returns the newly-inserted rows."""
     if not rows:
-        return 0
+        return []
+    by_id = {r["id"]: r for r in rows}
     with conn.cursor() as cur:
-        # executemany returns total affected — but ON CONFLICT DO NOTHING
-        # reports 0 for skipped rows, so summing per-row is correct.
-        # Doing this as a single VALUES batch with RETURNING is cleaner.
         values_sql = ",".join(["(%s,%s,%s,%s,%s,%s,%s)"] * len(rows))
         params: list = []
         for r in rows:
@@ -202,9 +203,98 @@ def upsert_rows(conn: psycopg.Connection, rows: list[dict]) -> int:
             """,
             params,
         )
-        inserted = cur.fetchall()
+        inserted_ids = [row[0] for row in cur.fetchall()]
     conn.commit()
-    return len(inserted)
+    return [by_id[i] for i in inserted_ids]
+
+
+def classify_trade_for_position(trade: dict) -> tuple[str, str] | None:
+    """Map a trade to (new_status, last_action_type), or None to skip.
+
+    - HEDGE / COVER-HEDGE: skip (short-ETF hedging, not real positions).
+    - BUY (any note): open or add → 'held'.
+    - SELL + close/stop hit note: → 'closed'.
+    - SELL + trim/half note: → 'held' (sizing reduction, thesis intact).
+    - SELL with neither pattern: log warning, skip.
+    """
+    action = trade.get("action") or ""
+    note = trade.get("note") or ""
+
+    if action in ("HEDGE", "COVER-HEDGE"):
+        return None
+
+    if action == "BUY":
+        action_type = "BUY-Add" if "add" in note.lower() else "BUY"
+        return ("held", action_type)
+
+    if action == "SELL":
+        if POSITION_CLOSE_RE.search(note):
+            return ("closed", "SELL-Close")
+        if POSITION_TRIM_RE.search(note):
+            return ("held", "SELL-Trim")
+        log(
+            f"position: ambiguous SELL note for {trade.get('ticker')!r} "
+            f"(note={note!r}); skipping"
+        )
+        return None
+
+    log(f"position: unknown action {action!r} for {trade.get('ticker')!r}; skipping")
+    return None
+
+
+def update_position_from_trade(conn: psycopg.Connection, trade: dict) -> None:
+    """Apply a single trade's state transition to the positions table."""
+    classified = classify_trade_for_position(trade)
+    if classified is None:
+        return
+    new_status, action_type = classified
+    ticker = trade["ticker"]
+    trade_date = trade["trade_date"]
+
+    with conn.cursor() as cur:
+        if action_type.startswith("BUY"):
+            # Re-entry resets first_entry_date so it tracks the FIRST entry of
+            # the CURRENT held run, not the lifetime-first entry. Matters when
+            # IOF closes + re-enters a position months later.
+            cur.execute(
+                """
+                INSERT INTO positions
+                    (ticker, status, first_entry_date, last_action_date,
+                     last_action_type, source, updated_at)
+                VALUES (%s, 'held', %s, %s, %s, 'trade_replay', now())
+                ON CONFLICT (ticker) DO UPDATE SET
+                    status = 'held',
+                    first_entry_date = CASE
+                        WHEN positions.status = 'closed' THEN EXCLUDED.first_entry_date
+                        ELSE COALESCE(positions.first_entry_date, EXCLUDED.first_entry_date)
+                    END,
+                    last_action_date = EXCLUDED.last_action_date,
+                    last_action_type = EXCLUDED.last_action_type,
+                    updated_at = now()
+                """,
+                (ticker, trade_date, trade_date, action_type),
+            )
+            log(f"position update: {ticker} → held ({action_type})")
+        else:
+            cur.execute(
+                """
+                UPDATE positions
+                SET status = %s,
+                    last_action_date = %s,
+                    last_action_type = %s,
+                    updated_at = now()
+                WHERE ticker = %s
+                """,
+                (new_status, trade_date, action_type, ticker),
+            )
+            if cur.rowcount == 0:
+                log(
+                    f"position: SELL on unknown ticker {ticker!r}; "
+                    f"skipping (bootstrap missing?)"
+                )
+            else:
+                log(f"position update: {ticker} → {new_status} ({action_type})")
+    conn.commit()
 
 
 def reconcile_legacy_rows(conn: psycopg.Connection, analyst: str | None) -> tuple[int, int]:
@@ -264,9 +354,18 @@ def main() -> int:
             log(f"reconcile: purged {purged} legacy hash-ID rows")
         if fixed:
             log(f"reconcile: backfilled analyst on {fixed} rows → {analyst!r}")
-        inserted = upsert_rows(conn, rows)
+        inserted_rows = upsert_rows(conn, rows)
+        log(
+            f"upsert: {len(inserted_rows)} new rows · "
+            f"{len(rows) - len(inserted_rows)} already present"
+        )
 
-    log(f"upsert: {inserted} new rows · {len(rows) - inserted} already present")
+        for trade in inserted_rows:
+            try:
+                update_position_from_trade(conn, trade)
+            except Exception as exc:
+                log(f"position update failed for {trade.get('id')!r}: {exc!r}")
+
     return 0
 
 

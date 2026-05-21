@@ -73,3 +73,25 @@ export const articles = pgTable(
   },
   (t) => [index("articles_pub_date_idx").on(t.pubDate)],
 );
+
+export const positions = pgTable(
+  "positions",
+  {
+    ticker: text("ticker").primaryKey(),
+    company: text("company"),
+    category: text("category"),
+    status: text("status").notNull(),
+    baselineWeightPct: numeric("baseline_weight_pct", { precision: 5, scale: 2 }),
+    firstEntryDate: date("first_entry_date"),
+    lastActionDate: date("last_action_date"),
+    lastActionType: text("last_action_type"),
+    source: text("source").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("positions_status_idx").on(t.status),
+    index("positions_category_idx").on(t.category),
+  ],
+);

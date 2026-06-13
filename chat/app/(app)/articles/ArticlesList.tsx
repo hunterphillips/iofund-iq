@@ -5,10 +5,16 @@
  * Reads initial props from the server shell; subsequent fetches go to /api/articles.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ArticleRow } from "@/lib/articles/search";
+
+function sinceDate(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
 
 interface Props {
   initialRows: ArticleRow[];
@@ -56,8 +62,21 @@ export function ArticlesList({
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
 
+  // Stable since-date strings computed once at mount (Fix 3: avoid midnight cliff
+  // where re-renders produce new strings that break the active-chip comparison).
+  const sinceDates = useMemo(() => ({ d30: sinceDate(30), d90: sinceDate(90) }), []);
+
   // Debounce ref for q input.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // AbortController ref — abort the in-flight request before starting a new one
+  // so that out-of-order responses from fast typing / rapid chip clicks can't
+  // clobber results (Fix 1).
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Mount guard — skip the first effect run when filters are empty so the
+  // initialRows from SSR are used directly (Fix 4).
+  const mountedRef = useRef(false);
 
   const fetchArticles = useCallback(
     async (params: {
@@ -66,6 +85,11 @@ export function ArticlesList({
       category: string;
       since: string;
     }) => {
+      // Cancel any in-flight request.
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       setLoading(true);
       try {
         const sp = new URLSearchParams();
@@ -74,7 +98,9 @@ export function ArticlesList({
         if (params.category) sp.set("category", params.category);
         if (params.since) sp.set("since", params.since);
 
-        const res = await fetch(`/api/articles?${sp.toString()}`);
+        const res = await fetch(`/api/articles?${sp.toString()}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error("fetch failed");
         const data: { rows: ArticleRow[]; total: number } = await res.json();
         setRows(data.rows);
@@ -82,17 +108,30 @@ export function ArticlesList({
 
         // Keep URL in sync.
         router.replace(`/articles?${sp.toString()}`, { scroll: false });
-      } catch {
-        // keep previous results on error
+      } catch (err) {
+        // Ignore aborted requests — keep previous results displayed.
+        if (err instanceof Error && err.name === "AbortError") return;
+        // For other errors, keep previous results on error.
       } finally {
-        setLoading(false);
+        // Only clear loading if this controller wasn't already superseded.
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     },
     [router],
   );
 
   // On filter-chip / date changes — immediate.
+  // Skip the very first run when all filters are empty: initialRows from SSR
+  // already reflect the unfiltered state (Fix 4). If the page was deep-linked
+  // with filters (non-empty initial state), the server shell already fetched
+  // with those filters, so we also skip — the initial data is already correct.
   useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
     fetchArticles({ q, ticker, category, since });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticker, category, since]);
@@ -149,8 +188,8 @@ export function ArticlesList({
 
         {/* Date-range: simple "since" shortcut chips */}
         {[
-          { label: "Last 30d", value: sinceDate(30) },
-          { label: "Last 90d", value: sinceDate(90) },
+          { label: "Last 30d", value: sinceDates.d30 },
+          { label: "Last 90d", value: sinceDates.d90 },
         ].map(({ label, value }) => (
           <button
             key={label}
@@ -210,7 +249,7 @@ export function ArticlesList({
 
       {/* Article list */}
       {rows.length === 0 && !loading ? (
-        <EmptyState q={q} ticker={ticker} category={category} />
+        <EmptyState q={q} ticker={ticker} category={category} since={since} />
       ) : (
         <div className={`flex flex-col divide-y divide-border ${loading ? "opacity-60" : ""} transition-opacity`}>
           {rows.map((row) => (
@@ -281,10 +320,12 @@ function EmptyState({
   q,
   ticker,
   category,
+  since,
 }: {
   q: string;
   ticker: string;
   category: string;
+  since: string;
 }) {
   return (
     <div className="py-20 text-center">
@@ -294,6 +335,7 @@ function EmptyState({
         {q ? ` for "${q}"` : ""}
         {ticker ? ` · ticker ${ticker}` : ""}
         {category ? ` · category ${category}` : ""}
+        {since ? ` · since ${since}` : ""}
         .
       </p>
       <p className="text-xs text-muted-deep mt-2">Try broader search terms.</p>
@@ -318,10 +360,4 @@ function SearchIcon() {
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
-}
-
-function sinceDate(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
 }

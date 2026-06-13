@@ -1,38 +1,29 @@
 import { Suspense } from "react";
 import { db, tables } from "@/db";
-import { desc } from "drizzle-orm";
+import { isNotNull } from "drizzle-orm";
 import { searchArticles } from "@/lib/articles/search";
 import { ArticlesList } from "./ArticlesList";
 
 export const dynamic = "force-dynamic";
 
-/** Unique non-null categories in the corpus, sorted. */
+/** Unique non-null categories in the corpus, sorted alphabetically. */
 async function getCategories(): Promise<string[]> {
   const rows = await db
-    .select({ category: tables.articles.category })
+    .selectDistinct({ category: tables.articles.category })
     .from(tables.articles)
-    .orderBy(desc(tables.articles.pubDate));
+    .where(isNotNull(tables.articles.category))
+    .orderBy(tables.articles.category);
 
-  const seen = new Set<string>();
-  for (const r of rows) {
-    if (r.category) seen.add(r.category);
-  }
-  return Array.from(seen).sort();
-}
-
-async function getCorpusCount(): Promise<number> {
-  const rows = await db
-    .select({ id: tables.articles.id })
-    .from(tables.articles);
-  return rows.length;
+  return rows.map((r) => r.category as string);
 }
 
 export default async function ArticlesPage() {
   // Initial load: all articles newest-first (no filters).
-  const [initial, allCategories, total] = await Promise.all([
+  // Reuse initial.total for the header count — one fewer query and the numbers
+  // are guaranteed consistent.
+  const [initial, allCategories] = await Promise.all([
     searchArticles({ limit: 50 }),
     getCategories(),
-    getCorpusCount(),
   ]);
 
   return (
@@ -46,7 +37,7 @@ export default async function ArticlesPage() {
           Articles
         </h1>
         <p className="text-sm text-muted tabular-nums">
-          {total} distilled {total === 1 ? "article" : "articles"} from the I/O Fund research corpus
+          {initial.total} distilled {initial.total === 1 ? "article" : "articles"} from the I/O Fund research corpus
         </p>
       </div>
 

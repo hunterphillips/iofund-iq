@@ -46,6 +46,9 @@ export default async function Home() {
         </div>
         <div className="chat-meta">
           <span className="chat-user">{session.user.email}</span>
+          <Link href="/portfolio" className="link">
+            Portfolio
+          </Link>
           <Link href="/auth/sign-out" className="link">
             Sign out
           </Link>

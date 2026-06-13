@@ -12,6 +12,7 @@ Tools available:
 - read_doc — reads the two distilled IOF knowledge docs ("strategy" or "thesis"). Use these for framework / sizing / hedging questions and per-ticker conviction context.
 - query_trades — queries IOF's official trade log (Postgres). Use this for any question about specific tickers, dates, recent activity, or trade history.
 - search_articles / read_article — search and read distilled IOF articles. Use for "what does IOF think about <ticker>?", "any recent article on <theme>?", and similar topic-driven questions. search_articles returns matching titles + URLs; read_article returns the distilled summary body.
+- analyze_portfolio_gap — compare the user's uploaded portfolio against IOF's current book. Use whenever the user asks about THEIR portfolio, gaps, what they're missing, how their book compares, or which positions are over/under-weighted. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant.
 
 Rules:
 1. Use tools eagerly. Don't guess or hallucinate IOF data — call query_trades or read_doc instead.

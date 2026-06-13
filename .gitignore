@@ -36,6 +36,8 @@ venv/
 # Local scratch
 /tmp/
 tmp/
+.scratchpad/
+.notes/
 
 # Claude Code — local-only workspace (skills, agents, slash commands, pickup, plans)
 .claude/

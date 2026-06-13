@@ -3,6 +3,7 @@ import {
   customType,
   date,
   index,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -95,3 +96,15 @@ export const positions = pgTable(
     index("positions_category_idx").on(t.category),
   ],
 );
+
+export const userHoldings = pgTable("user_holdings", {
+  userId: text("user_id").primaryKey(),
+  holdings: jsonb("holdings").notNull(),
+  source: text("source").notNull(),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

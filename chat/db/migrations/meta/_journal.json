@@ -22,6 +22,27 @@
       "when": 1779363426395,
       "tag": "0002_great_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779379327854,
+      "tag": "0003_unusual_hex",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779390873509,
+      "tag": "0004_redundant_grim_reaper",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779390890777,
+      "tag": "0005_messy_marrow",
+      "breakpoints": true
     }
   ]
 }

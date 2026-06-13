@@ -7,18 +7,20 @@ Personal AI assistant for getting more value out of an I/O Fund subscription. Lo
 - **App:** Next.js 16 App Router · React 19 · TypeScript · pnpm
 - **Auth:** Neon Auth (powered by Better Auth) — Google OAuth + email/password
 - **DB:** Neon Postgres via Vercel Marketplace · Drizzle ORM · `@neondatabase/serverless`
-- **LLM:** Vercel AI Gateway — `"anthropic/claude-sonnet-4-6"` for both chat and article distillation. AI SDK v6 (`streamText` + `stepCountIs(5)`).
-- **Storage:** Hybrid — Postgres for structured rows (trades, article metadata + FTS body, encrypted IOF credentials, current positions); git for prose (strategy/thesis docs, distilled article bodies, future digests) plus a hand-curated `positions-bootstrap.yaml` snapshot.
+- **LLM:** Vercel AI Gateway — `"anthropic/claude-sonnet-4-6"` for chat, article distillation, weekly digest, and vision extraction of brokerage screenshots. AI SDK v6 (`streamText` + `stepCountIs(5)` for chat; `generateObject` + image input for vision extraction).
+- **Prices:** Yahoo Finance public chart endpoint (no API key, no auth). Called by the `analyze_portfolio_gap` chat tool + the `/portfolio` review UI to compute live weights.
+- **Storage:** Hybrid — Postgres for structured rows (trades, article metadata + FTS body, encrypted IOF credentials, IOF current positions, user-uploaded portfolio holdings); git for prose (strategy/thesis docs, distilled article bodies, future digests) plus a hand-curated `positions-bootstrap.yaml` snapshot.
 - **Search:** Postgres `tsvector` full-text search on `articles(title, body)` with GIN index; pgvector RAG deferred to Phase 1.
 - **Cron:** GitHub Actions + Python `scripts/` for trade poll (#2), article ingest (#3), weekly digest (#4). Resend live (`onboarding@resend.dev` → Hunter's email) — the only outbound email from the system.
 
 ## Structure
 
 - `chat/` — Next.js app.
-  - `app/` — App Router pages (`/`, `/auth/[path]`, `/onboarding/connect-iof`) + API routes (`/api/auth/[...path]`, `/api/chat`, `/api/onboarding/connect-iof`).
+  - `app/` — App Router pages (`/`, `/auth/[path]`, `/onboarding/connect-iof`, `/onboarding/upload-portfolio`, `/portfolio`) + API routes (`/api/auth/[...path]`, `/api/chat`, `/api/onboarding/connect-iof`, `/api/portfolio` + `extract` / `save` / `quotes`).
   - `db/` — Drizzle `schema.ts`, `migrations/`, Neon HTTP client (`index.ts`), AES-256-GCM encryption helper (`encryption.ts`).
   - `lib/auth/` — Neon Auth server + client config.
   - `lib/iof/` — IOF Firebase verifier (`firebase.ts`) + encrypted credentials read/write (`credentials.ts`).
+  - `lib/portfolio/` — Vision extraction of brokerage holdings screenshots (`extract.ts`, Sonnet 4.6 + Zod), live Yahoo Finance price lookup (`prices.ts`, no API key), `user_holdings` DB helpers (`holdings.ts`).
   - `lib/chat/` — Chat system prompt, AI SDK tools, prose-doc readers.
   - `components/chat-thread.tsx` — `useChat` hook + message thread with transient tool-call indicators + react-markdown rendering + deterministic Sources block built from the `read_article` tool-call trace.
   - `evals/` — TypeScript regression harness (`run.ts`, `cases.ts`). Imports `chatTools` + `SYSTEM_PROMPT` directly, runs `generateText`, asserts on tool-call trace + response text. Runs via `pnpm eval`.
@@ -84,6 +86,7 @@ pnpm db:migrate                               # apply to Neon
 - **IOF subscription content is paid material.** Never reproduce article prose verbatim in code, docs, or chat output. The distilled docs in `data/` are transformative summaries; new article ingestion follows the same rule (system prompt enforces this for the chat agent).
 - **Trades source of truth is Postgres (`public.trades`)**, not the seed CSV/JSON files in `data/`.
 - **Positions source of truth is Postgres (`public.positions`)**, kept in lockstep with `trades` by the piggyback in `ingest_trades.py`. The hand-curated `data/positions-bootstrap.yaml` is the bootstrap/refresh input, not a running mirror — if it drifts from current state, the trade-poll piggyback still keeps `status` accurate.
+- **User portfolio holdings are in Postgres (`public.user_holdings`)**, one row per user, JSONB array of `{ticker, shares}` only. Per-share prices + position values are NEVER stored — looked up live from Yahoo Finance. This sidesteps the "is the screenshot showing price or value?" ambiguity that compact mobile brokerage views can't disambiguate. Raw screenshot images are sent to the AI Gateway (zero data retention) and discarded — not persisted anywhere.
 - **Two-layer auth:** Neon Auth identifies the app user; `public.iof_credentials` stores their AES-encrypted IOF email+password keyed to `neon_auth.user.id`. **Never put `IO_FUND_USERNAME`/`IO_FUND_PASSWORD` in Vercel env vars.** They live only in GH Actions secrets (for cron jobs that run as Hunter) and in encrypted DB rows (for end-user IOF subscriptions).
 - **`IOF_CREDS_ENCRYPTION_KEY` is unrotatable** — losing or changing it bricks every stored IOF credential. Rotation requires a re-encrypt migration.
 - **Citations are render-layer, not prompt-driven.** The Sources block in `chat-thread.tsx` is built deterministically from the `read_article` tool-call trace. The model writes free-form prose; the renderer guarantees attribution. Don't add citation rules to the system prompt.
@@ -96,14 +99,14 @@ Three hero features (Phase 0 target):
 
 1. **Natural-language chat** over IOF subscription content (live as of 2026-05-19; FTS retrieval + render-layer sources as of 2026-05-20).
 2. **Weekly auto-digest** of new IOF activity (live as of 2026-05-20; opens auto-PRs against `thesis.md` when drift detected).
-3. **Personal portfolio gap analysis** (CSV upload → diff vs IOF current book) (Task #6 — pending).
+3. **Personal portfolio gap analysis** (screenshot upload → vision extraction → live diff vs IOF current book) (live as of 2026-05-23).
 
 Architecture is **multi-tenant-clean from day one** — every per-user table keyed by `user_id`. Phase 3 multi-tenant rollout adds Postgres RLS policies, not an auth/data-model rewrite.
 
 ## Phases
 
-- **Phase 0** (current): read-only intelligence + chat app. Tasks #1, #2, #3, #4, #4.5, #5 ✓ done · Task #6 pending.
-- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus warrants semantic search — hybrid with existing FTS. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency. **Read-only broker portfolio sync** (Alpaca paper first) as the upgrade path to Task #6's CSV-upload flow — same diff/conviction-context tool, automatic data source.
+- **Phase 0** (current): read-only intelligence + chat app. Tasks #1, #2, #3, #4, #4.5, #5, #6 ✓ done. Phase 0 hero-features complete.
+- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus warrants semantic search — hybrid with existing FTS. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency.
 - **Phase 2**: multi-tenant rollout (RLS policies + per-user `iof_credentials` already in schema + public sign-up + billing) + formal pitch to I/O Fund team.
 
-> **Write-side broker integration is out of scope** — no auto-trade, no semi-auto execution, no approve-and-submit-to-broker flows. Different liability/compliance/brand-association posture; not IOF-pitchable. If pursued at all later, it would be a separate app. **Read-side broker integration (portfolio pull) IS in scope** as the Phase 1 upgrade to Task #6 — the chat needs to compare the user's actual holdings against IOF's current book; CSV upload is the Phase 0 stand-in.
+> **Write-side broker integration is out of scope** — no auto-trade, no semi-auto execution, no approve-and-submit-to-broker flows. Different liability/compliance/brand-association posture; not IOF-pitchable. If pursued at all later, it would be a separate app. **Read-side broker integration was originally planned as Phase 1's upgrade to Task #6's CSV flow; superseded** by the screenshot+vision approach which is broker-agnostic, has no TOS-risk surface, and ships in Phase 0.

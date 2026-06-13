@@ -26,7 +26,7 @@ export function ConnectIofForm() {
         setSubmitting(false);
         return;
       }
-      router.replace("/");
+      router.replace("/onboarding/upload-portfolio");
       router.refresh();
     } catch {
       setError("Network error. Try again.");

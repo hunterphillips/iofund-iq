@@ -3,6 +3,13 @@ import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { chatTools } from "@/lib/chat/tools";
 import { SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
+import {
+  appendMessage,
+  deriveTitle,
+  getThreadOwned,
+  touchThread,
+  updateThreadTitle,
+} from "@/lib/chat/threads";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,7 +23,33 @@ export async function POST(request: Request) {
     return new Response("I/O Fund account not connected.", { status: 403 });
   }
 
-  const { messages } = (await request.json()) as { messages: UIMessage[] };
+  const { messages, threadId } = (await request.json()) as {
+    messages: UIMessage[];
+    threadId?: string;
+  };
+
+  // Client-creates-first: the thread is created via POST /api/chat/threads
+  // before the first message is sent, so threadId is always present here.
+  if (!threadId) {
+    return new Response("Missing threadId.", { status: 400 });
+  }
+
+  // Ownership: never write to another user's thread.
+  const thread = await getThreadOwned(threadId, session.user.id);
+  if (!thread) {
+    return new Response("Thread not found.", { status: 404 });
+  }
+
+  // Persist the latest user message immediately (role + full UIMessage parts).
+  const latest = messages[messages.length - 1];
+  if (latest && latest.role === "user") {
+    await appendMessage(threadId, "user", latest);
+    // Backfill an auto-derived title from the first user message.
+    if (!thread.title) {
+      const title = deriveTitle(latest);
+      if (title) await updateThreadTitle(threadId, title);
+    }
+  }
 
   const result = streamText({
     model: "anthropic/claude-sonnet-4-6",
@@ -26,5 +59,12 @@ export async function POST(request: Request) {
     stopWhen: stepCountIs(5),
   });
 
-  return result.toUIMessageStreamResponse();
+  // Persist the assistant response (including tool-call parts → Sources) once
+  // the stream finishes, then bump the thread's activity timestamp.
+  return result.toUIMessageStreamResponse({
+    onFinish: async ({ responseMessage }) => {
+      await appendMessage(threadId, "assistant", responseMessage);
+      await touchThread(threadId);
+    },
+  });
 }

@@ -108,3 +108,50 @@ export const userHoldings = pgTable("user_holdings", {
     .notNull()
     .defaultNow(),
 });
+
+// user_id is the Neon Auth user id. Plain text (no cross-schema FK to
+// neon_auth.user — that schema is managed by Neon Auth), matching
+// iof_credentials / user_holdings.
+export const chatThreads = pgTable(
+  "chat_threads",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    // Nullable; auto-derived from the first user message when null.
+    title: text("title"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("chat_threads_user_last_message_idx").on(
+      t.userId,
+      t.lastMessageAt.desc(),
+    ),
+  ],
+);
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: text("id").primaryKey(),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => chatThreads.id, { onDelete: "cascade" }),
+    // "user" | "assistant" | "tool"
+    role: text("role").notNull(),
+    // AI SDK UIMessage shape: { id, role, parts } — supports text + tool-call
+    // parts so reloads reconstruct the render-layer Sources block.
+    content: jsonb("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("chat_messages_thread_created_idx").on(t.threadId, t.createdAt)],
+);

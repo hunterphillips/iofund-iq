@@ -6,10 +6,22 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export function ChatThread() {
+export function ChatThread({
+  threadId,
+  initialMessages,
+}: {
+  threadId: string;
+  initialMessages: UIMessage[];
+}) {
   const [input, setInput] = useState("");
   const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    messages: initialMessages,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      // threadId travels with every request so /api/chat persists the
+      // user + assistant messages into this thread.
+      body: { threadId },
+    }),
   });
 
   const busy = status === "streaming" || status === "submitted";

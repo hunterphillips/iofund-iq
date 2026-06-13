@@ -15,7 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "preeval": "scripts/copy-data.sh",
     "eval": "tsx --env-file=.env.local evals/run.ts",
-    "test:articles": "tsx --env-file=.env.local evals/articles-api.test.ts"
+    "test:articles": "tsx --env-file=.env.local evals/articles-api.test.ts",
+    "test:threads": "tsx --env-file=.env.local evals/threads.test.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.186",

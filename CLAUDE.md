@@ -16,16 +16,17 @@ Personal AI assistant for getting more value out of an I/O Fund subscription. Lo
 ## Structure
 
 - `chat/` — Next.js app.
-  - `app/` — App Router pages (`/`, `/auth/[path]`, `/onboarding/connect-iof`, `/onboarding/upload-portfolio`, `/portfolio`) + API routes (`/api/auth/[...path]`, `/api/chat`, `/api/onboarding/connect-iof`, `/api/portfolio` + `extract` / `save` / `quotes`).
-  - `db/` — Drizzle `schema.ts`, `migrations/`, Neon HTTP client (`index.ts`), AES-256-GCM encryption helper (`encryption.ts`).
+  - `app/` — App Router. Auth/onboarding outside the authenticated group: `/` (redirect), `/auth/[path]`, `/onboarding/connect-iof`, `/onboarding/upload-portfolio`. Authenticated route group `(app)/` with shared layout (top nav + drawer chat): `/fund` + reading-layout sub-routes `/fund/strategy`, `/fund/thesis`, `/fund/digests/[date]`; `/articles` (FTS browse) + `/articles/[slug]` (detail); `/portfolio` (IOF editorial: stat callouts + sortable positions table + recent moves) + `/portfolio/holdings` (user upload); `/chat` (full-screen thread switcher); `/profile`. API routes: `/api/auth/[...path]`, `/api/chat` (streaming, write-through-persist, `x-page-context` injection), `/api/chat/threads` (GET/POST), `/api/chat/threads/[id]` (PATCH/DELETE), `/api/chat/threads/[id]/messages` (GET), `/api/articles` (FTS), `/api/onboarding/connect-iof`, `/api/portfolio` + `extract` / `save` / `quotes`.
+  - `db/` — Drizzle `schema.ts` (includes `chat_threads` + `chat_messages` tables, migration `0006`), `migrations/`, Neon HTTP client (`index.ts`), AES-256-GCM encryption helper (`encryption.ts`).
   - `lib/auth/` — Neon Auth server + client config.
   - `lib/iof/` — IOF Firebase verifier (`firebase.ts`) + encrypted credentials read/write (`credentials.ts`).
   - `lib/portfolio/` — Vision extraction of brokerage holdings screenshots (`extract.ts`, Sonnet 4.6 + Zod), live Yahoo Finance price lookup (`prices.ts`, no API key), `user_holdings` DB helpers (`holdings.ts`).
-  - `lib/chat/` — Chat system prompt, AI SDK tools, prose-doc readers.
-  - `components/chat-thread.tsx` — `useChat` hook + message thread with transient tool-call indicators + react-markdown rendering + deterministic Sources block built from the `read_article` tool-call trace.
-  - `evals/` — TypeScript regression harness (`run.ts`, `cases.ts`). Imports `chatTools` + `SYSTEM_PROMPT` directly, runs `generateText`, asserts on tool-call trace + response text. Runs via `pnpm eval`.
+  - `lib/chat/` — Chat system prompt, AI SDK tools, prose-doc readers, shared active-thread state (`active-thread.tsx`), `useChatThreads` hook (`use-chat-threads.ts`), page-context prompt injection (`page-context-prompt.ts`).
+  - `lib/page-context/` — Page-context React provider (`context.tsx`) — supplies per-turn context to the drawer chat and `/chat` view.
+  - `components/` — `ChatThread` surface, `DrawerChat`, `ChatView`, reading-layout + markdown-body components.
+  - `evals/` — TypeScript regression harness (`run.ts`, `cases.ts`) plus integration/unit tests: `articles-api.test.ts` (`pnpm test:articles`), `threads.test.ts` (`pnpm test:threads`), `page-context.test.ts` (`pnpm test:page-context`). Runs via `pnpm eval`.
   - `scripts/seed-trades.ts` — one-shot CSV → Postgres seeder.
-  - `scripts/copy-data.sh` — predev/prebuild + preeval step copying repo-root `data/*.md` → `chat/_data/` (Turbopack rejects parent-dir globs in `outputFileTracingIncludes`).
+  - `scripts/copy-data.sh` — predev/prebuild + preeval step copying repo-root `data/*.md` + `data/digests/` → `chat/_data/` (Turbopack rejects parent-dir globs in `outputFileTracingIncludes`).
   - `_data/` — materialized at build time from repo-root `data/` (gitignored).
 - `data/` — Knowledge corpus, canonical source.
   - `io-fund-strategy.md` — alert decoding, sizing rules, hedging framework. Load-bearing for the chat system prompt.
@@ -105,8 +106,8 @@ Architecture is **multi-tenant-clean from day one** — every per-user table key
 
 ## Phases
 
-- **Phase 0** (current): read-only intelligence + chat app. Tasks #1, #2, #3, #4, #4.5, #5, #6 ✓ done. Phase 0 hero-features complete.
-- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus warrants semantic search — hybrid with existing FTS. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency.
+- **Phase 0** (complete): read-only intelligence + chat app. Tasks #1–#6 ✓ done. UI refresh (issues #4–#11, branch `ui-refresh`) ✓ done — new IA (`/fund`, `/articles`, `/portfolio`, `/chat`), authenticated layout shell with drawer chat, Tailwind v4 editorial palette, chat thread persistence (`chat_threads` + `chat_messages`), per-turn page-context injection, FTS article browse. Phase 0 hero-features complete.
+- **Phase 1**: pgvector RAG on existing Neon Postgres (`ALTER TABLE` not new infra) once distilled-article corpus warrants semantic search — hybrid with existing FTS. **Email→webhook trade ingest** to replace polling (IOF sends per-trade emails already; forward → Resend Inbound or Apps Script → our webhook → immediate Postgres insert) — same data flow as Task #2, lower latency. **Portfolio v2** (mine-vs-IOF comparison view, pie chart, category bar chart, per-ticker live-price column) — deferred; `recharts` will be re-added when this ships.
 - **Phase 2**: multi-tenant rollout (RLS policies + per-user `iof_credentials` already in schema + public sign-up + billing) + formal pitch to I/O Fund team.
 
 > **Write-side broker integration is out of scope** — no auto-trade, no semi-auto execution, no approve-and-submit-to-broker flows. Different liability/compliance/brand-association posture; not IOF-pitchable. If pursued at all later, it would be a separate app. **Read-side broker integration was originally planned as Phase 1's upgrade to Task #6's CSV flow; superseded** by the screenshot+vision approach which is broker-agnostic, has no TOS-risk surface, and ships in Phase 0.

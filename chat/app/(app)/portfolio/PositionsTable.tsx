@@ -48,8 +48,12 @@ function sortRows(
         cmp = (a.category ?? "").localeCompare(b.category ?? "");
         break;
       case "weight": {
-        const wa = parseFloat(a.baselineWeightPct ?? "0");
-        const wb = parseFloat(b.baselineWeightPct ?? "0");
+        const wa = a.baselineWeightPct != null ? parseFloat(a.baselineWeightPct) : null;
+        const wb = b.baselineWeightPct != null ? parseFloat(b.baselineWeightPct) : null;
+        // Null-weight rows always sort last, regardless of direction.
+        if (wa === null && wb === null) { cmp = 0; break; }
+        if (wa === null) return 1;
+        if (wb === null) return -1;
         cmp = wa - wb;
         break;
       }
@@ -62,6 +66,29 @@ function sortRows(
     }
     return cmp * sign;
   });
+}
+
+// ---------------------------------------------------------------------------
+// ChevronIcon (module scope — not inside the render body)
+// ---------------------------------------------------------------------------
+
+function ChevronIcon({
+  col,
+  sortCol,
+  sortDir,
+}: {
+  col: SortCol;
+  sortCol: SortCol;
+  sortDir: SortDir;
+}) {
+  if (sortCol !== col) {
+    return <span className="sort-icon sort-icon-inactive">↕</span>;
+  }
+  return (
+    <span className="sort-icon sort-icon-active">
+      {sortDir === "asc" ? "↑" : "↓"}
+    </span>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -87,17 +114,6 @@ export function PositionsTable({ rows }: Props) {
 
   const sorted = sortRows(rows, sortCol, sortDir);
 
-  function ChevronIcon({ col }: { col: SortCol }) {
-    if (sortCol !== col) {
-      return <span className="sort-icon sort-icon-inactive">↕</span>;
-    }
-    return (
-      <span className="sort-icon sort-icon-active">
-        {sortDir === "asc" ? "↑" : "↓"}
-      </span>
-    );
-  }
-
   return (
     <div className="overflow-x-auto">
       <table className="positions-table">
@@ -108,7 +124,7 @@ export function PositionsTable({ rows }: Props) {
                 className="col-header"
                 onClick={() => handleHeader("ticker")}
               >
-                Ticker <ChevronIcon col="ticker" />
+                Ticker <ChevronIcon col="ticker" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
             <th>
@@ -116,7 +132,7 @@ export function PositionsTable({ rows }: Props) {
                 className="col-header"
                 onClick={() => handleHeader("company")}
               >
-                Company <ChevronIcon col="company" />
+                Company <ChevronIcon col="company" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
             <th>
@@ -124,7 +140,7 @@ export function PositionsTable({ rows }: Props) {
                 className="col-header"
                 onClick={() => handleHeader("category")}
               >
-                Theme <ChevronIcon col="category" />
+                Theme <ChevronIcon col="category" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
             <th className="text-right">
@@ -132,7 +148,7 @@ export function PositionsTable({ rows }: Props) {
                 className="col-header col-header-right"
                 onClick={() => handleHeader("weight")}
               >
-                <ChevronIcon col="weight" /> Weight
+                <ChevronIcon col="weight" sortCol={sortCol} sortDir={sortDir} /> Weight
               </button>
             </th>
             <th>
@@ -140,7 +156,7 @@ export function PositionsTable({ rows }: Props) {
                 className="col-header"
                 onClick={() => handleHeader("firstEntry")}
               >
-                First entry <ChevronIcon col="firstEntry" />
+                First entry <ChevronIcon col="firstEntry" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
           </tr>

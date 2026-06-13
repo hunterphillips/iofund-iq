@@ -6,7 +6,7 @@
  * trades last 30d).
  */
 
-import { count, desc, eq, gte, sql } from "drizzle-orm";
+import { desc, eq, gte, sql } from "drizzle-orm";
 import { db, tables } from "@/db";
 
 // ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ function daysAgo(n: number): string {
 export async function getIofBook(): Promise<IofBook> {
   const since30d = daysAgo(30);
 
-  const [positions, recentTrades, tradeCntRow] = await Promise.all([
+  const [positions, recentTrades] = await Promise.all([
     // All held positions, sorted weight desc for default table order.
     db
       .select({
@@ -101,12 +101,6 @@ export async function getIofBook(): Promise<IofBook> {
       .from(tables.trades)
       .where(gte(tables.trades.tradeDate, since30d))
       .orderBy(desc(tables.trades.tradeDate)),
-
-    // Trade count for stat callout.
-    db
-      .select({ cnt: count() })
-      .from(tables.trades)
-      .where(gte(tables.trades.tradeDate, since30d)),
   ]);
 
   // Derive category-level stats from held positions.
@@ -135,7 +129,7 @@ export async function getIofBook(): Promise<IofBook> {
     topThemeName,
     topThemeWeight,
     activeThemes,
-    tradesLast30d: Number(tradeCntRow[0]?.cnt ?? 0),
+    tradesLast30d: recentTrades.length,
   };
 
   return {

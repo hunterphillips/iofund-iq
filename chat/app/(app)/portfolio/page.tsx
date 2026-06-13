@@ -67,7 +67,7 @@ export default async function PortfolioPage() {
 
   // Top-theme intro phrasing
   const topThemeIntro =
-    topThemeName && topThemeWeight
+    topThemeName != null && topThemeWeight != null
       ? `${topThemeName} leads at ${topThemeWeight.toFixed(0)}% of book weight`
       : "across five AI infrastructure themes";
 

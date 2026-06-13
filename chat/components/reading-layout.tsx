@@ -35,6 +35,7 @@ interface ReadingLayoutProps {
   body: string;
   backHref?: string;
   backLabel?: string;
+  footer?: React.ReactNode; // optional content appended after the prose body
 }
 
 /**
@@ -49,6 +50,7 @@ export function ReadingLayout({
   body,
   backHref = "/fund",
   backLabel = "Fund",
+  footer,
 }: ReadingLayoutProps) {
   const toc = extractHeadings(body);
   const [activeId, setActiveId] = useState<string>("");
@@ -108,6 +110,9 @@ export function ReadingLayout({
           <div className="reading-prose">
             <MarkdownBody>{body}</MarkdownBody>
           </div>
+
+          {/* Optional footer slot (e.g. ticker chips + external link on article detail) */}
+          {footer}
         </article>
 
         {/* Sticky TOC — hidden on mobile, visible md+ */}

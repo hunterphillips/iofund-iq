@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { AppChrome } from "@/components/app-chrome";
+import { PageContextRoot } from "@/lib/page-context/context";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,10 @@ export default async function AppLayout({
   }
 
   return (
-    <AppChrome email={session.user.email ?? null} name={session.user.name ?? null}>
-      {children}
-    </AppChrome>
+    <PageContextRoot>
+      <AppChrome email={session.user.email ?? null} name={session.user.name ?? null}>
+        {children}
+      </AppChrome>
+    </PageContextRoot>
   );
 }

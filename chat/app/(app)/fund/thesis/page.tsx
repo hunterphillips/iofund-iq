@@ -1,15 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ReadingLayout } from "@/components/reading-layout";
+import { stripFrontmatter } from "@/lib/fund/markdown";
 
 export const dynamic = "force-dynamic";
-
-function stripFrontmatter(content: string): string {
-  if (!content.startsWith("---")) return content;
-  const end = content.indexOf("\n---", 3);
-  if (end === -1) return content;
-  return content.slice(end + 4).trimStart();
-}
 
 export default function ThesisPage() {
   const raw = readFileSync(

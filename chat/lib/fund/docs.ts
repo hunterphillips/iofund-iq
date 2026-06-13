@@ -1,15 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { stripFrontmatter } from "./markdown";
 
 const DATA_DIR = join(process.cwd(), "_data");
-
-/** Strip YAML frontmatter from a markdown string. */
-function stripFrontmatter(content: string): string {
-  if (!content.startsWith("---")) return content;
-  const end = content.indexOf("\n---", 3);
-  if (end === -1) return content;
-  return content.slice(end + 4).trimStart();
-}
 
 /** Strategy pull-quote: first non-empty paragraph after all headings at the top. */
 export function getStrategyPullQuote(): string {

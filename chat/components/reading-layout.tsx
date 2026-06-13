@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MarkdownBody } from "./markdown-body";
+import { slugify } from "@/lib/fund/markdown";
 
 interface TocItem {
   id: string;
@@ -11,7 +12,7 @@ interface TocItem {
 
 /**
  * Extract ## and ### headings from raw markdown to build a table of contents.
- * Generates slugified IDs that match react-markdown's default anchor rendering.
+ * Uses the shared slugify helper so TOC hrefs match the rendered heading IDs.
  */
 function extractHeadings(markdown: string): TocItem[] {
   const lines = markdown.split("\n");
@@ -21,12 +22,7 @@ function extractHeadings(markdown: string): TocItem[] {
     if (!m) continue;
     const level = m[1].length;
     const text = m[2].trim();
-    // Slug: lowercase, strip non-alphanumeric except spaces, replace spaces with -
-    const id = text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
+    const id = slugify(text);
     items.push({ id, text, level });
   }
   return items;

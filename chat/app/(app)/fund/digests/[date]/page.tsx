@@ -14,10 +14,14 @@ export default async function DigestPage({ params }: Props) {
 
   if (!digest) notFound();
 
+  const tickerMeta =
+    digest.tickers.length > 0 ? digest.tickers.join(" · ") : undefined;
+
   return (
     <ReadingLayout
       eyebrow="Weekly digest"
       title={`Week of ${digest.date}`}
+      meta={tickerMeta}
       body={digest.body}
       backHref="/fund"
       backLabel="Fund"

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { stripFrontmatter } from "./markdown";
 
 const DIGESTS_DIR = join(process.cwd(), "_data", "digests");
 
@@ -12,14 +13,6 @@ export interface DigestMeta {
 
 export interface DigestFull extends DigestMeta {
   body: string; // raw markdown, frontmatter stripped
-}
-
-/** Strip YAML frontmatter (--- ... ---) from markdown. */
-function stripFrontmatter(content: string): string {
-  if (!content.startsWith("---")) return content;
-  const end = content.indexOf("\n---", 3);
-  if (end === -1) return content;
-  return content.slice(end + 4).trimStart();
 }
 
 /**
@@ -50,7 +43,8 @@ function extractSummary(body: string): string {
 
 /**
  * Extract uppercase tickers from the "## New trades" section.
- * Looks for bold ticker symbols like **PLTR**, **RDDT**, etc.
+ * Trade lines have the format: - **YYYY-MM-DD · TICKER · ACTION @ $price**
+ * We match the ticker sitting between two middot (·) separators.
  */
 function extractTickers(body: string): string[] {
   const lines = body.split("\n");
@@ -66,9 +60,9 @@ function extractTickers(body: string): string[] {
     if (inSection && line.startsWith("##")) break;
     if (!inSection) continue;
 
-    // Match **TICKER** patterns (2-5 uppercase letters/digits)
-    const matches = line.matchAll(/\*\*([A-Z]{2,5})\*\*/g);
-    for (const m of matches) {
+    // Match ticker between middot separators: · TICKER ·
+    const m = line.match(/·\s+([A-Z]{1,5})\s+·/);
+    if (m) {
       const t = m[1];
       if (!seen.has(t)) {
         seen.add(t);

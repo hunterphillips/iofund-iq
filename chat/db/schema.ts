@@ -144,7 +144,7 @@ export const chatMessages = pgTable(
     threadId: text("thread_id")
       .notNull()
       .references(() => chatThreads.id, { onDelete: "cascade" }),
-    // "user" | "assistant" | "tool"
+    // "user" | "assistant" — AI SDK v6 folds tool calls into assistant parts
     role: text("role").notNull(),
     // AI SDK UIMessage shape: { id, role, parts } — supports text + tool-call
     // parts so reloads reconstruct the render-layer Sources block.

@@ -136,6 +136,46 @@ async function main() {
     const retitled = await getThread(threadId);
     assert(retitled!.title === "NVDA discussion", "title updated");
 
+    // ── Fix 2: read_article body stripped before persistence ─────────────────
+    console.log("\n[i] read_article body stripped on persist (Fix 2)");
+    const articlePart = {
+      type: "tool-read_article" as const,
+      state: "output-available" as const,
+      toolCallId: "tc-test-1",
+      output: {
+        found: true as const,
+        title: "NVDA Deep Dive",
+        pub_date: "2026-01-01",
+        body: "LONG BODY — should be stripped before storage.",
+      },
+    };
+    const msgWithArticle: UIMessage = {
+      id: "a-article-test",
+      role: "assistant",
+      parts: [{ type: "text", text: "See sources." }, articlePart as unknown as UIMessage["parts"][number]],
+    };
+    await appendMessage(threadId!, "assistant", msgWithArticle);
+    const withArticle = await getMessages(threadId!);
+    // The article message is the 3rd row (after user + assistant from earlier).
+    const articleRow = withArticle[withArticle.length - 1];
+    const stored = articleRow.content as UIMessage;
+    const storedPart = stored.parts.find((p) => p.type === "tool-read_article") as
+      | (Record<string, unknown> & { output?: Record<string, unknown> })
+      | undefined;
+    assert(storedPart !== undefined, "tool-read_article part present in stored message");
+    assert(
+      storedPart?.output?.["title"] === "NVDA Deep Dive",
+      "stored part retains title",
+    );
+    assert(
+      storedPart?.output?.["pub_date"] === "2026-01-01",
+      "stored part retains pub_date",
+    );
+    assert(
+      !("body" in (storedPart?.output ?? {})),
+      "stored part body is stripped",
+    );
+
     // ── DELETE cascade ───────────────────────────────────────────────────────
     console.log("\n[h] delete cascades to messages");
     await deleteThread(threadId);

@@ -41,13 +41,21 @@ export async function POST(request: Request) {
   }
 
   // Persist the latest user message immediately (role + full UIMessage parts).
+  // A DB failure here is caught and logged; we fail fast with 500 BEFORE
+  // streaming starts so the client never receives a half-streamed response with
+  // a missing user message in history.
   const latest = messages[messages.length - 1];
   if (latest && latest.role === "user") {
-    await appendMessage(threadId, "user", latest);
-    // Backfill an auto-derived title from the first user message.
-    if (!thread.title) {
-      const title = deriveTitle(latest);
-      if (title) await updateThreadTitle(threadId, title);
+    try {
+      await appendMessage(threadId, "user", latest);
+      // Backfill an auto-derived title from the first user message.
+      if (!thread.title) {
+        const title = deriveTitle(latest);
+        if (title) await updateThreadTitle(threadId, title);
+      }
+    } catch (err) {
+      console.error("[chat] failed to persist user message", { threadId, err });
+      return new Response("Failed to persist message.", { status: 500 });
     }
   }
 
@@ -61,10 +69,20 @@ export async function POST(request: Request) {
 
   // Persist the assistant response (including tool-call parts → Sources) once
   // the stream finishes, then bump the thread's activity timestamp.
+  // onFinish runs after the stream is flushed — failures are invisible to the
+  // client, so we log and swallow rather than rethrow (which would reject the
+  // stream tail in some runtimes).
   return result.toUIMessageStreamResponse({
     onFinish: async ({ responseMessage }) => {
-      await appendMessage(threadId, "assistant", responseMessage);
-      await touchThread(threadId);
+      try {
+        await appendMessage(threadId, "assistant", responseMessage);
+        await touchThread(threadId);
+      } catch (err) {
+        console.error("[chat] failed to persist assistant message", {
+          threadId,
+          err,
+        });
+      }
     },
   });
 }

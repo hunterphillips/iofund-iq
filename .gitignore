@@ -46,3 +46,7 @@ AGENTS.md
 thoughts/
 .vercel
 .env*.local
+.playwright-mcp/
+
+# Throwaway UI prototypes — kept local only; see chat/app/prototypes/*/NOTES.md
+chat/app/prototypes/

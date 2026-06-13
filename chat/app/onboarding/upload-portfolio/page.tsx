@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { hasUserHoldings } from "@/lib/portfolio/holdings";
-import { PortfolioForm } from "@/app/portfolio/form";
+import { PortfolioForm } from "@/app/(app)/portfolio/form";
 
 export const dynamic = "force-dynamic";
 

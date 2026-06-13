@@ -1,9 +1,53 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — variant-C "editorial magazine" palette (LOCKED 2026-06-13).
+ * Two surfaces:
+ *   1. Tailwind v4 @theme block below → exposes the palette as utility tokens
+ *      (bg-bg, text-cream, border-border, bg-cat-networking, …). New shell +
+ *      slice routes consume these.
+ *   2. The legacy :root vars (--bg, --fg, --accent, …) are remapped onto the
+ *      new palette so the pre-Tailwind class system (.page, .chat-*,
+ *      .portfolio-*, auth/onboarding pages) shifts color without a rewrite.
+ */
+
+@theme {
+  /* Core palette */
+  --color-bg: #1a1612;
+  --color-surface: #221c17;
+  --color-border: #3d342b;
+  --color-cream: #f8f2e6;
+  --color-muted: #a39a8e;
+  --color-muted-deep: #7a6f66;
+  --color-orange: #e94e1b;
+  --color-gold: #d4af37;
+
+  /* Category swatches */
+  --color-cat-accelerators: #e94e1b;
+  --color-cat-networking: #d4af37;
+  --color-cat-memory: #c26b6b;
+  --color-cat-energy: #8fa86e;
+  --color-cat-software: #a98bc9;
+  --color-cat-crypto: #d97706;
+  --color-cat-other: #7a6f66;
+
+  /* Type — serif display, sans body */
+  --font-serif: Georgia, "Times New Roman", "Iowan Old Style", "Palatino Linotype",
+    serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
 :root {
-  --bg: #0a0a0b;
-  --fg: #ededee;
-  --muted: #8a8a92;
-  --accent: #d4af37;
-  --border: #1f1f23;
+  /* New palette */
+  --bg: #1a1612;
+  --surface: #221c17;
+  --fg: #f8f2e6;
+  --muted: #a39a8e;
+  --muted-deep: #7a6f66;
+  --accent: #d4af37; /* gold — legacy accent target */
+  --orange: #e94e1b;
+  --border: #3d342b;
 }
 
 * {
@@ -150,7 +194,7 @@ body {
 }
 
 .field-input {
-  background: #131318;
+  background: #221c17;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--fg);
@@ -298,7 +342,7 @@ body {
 
 .chat-message-user .chat-message-body {
   align-self: flex-end;
-  background: #1a1a20;
+  background: #2a231d;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.65rem 0.85rem;
@@ -437,14 +481,14 @@ body {
   font-family:
     ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.85em;
-  background: #1a1a20;
+  background: #2a231d;
   border: 1px solid var(--border);
   padding: 0.05rem 0.3rem;
   border-radius: 3px;
 }
 
 .markdown pre {
-  background: #131318;
+  background: #221c17;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.65rem 0.85rem;
@@ -491,7 +535,7 @@ body {
 }
 
 .markdown th {
-  background: #131318;
+  background: #221c17;
   font-weight: 600;
 }
 
@@ -504,7 +548,7 @@ body {
 
 .chat-input {
   flex: 1;
-  background: #131318;
+  background: #221c17;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--fg);
@@ -551,7 +595,7 @@ body {
   padding: 3rem 1.5rem;
   border: 1.5px dashed var(--border);
   border-radius: 10px;
-  background: #131318;
+  background: #221c17;
   color: var(--muted);
   cursor: pointer;
   transition: border-color 120ms ease, background 120ms ease;
@@ -561,7 +605,7 @@ body {
 .dropzone:hover,
 .dropzone:focus-visible {
   border-color: var(--accent);
-  background: #15151b;
+  background: #2a231d;
   outline: none;
 }
 

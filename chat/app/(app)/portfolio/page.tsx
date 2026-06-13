@@ -18,7 +18,7 @@ export default async function PortfolioPage() {
   const saved = await getUserHoldings(session.user.id);
 
   return (
-    <main className="page">
+    <div className="page">
       <div className="container portfolio-container">
         <h1 className="title-sm">
           Your <span className="accent">portfolio</span>
@@ -41,6 +41,6 @@ export default async function PortfolioPage() {
           }
         />
       </div>
-    </main>
+    </div>
   );
 }

@@ -32,4 +32,14 @@ if [ -d "$SRC/articles" ]; then
   fi
 fi
 
+# Copy weekly digest files if any exist.
+if [ -d "$SRC/digests" ]; then
+  mkdir -p "$DEST/digests"
+  shopt -s nullglob
+  digest_files=("$SRC/digests"/*.md)
+  if [ ${#digest_files[@]} -gt 0 ]; then
+    cp "${digest_files[@]}" "$DEST/digests/"
+  fi
+fi
+
 echo "copy-data: synced data/ → chat/_data/"

@@ -52,8 +52,8 @@ export async function POST(request: Request) {
     threadId?: string;
   };
 
-  // Client-creates-first: the thread is created via POST /api/chat/threads
-  // before the first message is sent, so threadId is always present here.
+  // threadId is always present: the client resolves or lazily creates the
+  // thread inside prepareSendMessagesRequest before the first send fires.
   if (!threadId) {
     return new Response("Missing threadId.", { status: 400 });
   }

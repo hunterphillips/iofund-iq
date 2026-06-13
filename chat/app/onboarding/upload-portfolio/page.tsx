@@ -15,7 +15,7 @@ export default async function UploadPortfolioPage() {
     redirect("/onboarding/connect-iof");
   }
   if (await hasUserHoldings(session.user.id)) {
-    redirect("/");
+    redirect("/fund");
   }
 
   return (

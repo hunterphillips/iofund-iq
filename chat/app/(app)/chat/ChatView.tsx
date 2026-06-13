@@ -143,7 +143,6 @@ export function ChatView() {
               threadId={null}
               initialMessages={[]}
               createThread={handleCreateThread}
-              onThreadCreated={(id) => setActiveThreadId(id)}
             />
           ) : selectedId ? (
             <ThreadReader key={selectedId} threadId={selectedId} />

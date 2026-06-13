@@ -16,7 +16,7 @@
  * drawer or visiting /chat.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface ChatThreadSummary {
   id: string;
@@ -33,8 +33,6 @@ interface UseChatThreads {
   createThread: () => Promise<ChatThreadSummary>;
   renameThread: (id: string, title: string) => Promise<void>;
   deleteThread: (id: string) => Promise<void>;
-  /** Locally splice a freshly-created thread into the list (no refetch). */
-  addThread: (thread: ChatThreadSummary) => void;
 }
 
 function sortByActivity(threads: ChatThreadSummary[]): ChatThreadSummary[] {
@@ -46,8 +44,27 @@ function sortByActivity(threads: ChatThreadSummary[]): ChatThreadSummary[] {
 
 export function useChatThreads(): UseChatThreads {
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
+  // Mirror of threads state in a ref so mutations can read the current list
+  // synchronously (before React flushes the next render) without relying on
+  // values captured inside setState updaters, which run lazily.
+  const threadsRef = useRef<ChatThreadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Wrapper so every setThreads call also updates the ref mirror, giving
+  // mutations synchronous read access to the latest list (used by renameThread
+  // to capture the pre-edit title before React flushes the optimistic update).
+  const setThreadsAndRef = useCallback(
+    (updater: ChatThreadSummary[] | ((prev: ChatThreadSummary[]) => ChatThreadSummary[])) => {
+      setThreads((prev) => {
+        const next =
+          typeof updater === "function" ? updater(prev) : updater;
+        threadsRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -64,41 +81,35 @@ export function useChatThreads(): UseChatThreads {
       const { threads: list } = (await res.json()) as {
         threads: ChatThreadSummary[];
       };
-      setThreads(sortByActivity(list));
+      setThreadsAndRef(sortByActivity(list));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setThreadsAndRef]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
-  const addThread = useCallback((thread: ChatThreadSummary) => {
-    setThreads((prev) => sortByActivity([thread, ...prev]));
-  }, []);
-
   const createThread = useCallback(async (): Promise<ChatThreadSummary> => {
     const res = await fetch("/api/chat/threads", { method: "POST" });
     if (!res.ok) throw new Error("Couldn't create a conversation.");
     const { thread } = (await res.json()) as { thread: ChatThreadSummary };
-    setThreads((prev) => sortByActivity([thread, ...prev]));
+    setThreadsAndRef((prev) => sortByActivity([thread, ...prev]));
     return thread;
-  }, []);
+  }, [setThreadsAndRef]);
 
   const renameThread = useCallback(async (id: string, title: string) => {
     const trimmed = title.trim();
     if (!trimmed) return;
-    // Optimistic: update locally, then PATCH. Roll back on failure.
-    let previous: string | null = null;
-    setThreads((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        previous = t.title;
-        return { ...t, title: trimmed };
-      }),
+    // Capture the previous title BEFORE the optimistic setState so the value is
+    // available synchronously — reading from threadsRef avoids relying on a `let`
+    // set inside a setState updater, which React runs lazily (after the await).
+    const previous = threadsRef.current.find((t) => t.id === id)?.title ?? null;
+    setThreadsAndRef((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, title: trimmed } : t)),
     );
     const res = await fetch(`/api/chat/threads/${id}`, {
       method: "PATCH",
@@ -106,18 +117,18 @@ export function useChatThreads(): UseChatThreads {
       body: JSON.stringify({ title: trimmed }),
     });
     if (!res.ok) {
-      setThreads((prev) =>
+      setThreadsAndRef((prev) =>
         prev.map((t) => (t.id === id ? { ...t, title: previous } : t)),
       );
       throw new Error("Couldn't rename the conversation.");
     }
-  }, []);
+  }, [setThreadsAndRef]);
 
   const deleteThread = useCallback(async (id: string) => {
     const res = await fetch(`/api/chat/threads/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Couldn't delete the conversation.");
-    setThreads((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+    setThreadsAndRef((prev) => prev.filter((t) => t.id !== id));
+  }, [setThreadsAndRef]);
 
   return {
     threads,
@@ -127,6 +138,5 @@ export function useChatThreads(): UseChatThreads {
     createThread,
     renameThread,
     deleteThread,
-    addThread,
   };
 }

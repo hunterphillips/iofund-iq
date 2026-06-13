@@ -32,7 +32,7 @@ type Selection =
 
 export function DrawerChat() {
   const { activeThreadId, setActiveThreadId } = useActiveThread();
-  const { threads, loading, error, createThread } = useChatThreads();
+  const { threads, loading, error, reload, createThread } = useChatThreads();
 
   const [selection, setSelection] = useState<Selection>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
@@ -100,13 +100,6 @@ export function DrawerChat() {
     return thread.id;
   }, [createThread, setActiveThreadId]);
 
-  const handleThreadCreated = useCallback(
-    (id: string) => {
-      setActiveThreadId(id);
-    },
-    [setActiveThreadId],
-  );
-
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="flex items-center justify-end px-6 py-3 border-b border-border">
@@ -123,7 +116,7 @@ export function DrawerChat() {
       {loading ? (
         <DrawerNotice>Loading…</DrawerNotice>
       ) : error ? (
-        <DrawerNotice>{error}</DrawerNotice>
+        <DrawerNotice reload={reload}>{error}</DrawerNotice>
       ) : msgError ? (
         <DrawerNotice>{msgError}</DrawerNotice>
       ) : selection?.kind === "new" ? (
@@ -133,7 +126,6 @@ export function DrawerChat() {
           threadId={null}
           initialMessages={[]}
           createThread={handleCreateThread}
-          onThreadCreated={handleThreadCreated}
         />
       ) : selection?.kind === "existing" && messages !== null ? (
         <ChatThread
@@ -148,10 +140,25 @@ export function DrawerChat() {
   );
 }
 
-function DrawerNotice({ children }: { children: React.ReactNode }) {
+function DrawerNotice({
+  children,
+  reload,
+}: {
+  children: React.ReactNode;
+  reload?: () => void;
+}) {
   return (
-    <div className="flex-1 flex items-center justify-center px-6 text-center text-sm text-muted">
-      {children}
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted">
+      <span>{children}</span>
+      {reload ? (
+        <button
+          type="button"
+          onClick={reload}
+          className="text-xs tracking-wide text-muted hover:text-cream transition-colors"
+        >
+          Retry
+        </button>
+      ) : null}
     </div>
   );
 }

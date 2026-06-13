@@ -63,17 +63,30 @@ export function ChatThread({
   createThreadRef.current = createThread;
   const onCreatedRef = useRef(onThreadCreated);
   onCreatedRef.current = onThreadCreated;
+  // In-flight creation promise: concurrent first-sends await the SAME promise so
+  // only one thread row is ever created (the second caller waits for the first).
+  const creatingRef = useRef<Promise<string> | null>(null);
 
   async function ensureThreadId(): Promise<string> {
     if (threadIdRef.current) return threadIdRef.current;
-    const create = createThreadRef.current;
-    if (!create) {
-      throw new Error("No thread and no way to create one.");
+    if (!creatingRef.current) {
+      const create = createThreadRef.current;
+      if (!create) {
+        throw new Error("No thread and no way to create one.");
+      }
+      creatingRef.current = create()
+        .then((id) => {
+          threadIdRef.current = id;
+          onCreatedRef.current?.(id);
+          return id;
+        })
+        .catch((err: unknown) => {
+          // Reset so a later retry can attempt creation again.
+          creatingRef.current = null;
+          throw err;
+        });
     }
-    const id = await create();
-    threadIdRef.current = id;
-    onCreatedRef.current?.(id);
-    return id;
+    return creatingRef.current;
   }
 
   const { messages, sendMessage, status, error } = useChat({

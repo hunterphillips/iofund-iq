@@ -689,6 +689,231 @@ body {
   margin-top: 0.5rem;
 }
 
+/* ---------- IOF Portfolio editorial page ---------- */
+
+/* Positions table */
+.positions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.positions-table th {
+  padding: 0 0.75rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.positions-table th:last-child,
+.positions-table td:last-child {
+  padding-right: 0;
+}
+
+.positions-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  vertical-align: middle;
+}
+
+.positions-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.positions-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+
+.col-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  transition: color 120ms ease;
+}
+
+.col-header:hover {
+  color: var(--fg);
+}
+
+.col-header-right {
+  flex-direction: row-reverse;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.sort-icon {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.sort-icon-inactive {
+  opacity: 0.3;
+}
+
+.sort-icon-active {
+  color: var(--accent);
+}
+
+.ticker-mono {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cream, var(--fg));
+  letter-spacing: 0.02em;
+}
+
+.company-cell {
+  color: var(--muted);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.theme-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.theme-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.weight-cell {
+  text-align: right;
+}
+
+.weight-num {
+  font-family: Georgia, "Times New Roman", "Iowan Old Style", serif;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.entry-cell {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Recent moves narrative list */
+.recent-moves-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.recent-move-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.recent-move-row:last-child {
+  border-bottom: none;
+}
+
+.move-date {
+  font-size: 1.25rem;
+  color: var(--fg);
+  font-style: italic;
+  min-width: 4rem;
+}
+
+.move-ticker {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}
+
+.move-chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid transparent;
+}
+
+.chip-buy {
+  color: #8FA86E;
+  background: color-mix(in srgb, #8FA86E 12%, transparent);
+  border-color: color-mix(in srgb, #8FA86E 35%, transparent);
+}
+
+.chip-sell {
+  color: #C26B6B;
+  background: color-mix(in srgb, #C26B6B 12%, transparent);
+  border-color: color-mix(in srgb, #C26B6B 35%, transparent);
+}
+
+.chip-hedge {
+  color: #D4AF37;
+  background: color-mix(in srgb, #D4AF37 12%, transparent);
+  border-color: color-mix(in srgb, #D4AF37 35%, transparent);
+}
+
+.chip-cover {
+  color: #A98BC9;
+  background: color-mix(in srgb, #A98BC9 12%, transparent);
+  border-color: color-mix(in srgb, #A98BC9 35%, transparent);
+}
+
+.chip-other {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  border-color: var(--border);
+}
+
+.move-price {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.move-note {
+  font-size: 0.82rem;
+  color: var(--muted-deep);
+  font-style: italic;
+}
+
+.move-analyst {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--muted-deep) 70%, transparent);
+  margin-left: auto;
+}
+
 /* ---------- Reading layout (fund strategy / thesis / digest pages) ---------- */
 
 /*

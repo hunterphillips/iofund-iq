@@ -34,6 +34,8 @@ export function AppChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // Slice #9 will inject per-turn page context into the drawer via a React context
+  // provider that pages set and the drawer reads — NOT prop-drilling through the layout.
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -121,7 +123,7 @@ export function AppChrome({
                       {email}
                     </div>
                   )}
-                  <MenuLink href="/onboarding/connect-iof" onSelect={() => setMenuOpen(false)}>
+                  <MenuLink href="/profile" onSelect={() => setMenuOpen(false)}>
                     Profile
                   </MenuLink>
                   <MenuLink href="/onboarding/connect-iof" onSelect={() => setMenuOpen(false)}>

@@ -6,12 +6,15 @@
 //   · top nav — IOF wordmark (left), four destinations (center, active tab gets
 //     a 2px orange underline + full opacity; others 55% opacity), avatar
 //     dropdown + drawer toggle (right);
-//   · an empty right-side drawer <aside> placeholder. Real chat wiring lands in
-//     slice #9 — for now the drawer is purely a toggle-able shell.
+//   · a right-side drawer <aside> housing the working assistant chat
+//     (<DrawerChat />), mounted only while open so its thread list reloads each
+//     time and no chat state lingers while closed.
 //
 // State (drawer open/closed, dropdown open/closed) lives here, in the layout's
 // client subtree, so it persists across route navigation (the layout does not
-// remount between sibling routes).
+// remount between sibling routes). The drawer's active thread is shared with the
+// /chat view via ActiveThreadProvider (mounted in app/(app)/layout.tsx); the
+// per-turn page context flows through PageContextRoot, not prop-drilling.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -35,8 +38,6 @@ export function AppChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // Slice #9 will inject per-turn page context into the drawer via a React context
-  // provider that pages set and the drawer reads — NOT prop-drilling through the layout.
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -146,8 +147,8 @@ export function AppChrome({
 
       <main>{children}</main>
 
-      {/* Right-side assistant drawer — working chat (slice #9). ~420px on
-          desktop, full-screen modal on mobile. */}
+      {/* Right-side assistant drawer — working chat. ~420px on desktop,
+          full-screen modal on mobile. */}
       {drawerOpen && (
         <>
           <div
@@ -170,7 +171,7 @@ export function AppChrome({
                 ×
               </button>
             </div>
-            <DrawerChat open={drawerOpen} />
+            <DrawerChat />
           </aside>
         </>
       )}

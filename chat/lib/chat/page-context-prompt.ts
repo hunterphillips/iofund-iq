@@ -85,7 +85,10 @@ function describeContext(ctx: PageContext): string {
           `Prefer read_doc('${ctx.docName}') for questions about what they're reading.`
         );
       }
-      return `[Page context] The user is currently on ${ctx.route}.`;
+      // Unrecognized route with no doc specifics (e.g. /chat, /fund, /profile):
+      // emit nothing so buildSystemPrompt falls back to the base prompt. A generic
+      // "user is on /X" line is pure noise for the model.
+      return "";
     }
   }
 }

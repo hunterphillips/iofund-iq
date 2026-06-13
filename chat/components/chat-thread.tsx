@@ -11,21 +11,42 @@ import {
   type PageContext,
 } from "@/lib/page-context/context";
 
+/**
+ * ChatThread — the pure chat surface. Both surfaces (drawer + /chat) reuse it.
+ *
+ * Lazy thread creation: a conversation may start with NO thread row
+ * (`initialThreadId === null`). The thread is created on the FIRST send, not on
+ * mount — `createThread()` runs inside the transport's async
+ * `prepareSendMessagesRequest`, which injects the resulting id into the request
+ * body so /api/chat (which 400s without a threadId) always gets one. The id is
+ * cached in a ref so subsequent sends reuse it. `onThreadCreated(id)` lets the
+ * wrapper sync shared active-thread state + the sidebar list.
+ *
+ * IMPORTANT: callers must keep ChatThread MOUNTED across the first send when
+ * starting from a null thread (key it by a stable sentinel like "new", not by
+ * threadId) — otherwise the just-typed message is lost when the id arrives.
+ */
 export function ChatThread({
-  threadId,
+  threadId: initialThreadId,
   initialMessages,
+  createThread,
+  onThreadCreated,
 }: {
-  threadId: string;
+  threadId: string | null;
   initialMessages: UIMessage[];
+  /** Resolver run once on first send when there's no thread yet. */
+  createThread?: () => Promise<string>;
+  /** Notified with the new id after lazy creation (wrapper syncs state). */
+  onThreadCreated?: (id: string) => void;
 }) {
   const [input, setInput] = useState("");
 
   // Per-turn page context: build the `x-page-context` header from the current
   // route + whatever the page published via useSetPageContext(). The transport
-  // is constructed once (per threadId), but useChat resolves `headers` per
-  // request — so we read the LATEST context through a ref the closure captures.
-  // The drawer/page only PRODUCE the header here; the system-prompt injection
-  // lives entirely in /api/chat (see lib/chat/page-context-prompt.ts).
+  // is constructed once, but useChat resolves `headers` per request — so we read
+  // the LATEST context through a ref the closure captures. The drawer/page only
+  // PRODUCE the header here; the system-prompt injection lives entirely in
+  // /api/chat (see lib/chat/page-context-prompt.ts).
   const pathname = usePathname();
   const published = usePageContext();
   const headerValue = useMemo(
@@ -35,19 +56,53 @@ export function ChatThread({
   const headerRef = useRef(headerValue);
   headerRef.current = headerValue;
 
+  // Resolve the threadId lazily, once. Seeded from the prop; if null, the first
+  // send creates a thread and caches its id here.
+  const threadIdRef = useRef<string | null>(initialThreadId);
+  const createThreadRef = useRef(createThread);
+  createThreadRef.current = createThread;
+  const onCreatedRef = useRef(onThreadCreated);
+  onCreatedRef.current = onThreadCreated;
+
+  async function ensureThreadId(): Promise<string> {
+    if (threadIdRef.current) return threadIdRef.current;
+    const create = createThreadRef.current;
+    if (!create) {
+      throw new Error("No thread and no way to create one.");
+    }
+    const id = await create();
+    threadIdRef.current = id;
+    onCreatedRef.current?.(id);
+    return id;
+  }
+
   const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      // threadId travels with every request so /api/chat persists the
-      // user + assistant messages into this thread.
-      body: { threadId },
       // `headers` is a Resolvable in AI SDK v6 — evaluated per request. Reading
       // the ref means navigation updates the context without rebuilding the
       // transport (which would reset useChat state).
       headers: (): Record<string, string> => {
         const value = headerRef.current;
         return value ? { "x-page-context": value } : {};
+      },
+      // Inject the threadId into every request body. This is async so it can
+      // lazily create the thread on the first send (returning its id) — /api/chat
+      // 400s without a threadId, so we guarantee one exists before sending.
+      // Returning `body` fully replaces the default, so we re-include the
+      // standard fields (id/messages/trigger/messageId) the SDK would have sent.
+      prepareSendMessagesRequest: async ({
+        body,
+        id,
+        messages: msgs,
+        trigger,
+        messageId,
+      }) => {
+        const threadId = await ensureThreadId();
+        return {
+          body: { ...body, id, messages: msgs, trigger, messageId, threadId },
+        };
       },
     }),
   });

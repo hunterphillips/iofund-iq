@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Client component that publishes the current article's context for slice #9's
- * drawer to consume via usePageContext(). No visible output.
+ * Client component that publishes the current article's context for the chat
+ * surfaces to consume via usePageContext(). No visible output.
  *
- * Calls useSetPageContext on mount (cleared on unmount) so the drawer always
- * knows which article slug + tickers are currently in view.
- *
- * Slice #9 reads usePageContext() from lib/page-context/context.tsx to inject
- *   { route: '/articles/[slug]', articleSlug, tickers }
- * as a system header per chat turn.
+ * Calls useSetPageContext on mount (cleared on unmount) so the drawer / chat
+ * always know which article slug + tickers are in view. ChatThread reads
+ * usePageContext() and sends it as the `x-page-context` header; /api/chat
+ * injects it into the system prompt as
+ *   { route: '/articles/[slug]', articleSlug, tickers }.
  */
 
 import { useSetPageContext } from "@/lib/page-context/context";
@@ -21,7 +20,6 @@ interface Props {
 
 export function ArticlePageContext({ slug, tickers }: Props) {
   // Sets context on mount, clears on unmount (navigation away).
-  // TODO(slice #9): drawer reads usePageContext() to inject into chat header.
   useSetPageContext({ route: "/articles/[slug]", articleSlug: slug, tickers });
   return null;
 }

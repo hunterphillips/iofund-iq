@@ -103,6 +103,17 @@ function main() {
     "docName fallback names the strategy doc + keeps base",
   );
 
+  // ── (e) unrecognized route, no doc specifics → base unchanged ───────────────
+  console.log("\n[e] unrecognized route with no docName leaves base unchanged");
+  assert(
+    buildSystemPrompt(BASE, { route: "/chat" }) === BASE,
+    "/chat → identical base (no noise block)",
+  );
+  assert(
+    buildSystemPrompt(BASE, { route: "/profile" }) === BASE,
+    "/profile → identical base (no noise block)",
+  );
+
   console.log("\n" + "─".repeat(50));
   if (failures === 0) {
     console.log("All assertions passed.");

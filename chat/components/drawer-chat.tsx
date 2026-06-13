@@ -1,97 +1,111 @@
 "use client";
 
 /**
- * DrawerChat — orchestrates thread loading for the assistant drawer (slice #9).
+ * DrawerChat — orchestrates which thread the assistant drawer shows (slices #9/#10).
  *
- * Lifecycle (lazy — runs only once the drawer is first opened, not on app load):
- *   1. GET /api/chat/threads. If any exist, pick threads[0] (most recent
- *      activity) and GET its messages → render <ChatThread initialMessages>.
- *   2. If none exist, POST /api/chat/threads to create one → render it empty.
+ * Lifecycle (the component is only mounted while the drawer is OPEN — see
+ * app-chrome.tsx — so the thread list reloads on each open via useChatThreads):
+ *   1. Load the user's threads (useChatThreads, loads on mount).
+ *   2. Pick the thread to resume: the shared activeThreadId if it's set and still
+ *      exists (so the drawer resumes whatever /chat last selected), else the
+ *      most-recent thread, else start a fresh UNSTARTED conversation.
+ *   3. For an existing thread, fetch its messages and render <ChatThread> keyed
+ *      by its id. For a fresh one, render an unstarted <ChatThread> (threadId
+ *      null) — NO thread row is created until the first message is sent.
  *
- * "New conversation" POSTs a fresh thread and switches to it WITHOUT reload.
- * <ChatThread> is keyed by threadId so useChat re-initializes cleanly on switch.
- *
- * This component owns active-thread + load state; ChatThread stays the reusable
- * chat surface (slice #10's /chat view reuses it with its own thread switcher).
+ * "New conversation" just drops into an unstarted ChatThread; the orphan-free
+ * thread row is created lazily on first send (ChatThread.createThread), which
+ * also syncs the shared activeThreadId + the list.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { UIMessage } from "ai";
 import { ChatThread } from "./chat-thread";
+import { useActiveThread } from "@/lib/chat/active-thread";
+import { useChatThreads } from "@/lib/chat/use-chat-threads";
 
-interface Thread {
-  id: string;
-  title: string | null;
-}
+// What the drawer is currently showing.
+type Selection =
+  | { kind: "existing"; id: string }
+  | { kind: "new" }
+  | null; // not yet resolved
 
-type Phase =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; threadId: string; initialMessages: UIMessage[] };
+export function DrawerChat() {
+  const { activeThreadId, setActiveThreadId } = useActiveThread();
+  const { threads, loading, error, createThread } = useChatThreads();
 
-export function DrawerChat({ open }: { open: boolean }) {
-  const [phase, setPhase] = useState<Phase>({ status: "loading" });
-  const [creating, setCreating] = useState(false);
-  // Guard so the lazy initial load runs exactly once across open/close toggles.
-  const loadedRef = useRef(false);
+  const [selection, setSelection] = useState<Selection>(null);
+  const [messages, setMessages] = useState<UIMessage[] | null>(null);
+  const [msgError, setMsgError] = useState<string | null>(null);
 
-  const loadInitial = useCallback(async () => {
-    setPhase({ status: "loading" });
-    try {
-      const listRes = await fetch("/api/chat/threads");
-      if (!listRes.ok) {
-        throw new Error(
-          listRes.status === 403
-            ? "Connect your I/O Fund account to start chatting."
-            : "Couldn't load your conversations.",
-        );
-      }
-      const { threads } = (await listRes.json()) as { threads: Thread[] };
-
-      if (threads.length > 0) {
-        const threadId = threads[0].id;
-        const msgRes = await fetch(`/api/chat/threads/${threadId}/messages`);
-        if (!msgRes.ok) throw new Error("Couldn't load conversation history.");
-        const { messages } = (await msgRes.json()) as { messages: UIMessage[] };
-        setPhase({ status: "ready", threadId, initialMessages: messages });
-        return;
-      }
-
-      // No threads yet — create the first one.
-      const created = await createThread();
-      setPhase({ status: "ready", threadId: created.id, initialMessages: [] });
-    } catch (err) {
-      setPhase({
-        status: "error",
-        message: err instanceof Error ? err.message : "Something went wrong.",
-      });
-    }
-  }, []);
-
-  // Lazy first load: only when the drawer is actually opened, and only once.
+  // Resolve the initial selection once the list finishes loading. Prefer the
+  // shared active thread (resume what /chat selected), else most-recent, else
+  // an unstarted conversation. Runs once per mount (selection stays null until
+  // then; "New conversation" / lazy-create transitions handle the rest).
   useEffect(() => {
-    if (open && !loadedRef.current) {
-      loadedRef.current = true;
-      void loadInitial();
+    if (loading || selection !== null) return;
+    if (activeThreadId && threads.some((t) => t.id === activeThreadId)) {
+      setSelection({ kind: "existing", id: activeThreadId });
+    } else if (threads.length > 0) {
+      setSelection({ kind: "existing", id: threads[0].id });
+    } else {
+      setSelection({ kind: "new" });
     }
-  }, [open, loadInitial]);
+  }, [loading, selection, activeThreadId, threads]);
 
-  const handleNewConversation = useCallback(async () => {
-    if (creating) return;
-    setCreating(true);
-    try {
-      const created = await createThread();
-      // Switch without reload — keying ChatThread by id re-inits useChat.
-      setPhase({ status: "ready", threadId: created.id, initialMessages: [] });
-    } catch {
-      setPhase({
-        status: "error",
-        message: "Couldn't start a new conversation.",
-      });
-    } finally {
-      setCreating(false);
+  // Fetch messages whenever we're showing an existing thread.
+  useEffect(() => {
+    if (selection?.kind !== "existing") {
+      setMessages(selection?.kind === "new" ? [] : null);
+      return;
     }
-  }, [creating]);
+    let cancelled = false;
+    setMessages(null);
+    setMsgError(null);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/chat/threads/${selection.id}/messages`);
+        if (!res.ok) throw new Error("Couldn't load conversation history.");
+        const { messages: list } = (await res.json()) as {
+          messages: UIMessage[];
+        };
+        if (!cancelled) setMessages(list);
+      } catch (err) {
+        if (!cancelled) {
+          setMsgError(
+            err instanceof Error ? err.message : "Something went wrong.",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selection]);
+
+  const handleNewConversation = useCallback(() => {
+    setActiveThreadId(null);
+    setMsgError(null);
+    setSelection({ kind: "new" });
+  }, [setActiveThreadId]);
+
+  // Lazy-create: ChatThread calls this on first send of an unstarted thread.
+  // We deliberately DON'T flip `selection` to "existing" here — that would
+  // remount ChatThread (different key) and drop the in-flight message. The
+  // ChatThread caches the new id internally and keeps streaming into it; we only
+  // sync the shared active thread + list (createThread already updates the list).
+  const handleCreateThread = useCallback(async (): Promise<string> => {
+    const thread = await createThread();
+    setActiveThreadId(thread.id);
+    return thread.id;
+  }, [createThread, setActiveThreadId]);
+
+  const handleThreadCreated = useCallback(
+    (id: string) => {
+      setActiveThreadId(id);
+    },
+    [setActiveThreadId],
+  );
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -99,42 +113,45 @@ export function DrawerChat({ open }: { open: boolean }) {
         <button
           type="button"
           onClick={handleNewConversation}
-          disabled={creating || phase.status === "loading"}
+          disabled={loading}
           className="text-xs tracking-wide text-muted hover:text-cream transition-colors disabled:opacity-50"
         >
-          {creating ? "Starting…" : "New conversation"}
+          New conversation
         </button>
       </div>
 
-      {phase.status === "loading" ? (
-        <div className="flex-1 flex items-center justify-center px-6 text-center text-sm text-muted">
-          Loading…
-        </div>
-      ) : phase.status === "error" ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted">
-          <p>{phase.message}</p>
-          <button
-            type="button"
-            onClick={loadInitial}
-            className="text-xs tracking-wide text-orange hover:opacity-80 transition-opacity"
-          >
-            Retry
-          </button>
-        </div>
-      ) : (
+      {loading ? (
+        <DrawerNotice>Loading…</DrawerNotice>
+      ) : error ? (
+        <DrawerNotice>{error}</DrawerNotice>
+      ) : msgError ? (
+        <DrawerNotice>{msgError}</DrawerNotice>
+      ) : selection?.kind === "new" ? (
+        // Stable "new" key so the in-flight first message survives lazy creation.
         <ChatThread
-          key={phase.threadId}
-          threadId={phase.threadId}
-          initialMessages={phase.initialMessages}
+          key="new"
+          threadId={null}
+          initialMessages={[]}
+          createThread={handleCreateThread}
+          onThreadCreated={handleThreadCreated}
         />
+      ) : selection?.kind === "existing" && messages !== null ? (
+        <ChatThread
+          key={selection.id}
+          threadId={selection.id}
+          initialMessages={messages}
+        />
+      ) : (
+        <DrawerNotice>Loading…</DrawerNotice>
       )}
     </div>
   );
 }
 
-async function createThread(): Promise<Thread> {
-  const res = await fetch("/api/chat/threads", { method: "POST" });
-  if (!res.ok) throw new Error("Couldn't create a conversation.");
-  const { thread } = (await res.json()) as { thread: Thread };
-  return thread;
+function DrawerNotice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex-1 flex items-center justify-center px-6 text-center text-sm text-muted">
+      {children}
+    </div>
+  );
 }

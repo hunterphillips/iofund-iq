@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { AppChrome } from "@/components/app-chrome";
 import { PageContextRoot } from "@/lib/page-context/context";
+import { ActiveThreadProvider } from "@/lib/chat/active-thread";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,11 @@ export default async function AppLayout({
 
   return (
     <PageContextRoot>
-      <AppChrome email={session.user.email ?? null} name={session.user.name ?? null}>
-        {children}
-      </AppChrome>
+      <ActiveThreadProvider>
+        <AppChrome email={session.user.email ?? null} name={session.user.name ?? null}>
+          {children}
+        </AppChrome>
+      </ActiveThreadProvider>
     </PageContextRoot>
   );
 }

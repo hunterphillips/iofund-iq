@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  usePageContext,
+  type PageContext,
+} from "@/lib/page-context/context";
 
 export function ChatThread({
   threadId,
@@ -14,6 +19,22 @@ export function ChatThread({
   initialMessages: UIMessage[];
 }) {
   const [input, setInput] = useState("");
+
+  // Per-turn page context: build the `x-page-context` header from the current
+  // route + whatever the page published via useSetPageContext(). The transport
+  // is constructed once (per threadId), but useChat resolves `headers` per
+  // request — so we read the LATEST context through a ref the closure captures.
+  // The drawer/page only PRODUCE the header here; the system-prompt injection
+  // lives entirely in /api/chat (see lib/chat/page-context-prompt.ts).
+  const pathname = usePathname();
+  const published = usePageContext();
+  const headerValue = useMemo(
+    () => buildPageContextHeader(pathname, published),
+    [pathname, published],
+  );
+  const headerRef = useRef(headerValue);
+  headerRef.current = headerValue;
+
   const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -21,6 +42,13 @@ export function ChatThread({
       // threadId travels with every request so /api/chat persists the
       // user + assistant messages into this thread.
       body: { threadId },
+      // `headers` is a Resolvable in AI SDK v6 — evaluated per request. Reading
+      // the ref means navigation updates the context without rebuilding the
+      // transport (which would reset useChat state).
+      headers: (): Record<string, string> => {
+        const value = headerRef.current;
+        return value ? { "x-page-context": value } : {};
+      },
     }),
   });
 
@@ -74,6 +102,38 @@ export function ChatThread({
       </form>
     </div>
   );
+}
+
+/**
+ * Construct the compact `x-page-context` JSON the chat client sends per request.
+ *
+ * `route` comes from the current pathname; article slug / tickers / docName come
+ * from whatever the page published via useSetPageContext(). When no producer
+ * published a docName for a fund doc page, we derive it from the pathname so the
+ * fund pages can stay pure server components.
+ *
+ * Returns null (→ no header) for unknown pages with no published context.
+ */
+function buildPageContextHeader(
+  pathname: string | null,
+  published: PageContext | null,
+): string | null {
+  // A producer published context (article / portfolio) — trust it, but ensure
+  // a docName is present for fund docs if it derived from the path.
+  if (published) {
+    return JSON.stringify(published);
+  }
+
+  if (!pathname) return null;
+
+  if (pathname === "/fund/strategy") {
+    return JSON.stringify({ route: "/fund/strategy", docName: "strategy" });
+  }
+  if (pathname === "/fund/thesis") {
+    return JSON.stringify({ route: "/fund/thesis", docName: "thesis" });
+  }
+
+  return JSON.stringify({ route: pathname });
 }
 
 function Message({

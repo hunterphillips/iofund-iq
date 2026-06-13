@@ -28,6 +28,7 @@ export interface PageContext {
   route: string;
   articleSlug?: string;
   tickers?: string[];
+  docName?: "strategy" | "thesis";
 }
 
 interface PageContextState {

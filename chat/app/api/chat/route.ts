@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { chatTools } from "@/lib/chat/tools";
 import { SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
+import { buildSystemPrompt } from "@/lib/chat/page-context-prompt";
+import type { PageContext } from "@/lib/page-context/context";
 import {
   appendMessage,
   deriveTitle,
@@ -13,6 +15,28 @@ import {
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+/**
+ * Defensively parse the `x-page-context` request header into a PageContext.
+ * Returns null when the header is absent or malformed — injection is best-effort
+ * and must never break the chat request.
+ */
+function parsePageContext(raw: string | null): PageContext | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof (parsed as { route?: unknown }).route === "string"
+    ) {
+      return parsed as PageContext;
+    }
+  } catch {
+    // Malformed header — ignore.
+  }
+  return null;
+}
 
 export async function POST(request: Request) {
   const { data: session } = await auth.getSession();
@@ -59,9 +83,15 @@ export async function POST(request: Request) {
     }
   }
 
+  // Per-turn page context: the drawer/chat client sends a compact JSON
+  // `x-page-context` header describing what the user is viewing. We parse it
+  // defensively (absent/malformed → ignored) and prepend a single context
+  // block to the system prompt. The client never mutates the prompt itself.
+  const pageContext = parsePageContext(request.headers.get("x-page-context"));
+
   const result = streamText({
     model: "anthropic/claude-sonnet-4-6",
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(SYSTEM_PROMPT, pageContext),
     messages: await convertToModelMessages(messages),
     tools: chatTools,
     stopWhen: stepCountIs(5),

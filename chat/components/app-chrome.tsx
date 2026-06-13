@@ -16,6 +16,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { DrawerChat } from "./drawer-chat";
 
 const NAV: { label: string; href: string }[] = [
   { label: "Fund", href: "/fund" },
@@ -145,7 +146,8 @@ export function AppChrome({
 
       <main>{children}</main>
 
-      {/* Right-side assistant drawer — empty placeholder; chat lands in slice #9. */}
+      {/* Right-side assistant drawer — working chat (slice #9). ~420px on
+          desktop, full-screen modal on mobile. */}
       {drawerOpen && (
         <>
           <div
@@ -155,7 +157,7 @@ export function AppChrome({
           />
           <aside
             aria-label="Assistant"
-            className="fixed top-0 right-0 h-screen w-full max-w-[420px] bg-surface border-l border-border z-50 flex flex-col"
+            className="fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-surface border-l border-border z-50 flex flex-col"
           >
             <div className="flex items-center justify-between px-6 h-20 border-b border-border">
               <span className="font-serif text-lg tracking-tight">Assistant</span>
@@ -168,9 +170,7 @@ export function AppChrome({
                 ×
               </button>
             </div>
-            <div className="flex-1 flex items-center justify-center px-6 text-center text-sm text-muted">
-              Chat arrives in a later slice.
-            </div>
+            <DrawerChat open={drawerOpen} />
           </aside>
         </>
       )}

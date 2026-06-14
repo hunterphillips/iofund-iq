@@ -2,7 +2,7 @@
 purpose: I/O Fund's current investment thesis, per-ticker conviction history, theme evolution, and observed decision-reasoning patterns. Distilled from quarterly "Top 15" reports.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-17
+last_distilled: 2026-05-20
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -33,7 +33,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 ### Headline move
 - **Closed Nvidia.** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack).
 
-### Current picks (held as of Q2 2026)
+### Current picks (held as of Q2 2026, updated for post-Q2 trade activity)
 
 | Category | Ticker | One-line thesis | Risk |
 |---|---|---|---|
@@ -50,16 +50,18 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | Networking | **VRT** | Facility-level cooling for Rubin's warm-water design. New entrant | Newer position, limited trade history |
 | Big Tech | **META** | Tied for best Mag 7. AI rec models tailwinding ad ROI | Capex spend |
 | Big Tech | **GOOG** | Tied for first Mag 7. TPU/Ironwood. Gemini diffusion +300% partner-AI rev YoY | Antitrust |
-| Software | **RDDT** | "Scarce asset" — human-data farm. Strong cash flows | Google relationship risk |
-| Software | **PLTR** | Commercial surges (Q4 GAAP EPS +700%). Cash $7.18B, zero debt | "Software stocks will be tested" — IOF cautious on category |
+| Software | **PLTR** | Commercial surges (Q4 GAAP EPS +700%). Cash $7.18B, zero debt. **~50% position trimmed 2026-05-18 @ $133.51; half position remains.** | "Software stocks will be tested" — IOF cautious on category |
 | Software | **NET** | Edge inference positioning unique. Timing the open question | Not GAAP profitable after 16 yrs |
-| Energy | **BE** | Time-to-power thesis. 2GW capacity by Dec 2026 → ~4× 2025 rev | Premium valuation (13.8 fwd PS) |
+| Energy | **BE** | Time-to-power thesis. 2GW capacity by Dec 2026 → ~4× 2025 rev. **~1,300% from initial entries ($16.64–$17.04, April 2025).** | Premium valuation (13.8 fwd PS) |
 | Energy | **GEV** | Order book sold out through 2028. Gas-turbine supply locked through 2030 | Slower growth profile |
 
 ### Closed / removed in Q2 2026
 - **NVDA** — closed (see headline move)
 - **APP** — removed/de-emphasized from list (was held Q4-Q1)
 - **CRWV** — not in Q2 list (held in Q4-Q1 with outsized-risk caveat)
+
+### Closed after Q2 2026 (post-report trade activity)
+- **RDDT** — fully closed 2026-05-18 @ $158.85. Was listed as ✓ held ("scarce asset" / human-data farm thesis). Closure logged in trade log; thesis doc updated accordingly.
 
 ### Thematic but not held (utilities + miners)
 - **Talen / Constellation / Vistra** — discussed thematically given PJM auction surge (clearing prices +11× over 2 yrs); Talen = purest PJM play.
@@ -85,16 +87,16 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | **COHR** | — | + Added (InP capacity doubling) | ✓ slow and steady | New Q1; held |
 | **AAOI** | — | — | + **Added** | New Q2 entrant after ~300% YTD move |
 | **VRT** | — | — | + **Added** | New Q2 entrant on cooling thesis |
-| **RDDT** | ✓ #1 software/data | ✓ contextual high-intent data | ✓ scarce asset | Consistent hold; thesis stable |
+| **RDDT** | ✓ #1 software/data | ✓ contextual high-intent data | ✓ scarce asset → ✗ **closed 2026-05-18** | Fully closed @ $158.85; post-Q2 exit |
 | **CRWV** | ✓ #2 software (thematic 11/10) | ✓ legacy IaaS wasn't built for AI | ✗ **removed from list** | Debt trajectory (D/C ratio ~12× projected for 2026) finally too much |
 | **ORCL** | ✓ #3 software | ✗ **dropped** | — | Dropped Q1 |
 | **APP** | ✓ #4 software | ✓ sentiment doesn't match fundamentals | ✗ **dropped/de-emphasized** | Held Q4-Q1, exit by Q2 |
 | **NET** | ✓ #5 software | ✓ early but unique | ✓ timing main question | Consistent placeholder/speculation hold |
-| **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges | New Q1; held |
+| **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges → ↓ **~50% trimmed 2026-05-18** | Half position remains after trim @ $133.51 |
 | **META** | — (honorable mention) | (honorable mention) | ✓ **added** (Mag 7) | Promoted from honorable mention to held |
 | **GOOG** | — | — | + **Added** (Mag 7) | New Q2 entrant |
 | **ARM** | — | — | + **Added** (AGI CPU) | New Q2 entrant |
-| **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1000% from entry | Consistent hold; capacity ramping into 2026-2027 |
+| **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1,300% from entry | Consistent hold; capacity ramping into 2026-2027 |
 | **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold |
 | Bitcoin Miner | ✓ #3 energy (Discovery) | ✓ Discovery only | ✓ Discovery only | Gated to Discovery tier across all 3 |
 
@@ -125,7 +127,7 @@ Patterns observed across the three reports — useful for predicting what they'l
 
 ### Entry / addition triggers
 - **New product cycle inflection.** ALAB on Scorpio launch, VRT on Rubin cooling, ARM on AGI CPU.
-- **Sector saturation about to break.** AVGO promoted as NVDA's CUDA moat erodes.
+- **Sector saturation about to break.** AVBO promoted as NVDA's CUDA moat erodes.
 - **Counter-narrative pricing.** MU when memory still seen as cyclical. AAOI after the market wrote it off.
 - **Capex / capacity sellout.** GEV (gas turbines sold out to 2028). MU (NAND sold out 2026).
 

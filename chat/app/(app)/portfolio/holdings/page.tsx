@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { getUserHoldings } from "@/lib/portfolio/holdings";
-import { PortfolioForm } from "./form";
+import { PortfolioForm } from "../form";
 
 export const dynamic = "force-dynamic";
 
-export default async function PortfolioPage() {
+export default async function PortfolioHoldingsPage() {
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     redirect("/auth/sign-in");
@@ -18,7 +18,7 @@ export default async function PortfolioPage() {
   const saved = await getUserHoldings(session.user.id);
 
   return (
-    <main className="page">
+    <div className="page">
       <div className="container portfolio-container">
         <h1 className="title-sm">
           Your <span className="accent">portfolio</span>
@@ -41,6 +41,6 @@ export default async function PortfolioPage() {
           }
         />
       </div>
-    </main>
+    </div>
   );
 }

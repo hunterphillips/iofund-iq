@@ -37,6 +37,7 @@ venv/
 /tmp/
 tmp/
 .scratchpad/
+scratchpad.*
 .notes/
 
 # Claude Code — local-only workspace (skills, agents, slash commands, pickup, plans)
@@ -46,3 +47,5 @@ AGENTS.md
 thoughts/
 .vercel
 .env*.local
+.playwright-mcp/
+

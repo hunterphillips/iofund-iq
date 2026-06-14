@@ -1,27 +1,161 @@
-:root {
-  --bg: #0a0a0b;
-  --fg: #ededee;
-  --muted: #8a8a92;
-  --accent: #d4af37;
-  --border: #1f1f23;
+@import "tailwindcss";
+
+/*
+ * Design tokens — editorial "warm paper" system (variant C, LOCKED 2026-06-13).
+ * Two themes ship: warm-dark (default) and warm-light, flipped by the
+ * data-theme attribute on <html> — set pre-hydration in app/layout.tsx, toggled
+ * from the nav (components/app-chrome.tsx).
+ *
+ * Tailwind v4 utilities (bg-bg, text-cream, …) compile to var(--color-*), so
+ * overriding those custom properties under [data-theme="light"] re-themes the
+ * whole app at runtime with no class changes. The legacy :root vars (--bg,
+ * --fg, --accent, …) mirror the palette for the pre-Tailwind class system
+ * (.page, .chat-*, .portfolio-*, auth/onboarding) and flip in lockstep.
+ *
+ * "cream" is the primary-text token: it intentionally flips to dark ink under
+ * the light theme so every text-cream usage stays readable.
+ */
+
+@theme {
+  /* Core palette (warm-dark defaults) */
+  --color-bg: #1a1612;
+  --color-surface: #221c17;
+  --color-surface-2: #2a231d;
+  --color-border: #3d342b;
+  --color-cream: #f8f2e6;
+  --color-muted: #a39a8e;
+  --color-muted-deep: #7a6f66;
+  --color-orange: #e94e1b;
+  --color-gold: #d4af37;
+
+  /* Category swatches */
+  --color-cat-accelerators: #e94e1b;
+  --color-cat-networking: #d4af37;
+  --color-cat-memory: #c26b6b;
+  --color-cat-energy: #8fa86e;
+  --color-cat-software: #a98bc9;
+  --color-cat-crypto: #d97706;
+  --color-cat-other: #7a6f66;
+
+  /* Type — Fraunces (display serif), Hanken Grotesk (body), Spline Sans Mono
+     (tabular numerals). CSS vars are supplied by next/font in app/layout.tsx. */
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-spline-mono), ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Warm-dark legacy vars (consumed by the pre-Tailwind class system). */
+:root {
+  --bg: #1a1612;
+  --surface: #221c17;
+  --surface-2: #2a231d;
+  --fg: #f8f2e6;
+  --cream: #f8f2e6;
+  --muted: #a39a8e;
+  --muted-deep: #7a6f66;
+  --accent: #d4af37; /* gold — legacy accent target */
+  --orange: #e94e1b;
+  --gold: #d4af37;
+  --border: #3d342b;
+  --shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55);
+  --grain-op: 0.035;
 }
+
+/* Warm-light "printed paper" — overrides @theme tokens + legacy vars together. */
+[data-theme="light"] {
+  --color-bg: #f1eadb;
+  --color-surface: #fbf7ee;
+  --color-surface-2: #f6efe1;
+  --color-border: #ded2be;
+  --color-cream: #241d14;
+  --color-muted: #6e6557;
+  --color-muted-deep: #8a8072;
+  --color-orange: #d2401a;
+  --color-gold: #9c7a14;
+  --color-cat-accelerators: #d2401a;
+  --color-cat-networking: #9c7a14;
+  --color-cat-memory: #a8504f;
+  --color-cat-energy: #5f7a45;
+  --color-cat-software: #7e5ba6;
+  --color-cat-crypto: #b26206;
+  --color-cat-other: #8a8072;
+
+  --bg: #f1eadb;
+  --surface: #fbf7ee;
+  --surface-2: #f6efe1;
+  --fg: #241d14;
+  --cream: #241d14;
+  --muted: #6e6557;
+  --muted-deep: #8a8072;
+  --accent: #9c7a14;
+  --orange: #d2401a;
+  --gold: #9c7a14;
+  --border: #ded2be;
+  --shadow: 0 24px 60px -24px rgba(80, 60, 30, 0.3);
+  --grain-op: 0.04;
+}
+
+/*
+ * NOTE: do NOT add an unlayered universal reset (margin/padding 0) here.
+ * Tailwind v4 utilities live in `@layer utilities`, and unlayered rules beat
+ * layered ones regardless of specificity — a universal reset would silently
+ * override every padding and margin utility app-wide. Tailwind's Preflight
+ * (in @layer base) already resets box-sizing, margins, and list padding.
+ */
 
 html,
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   min-height: 100vh;
+}
+
+body {
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+/* Editorial atmosphere — soft radial warmth + faint grain behind all content.
+   Content sits above via a relative/z-10 wrapper (components/app-chrome.tsx). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      1200px 700px at 78% -8%,
+      color-mix(in srgb, var(--orange) 9%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at 5% 8%,
+      color-mix(in srgb, var(--gold) 7%, transparent),
+      transparent 55%
+    );
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--grain-op);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Nav theme-toggle icon swap — moon while dark, sun while light. */
+[data-theme="dark"] .theme-toggle .i-sun {
+  display: none;
+}
+[data-theme="light"] .theme-toggle .i-moon {
+  display: none;
 }
 
 .page {
@@ -150,7 +284,7 @@ body {
 }
 
 .field-input {
-  background: #131318;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--fg);
@@ -163,7 +297,7 @@ body {
 .field-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .field-input:disabled {
@@ -298,7 +432,7 @@ body {
 
 .chat-message-user .chat-message-body {
   align-self: flex-end;
-  background: #1a1a20;
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.65rem 0.85rem;
@@ -437,14 +571,14 @@ body {
   font-family:
     ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.85em;
-  background: #1a1a20;
+  background: var(--surface-2);
   border: 1px solid var(--border);
   padding: 0.05rem 0.3rem;
   border-radius: 3px;
 }
 
 .markdown pre {
-  background: #131318;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.65rem 0.85rem;
@@ -491,7 +625,7 @@ body {
 }
 
 .markdown th {
-  background: #131318;
+  background: var(--surface);
   font-weight: 600;
 }
 
@@ -504,7 +638,7 @@ body {
 
 .chat-input {
   flex: 1;
-  background: #131318;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--fg);
@@ -517,7 +651,7 @@ body {
 .chat-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .chat-error {
@@ -551,7 +685,7 @@ body {
   padding: 3rem 1.5rem;
   border: 1.5px dashed var(--border);
   border-radius: 10px;
-  background: #131318;
+  background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   transition: border-color 120ms ease, background 120ms ease;
@@ -561,13 +695,13 @@ body {
 .dropzone:hover,
 .dropzone:focus-visible {
   border-color: var(--accent);
-  background: #15151b;
+  background: var(--surface-2);
   outline: none;
 }
 
 .dropzone-over {
   border-color: var(--accent);
-  background: rgba(212, 175, 55, 0.06);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .dropzone-busy {
@@ -643,4 +777,179 @@ body {
   gap: 1rem;
   align-items: center;
   margin-top: 0.5rem;
+}
+
+/* ---------- IOF Portfolio editorial page ---------- */
+
+/* Positions table */
+.positions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.positions-table th {
+  padding: 0 0.75rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.positions-table th:last-child,
+.positions-table td:last-child {
+  padding-right: 0;
+}
+
+.positions-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  vertical-align: middle;
+}
+
+.positions-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.positions-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+
+.col-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  transition: color 120ms ease;
+}
+
+.col-header:hover {
+  color: var(--fg);
+}
+
+.col-header-right {
+  flex-direction: row-reverse;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.sort-icon {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.sort-icon-inactive {
+  opacity: 0.3;
+}
+
+.sort-icon-active {
+  color: var(--accent);
+}
+
+.ticker-mono {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cream, var(--fg));
+  letter-spacing: 0.02em;
+}
+
+.company-cell {
+  color: var(--muted);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.theme-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.theme-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.weight-cell {
+  text-align: right;
+}
+
+.weight-num {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.entry-cell {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Reading layout (fund strategy / thesis / digest pages) ---------- */
+
+/*
+ * .reading-prose overrides the base .markdown spacing and sizing to create
+ * an editorial reading experience: serif headings, generous vertical rhythm,
+ * slightly larger body text. Only applied inside ReadingLayout.
+ */
+.reading-prose .markdown h1,
+.reading-prose .markdown h2,
+.reading-prose .markdown h3,
+.reading-prose .markdown h4 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+}
+
+.reading-prose .markdown h2 {
+  font-size: 1.45rem;
+  margin-top: 2.25rem;
+  letter-spacing: -0.015em;
+}
+
+.reading-prose .markdown h3 {
+  font-size: 1.15rem;
+  margin-top: 1.75rem;
+}
+
+.reading-prose .markdown p {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--fg);
+}
+
+.reading-prose .markdown > * + * {
+  margin-top: 1rem;
+}
+
+.reading-prose .markdown ul,
+.reading-prose .markdown ol {
+  gap: 0.5rem;
+}
+
+.reading-prose .markdown li {
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.reading-prose .markdown hr {
+  margin: 2rem 0;
 }

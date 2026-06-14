@@ -1,15 +1,123 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  usePageContext,
+  type PageContext,
+} from "@/lib/page-context/context";
 
-export function ChatThread() {
+/**
+ * ChatThread — the pure chat surface. Both surfaces (drawer + /chat) reuse it.
+ *
+ * Lazy thread creation: a conversation may start with NO thread row
+ * (`initialThreadId === null`). The thread is created on the FIRST send, not on
+ * mount — `createThread()` runs inside the transport's async
+ * `prepareSendMessagesRequest`, which injects the resulting id into the request
+ * body so /api/chat (which 400s without a threadId) always gets one. The id is
+ * cached in a ref so subsequent sends reuse it. `onThreadCreated(id)` lets the
+ * wrapper sync shared active-thread state + the sidebar list.
+ *
+ * IMPORTANT: callers must keep ChatThread MOUNTED across the first send when
+ * starting from a null thread (key it by a stable sentinel like "new", not by
+ * threadId) — otherwise the just-typed message is lost when the id arrives.
+ */
+export function ChatThread({
+  threadId: initialThreadId,
+  initialMessages,
+  createThread,
+  onThreadCreated,
+}: {
+  threadId: string | null;
+  initialMessages: UIMessage[];
+  /** Resolver run once on first send when there's no thread yet. */
+  createThread?: () => Promise<string>;
+  /** Notified with the new id after lazy creation (wrapper syncs state). */
+  onThreadCreated?: (id: string) => void;
+}) {
   const [input, setInput] = useState("");
+
+  // Per-turn page context: build the `x-page-context` header from the current
+  // route + whatever the page published via useSetPageContext(). The transport
+  // is constructed once, but useChat resolves `headers` per request — so we read
+  // the LATEST context through a ref the closure captures. The drawer/page only
+  // PRODUCE the header here; the system-prompt injection lives entirely in
+  // /api/chat (see lib/chat/page-context-prompt.ts).
+  const pathname = usePathname();
+  const published = usePageContext();
+  const headerValue = useMemo(
+    () => buildPageContextHeader(pathname, published),
+    [pathname, published],
+  );
+  const headerRef = useRef(headerValue);
+  headerRef.current = headerValue;
+
+  // Resolve the threadId lazily, once. Seeded from the prop; if null, the first
+  // send creates a thread and caches its id here.
+  const threadIdRef = useRef<string | null>(initialThreadId);
+  const createThreadRef = useRef(createThread);
+  createThreadRef.current = createThread;
+  const onCreatedRef = useRef(onThreadCreated);
+  onCreatedRef.current = onThreadCreated;
+  // In-flight creation promise: concurrent first-sends await the SAME promise so
+  // only one thread row is ever created (the second caller waits for the first).
+  const creatingRef = useRef<Promise<string> | null>(null);
+
+  async function ensureThreadId(): Promise<string> {
+    if (threadIdRef.current) return threadIdRef.current;
+    if (!creatingRef.current) {
+      const create = createThreadRef.current;
+      if (!create) {
+        throw new Error("No thread and no way to create one.");
+      }
+      creatingRef.current = create()
+        .then((id) => {
+          threadIdRef.current = id;
+          onCreatedRef.current?.(id);
+          return id;
+        })
+        .catch((err: unknown) => {
+          // Reset so a later retry can attempt creation again.
+          creatingRef.current = null;
+          throw err;
+        });
+    }
+    return creatingRef.current;
+  }
+
   const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    messages: initialMessages,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      // `headers` is a Resolvable in AI SDK v6 — evaluated per request. Reading
+      // the ref means navigation updates the context without rebuilding the
+      // transport (which would reset useChat state).
+      headers: (): Record<string, string> => {
+        const value = headerRef.current;
+        return value ? { "x-page-context": value } : {};
+      },
+      // Inject the threadId into every request body. This is async so it can
+      // lazily create the thread on the first send (returning its id) — /api/chat
+      // 400s without a threadId, so we guarantee one exists before sending.
+      // Returning `body` fully replaces the default, so we re-include the
+      // standard fields (id/messages/trigger/messageId) the SDK would have sent.
+      prepareSendMessagesRequest: async ({
+        body,
+        id,
+        messages: msgs,
+        trigger,
+        messageId,
+      }) => {
+        const threadId = await ensureThreadId();
+        return {
+          body: { ...body, id, messages: msgs, trigger, messageId, threadId },
+        };
+      },
+    }),
   });
 
   const busy = status === "streaming" || status === "submitted";
@@ -62,6 +170,38 @@ export function ChatThread() {
       </form>
     </div>
   );
+}
+
+/**
+ * Construct the compact `x-page-context` JSON the chat client sends per request.
+ *
+ * `route` comes from the current pathname; article slug / tickers / docName come
+ * from whatever the page published via useSetPageContext(). When no producer
+ * published a docName for a fund doc page, we derive it from the pathname so the
+ * fund pages can stay pure server components.
+ *
+ * Returns null (→ no header) for unknown pages with no published context.
+ */
+function buildPageContextHeader(
+  pathname: string | null,
+  published: PageContext | null,
+): string | null {
+  // A producer published context (article / portfolio) — trust it, but ensure
+  // a docName is present for fund docs if it derived from the path.
+  if (published) {
+    return JSON.stringify(published);
+  }
+
+  if (!pathname) return null;
+
+  if (pathname === "/fund/strategy") {
+    return JSON.stringify({ route: "/fund/strategy", docName: "strategy" });
+  }
+  if (pathname === "/fund/thesis") {
+    return JSON.stringify({ route: "/fund/thesis", docName: "thesis" });
+  }
+
+  return JSON.stringify({ route: pathname });
 }
 
 function Message({

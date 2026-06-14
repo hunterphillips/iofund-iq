@@ -11,7 +11,7 @@ export default async function ConnectIofPage() {
     redirect("/auth/sign-in");
   }
   if (await hasIofCredentials(session.user.id)) {
-    redirect("/");
+    redirect("/fund");
   }
 
   return (

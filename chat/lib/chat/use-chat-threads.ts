@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * useChatThreads — shared thread-list lifecycle hook for both chat surfaces
- * (components/drawer-chat.tsx + app/(app)/chat/ChatView.tsx).
+ * useChatThreads — thread-list lifecycle hook for the assistant drawer
+ * (components/drawer-chat.tsx).
  *
  * Owns the list of the user's threads and the mutations against the threads API
  * (slice #8): load/reload, create, rename, delete. It does NOT own which thread

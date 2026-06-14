@@ -1,5 +1,5 @@
 import { getIofBook } from "@/lib/portfolio/iof-book";
-import { PositionsTable } from "./PositionsTable";
+import { PortfolioBook } from "./PortfolioBook";
 import { PortfolioPageContext } from "./PortfolioPageContext";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Format a trade date as a big serif display date, e.g. "Jun 9" */
+/** Format a trade date as a short serif display date, e.g. "Jun 9" */
 function formatTradeDate(dateStr: string): string {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
     month: "short",
@@ -16,14 +16,14 @@ function formatTradeDate(dateStr: string): string {
   });
 }
 
-/** Action → label + color class */
-function actionChip(action: string): { label: string; cls: string } {
-  const upper = action.toUpperCase();
-  if (upper.startsWith("BUY")) return { label: action, cls: "chip-buy" };
-  if (upper.startsWith("SELL")) return { label: action, cls: "chip-sell" };
-  if (upper.startsWith("HEDGE")) return { label: action, cls: "chip-hedge" };
-  if (upper.startsWith("COVER")) return { label: action, cls: "chip-cover" };
-  return { label: action, cls: "chip-other" };
+/** Action → tone class for the inline action label. */
+function actionTone(action: string): string {
+  const u = action.toUpperCase();
+  if (u.startsWith("BUY")) return "text-cat-energy";
+  if (u.startsWith("SELL")) return "text-cat-memory";
+  if (u.startsWith("HEDGE")) return "text-gold";
+  if (u.startsWith("COVER")) return "text-cat-software";
+  return "text-muted";
 }
 
 /** Today formatted as "June 13, 2026" */
@@ -40,17 +40,9 @@ function todayLabel(): string {
 // ---------------------------------------------------------------------------
 
 export default async function PortfolioPage() {
-  const { positions, trades, stats } = await getIofBook();
+  const { positions, trades, stats, categoryBreakdown } = await getIofBook();
+  const { positionsHeld, topThemeName, topThemeWeight, activeThemes } = stats;
 
-  const {
-    positionsHeld,
-    topThemeName,
-    topThemeWeight,
-    activeThemes,
-    tradesLast30d,
-  } = stats;
-
-  // Build the intro copy from real data.
   const headlineCount =
     positionsHeld === 1
       ? "One name"
@@ -65,86 +57,56 @@ export default async function PortfolioPage() {
         ? numberWord(activeThemes) + " themes"
         : `${activeThemes} themes`;
 
-  // Top-theme intro phrasing
   const topThemeIntro =
     topThemeName != null && topThemeWeight != null
-      ? `${topThemeName} leads at ${topThemeWeight.toFixed(0)}% of book weight`
+      ? `${topThemeName} leads at ${Math.round(topThemeWeight)}% of book weight`
       : "across five AI infrastructure themes";
 
-  const held = positions;
-  const heldTickers = held.map((p) => p.ticker);
+  const heldTickers = positions.map((p) => p.ticker);
 
   return (
     <>
       <PortfolioPageContext tickers={heldTickers} />
 
-      <div className="max-w-[1100px] mx-auto px-8 py-12">
-        {/* ------------------------------------------------------------------ */}
-        {/* 1 — Editorial header                                                */}
-        {/* ------------------------------------------------------------------ */}
-        <header className="mb-12 border-b border-border pb-10">
-          <div className="text-xs uppercase tracking-[0.18em] mb-4 text-orange">
-            {todayLabel()} · I/O Fund book
+      <div className="max-w-[1180px] mx-auto px-8 pb-32">
+        {/* ── Editorial header ── */}
+        <header className="pt-16 pb-10">
+          <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
+            {todayLabel()} · The IOF book
           </div>
-          <h1 className="font-serif text-[2.75rem] leading-[1.1] tracking-tight text-cream mb-5 max-w-[34rem]">
+          <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5 max-w-[34rem]">
             {headlineCount}, {themesPhrase}, one book.
           </h1>
-          <p className="text-muted text-sm leading-relaxed max-w-[42rem]">
-            {topThemeIntro}. The table below reflects I/O Fund&apos;s publicly
-            disclosed positions as of the last recorded trade, with baseline
-            weights from the most recent portfolio snapshot. Recent move
-            history scrolls below the book.
+          <p className="text-lg text-muted leading-relaxed max-w-[60ch] mt-5">
+            {topThemeIntro}. Below is the current book — viewable as a table, a
+            theme breakdown, or weight bars — and the moves of the last 30 days.
           </p>
         </header>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* 2 — Stat callouts                                                   */}
-        {/* ------------------------------------------------------------------ */}
-        <section
-          className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border mb-14 border border-border rounded-lg overflow-hidden"
-          aria-label="Portfolio statistics"
-        >
-          <StatCallout
-            value={String(positionsHeld)}
-            label="Positions held"
-          />
-          <StatCallout
-            value={
-              topThemeWeight !== null ? `${topThemeWeight.toFixed(0)}%` : "—"
-            }
-            label={topThemeName ? `Top theme · ${topThemeName}` : "Top theme"}
-          />
-          <StatCallout
-            value={String(activeThemes)}
-            label="Active themes"
-          />
-          <StatCallout
-            value={String(tradesLast30d)}
-            label="Trades · last 30d"
-          />
+        {/* ── 01 — The book (Table / Pie / Themes) ── */}
+        <section className="mt-4">
+          <PortfolioBook rows={positions} breakdown={categoryBreakdown} />
         </section>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* 3 — "01 — The book" sortable positions table                        */}
-        {/* ------------------------------------------------------------------ */}
-        <section className="mb-16">
-          <SectionHeader index="01" title="The book" />
-          <PositionsTable rows={held} />
-        </section>
+        {/* ── 02 — Recent moves ── */}
+        <section className="mt-16">
+          <div className="flex items-baseline justify-between mb-6">
+            <div className="flex items-baseline gap-3">
+              <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
+                02
+              </span>
+              <h2 className="font-serif text-2xl text-cream tracking-tight">
+                Recent moves
+              </h2>
+            </div>
+            <span className="text-[13px] text-muted">Last 30 days</span>
+          </div>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* 4 — "02 — Recent moves" narrative rows                              */}
-        {/* ------------------------------------------------------------------ */}
-        <section>
-          <SectionHeader index="02" title="Recent moves" />
           {trades.length === 0 ? (
-            <p className="text-muted-deep text-sm">
-              No moves in the last 30 days.
-            </p>
+            <p className="text-muted-deep text-sm">No moves in the last 30 days.</p>
           ) : (
-            <ol className="recent-moves-list">
-              {trades.map((t) => {
-                const chip = actionChip(t.action);
+            <div className="border border-border rounded-2xl bg-surface px-6">
+              {trades.map((t, i) => {
                 const price = t.price
                   ? `$${parseFloat(t.price).toLocaleString("en-US", {
                       minimumFractionDigits: 2,
@@ -152,55 +114,41 @@ export default async function PortfolioPage() {
                     })}`
                   : null;
                 return (
-                  <li key={t.id} className="recent-move-row">
-                    <span className="move-date font-serif">
+                  <div
+                    key={t.id}
+                    className={
+                      "grid grid-cols-[88px_64px_1fr_auto] gap-5 items-center py-4 " +
+                      (i > 0 ? "border-t border-border" : "")
+                    }
+                  >
+                    <span className="font-serif text-[15px] text-muted">
                       {formatTradeDate(t.tradeDate)}
                     </span>
-                    <span className="move-ticker">{t.ticker}</span>
-                    <span className={`move-chip ${chip.cls}`}>
-                      {chip.label}
+                    <span className="font-bold text-[15px] tracking-wide">
+                      {t.ticker}
                     </span>
-                    {price && <span className="move-price">{price}</span>}
-                    {t.note && <span className="move-note">{t.note}</span>}
-                    {t.analyst && (
-                      <span className="move-analyst">— {t.analyst}</span>
-                    )}
-                  </li>
+                    <span className="text-sm text-muted truncate">
+                      <span
+                        className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${actionTone(t.action)}`}
+                      >
+                        {t.action}
+                      </span>
+                      {t.note}
+                      {t.analyst && (
+                        <span className="text-muted-deep"> — {t.analyst}</span>
+                      )}
+                    </span>
+                    <span className="font-mono text-sm tabular-nums text-cream">
+                      {price ?? ""}
+                    </span>
+                  </div>
                 );
               })}
-            </ol>
+            </div>
           )}
         </section>
       </div>
     </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function StatCallout({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="bg-surface px-6 py-7 flex flex-col gap-1.5">
-      <span className="font-serif text-4xl tabular-nums text-cream leading-none">
-        {value}
-      </span>
-      <span className="text-[0.7rem] uppercase tracking-[0.12em] text-muted-deep leading-snug">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function SectionHeader({ index, title }: { index: string; title: string }) {
-  return (
-    <div className="flex items-baseline gap-3 mb-6 border-b border-border pb-3">
-      <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
-        {index}
-      </span>
-      <h2 className="font-serif text-xl text-cream tracking-tight">{title}</h2>
-    </div>
   );
 }
 

@@ -1,20 +1,26 @@
 @import "tailwindcss";
 
 /*
- * Design tokens — variant-C "editorial magazine" palette (LOCKED 2026-06-13).
- * Two surfaces:
- *   1. Tailwind v4 @theme block below → exposes the palette as utility tokens
- *      (bg-bg, text-cream, border-border, bg-cat-networking, …). New shell +
- *      slice routes consume these.
- *   2. The legacy :root vars (--bg, --fg, --accent, …) are remapped onto the
- *      new palette so the pre-Tailwind class system (.page, .chat-*,
- *      .portfolio-*, auth/onboarding pages) shifts color without a rewrite.
+ * Design tokens — editorial "warm paper" system (variant C, LOCKED 2026-06-13).
+ * Two themes ship: warm-dark (default) and warm-light, flipped by the
+ * data-theme attribute on <html> — set pre-hydration in app/layout.tsx, toggled
+ * from the nav (components/app-chrome.tsx).
+ *
+ * Tailwind v4 utilities (bg-bg, text-cream, …) compile to var(--color-*), so
+ * overriding those custom properties under [data-theme="light"] re-themes the
+ * whole app at runtime with no class changes. The legacy :root vars (--bg,
+ * --fg, --accent, …) mirror the palette for the pre-Tailwind class system
+ * (.page, .chat-*, .portfolio-*, auth/onboarding) and flip in lockstep.
+ *
+ * "cream" is the primary-text token: it intentionally flips to dark ink under
+ * the light theme so every text-cream usage stays readable.
  */
 
 @theme {
-  /* Core palette */
+  /* Core palette (warm-dark defaults) */
   --color-bg: #1a1612;
   --color-surface: #221c17;
+  --color-surface-2: #2a231d;
   --color-border: #3d342b;
   --color-cream: #f8f2e6;
   --color-muted: #a39a8e;
@@ -31,41 +37,125 @@
   --color-cat-crypto: #d97706;
   --color-cat-other: #7a6f66;
 
-  /* Type — serif display, sans body */
-  --font-serif: Georgia, "Times New Roman", "Iowan Old Style", "Palatino Linotype",
-    serif;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  /* Type — Fraunces (display serif), Hanken Grotesk (body), Spline Sans Mono
+     (tabular numerals). CSS vars are supplied by next/font in app/layout.tsx. */
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-spline-mono), ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
 }
 
+/* Warm-dark legacy vars (consumed by the pre-Tailwind class system). */
 :root {
-  /* New palette */
   --bg: #1a1612;
   --surface: #221c17;
+  --surface-2: #2a231d;
   --fg: #f8f2e6;
+  --cream: #f8f2e6;
   --muted: #a39a8e;
   --muted-deep: #7a6f66;
   --accent: #d4af37; /* gold — legacy accent target */
   --orange: #e94e1b;
+  --gold: #d4af37;
   --border: #3d342b;
+  --shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55);
+  --grain-op: 0.035;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Warm-light "printed paper" — overrides @theme tokens + legacy vars together. */
+[data-theme="light"] {
+  --color-bg: #f1eadb;
+  --color-surface: #fbf7ee;
+  --color-surface-2: #f6efe1;
+  --color-border: #ded2be;
+  --color-cream: #241d14;
+  --color-muted: #6e6557;
+  --color-muted-deep: #8a8072;
+  --color-orange: #d2401a;
+  --color-gold: #9c7a14;
+  --color-cat-accelerators: #d2401a;
+  --color-cat-networking: #9c7a14;
+  --color-cat-memory: #a8504f;
+  --color-cat-energy: #5f7a45;
+  --color-cat-software: #7e5ba6;
+  --color-cat-crypto: #b26206;
+  --color-cat-other: #8a8072;
+
+  --bg: #f1eadb;
+  --surface: #fbf7ee;
+  --surface-2: #f6efe1;
+  --fg: #241d14;
+  --cream: #241d14;
+  --muted: #6e6557;
+  --muted-deep: #8a8072;
+  --accent: #9c7a14;
+  --orange: #d2401a;
+  --gold: #9c7a14;
+  --border: #ded2be;
+  --shadow: 0 24px 60px -24px rgba(80, 60, 30, 0.3);
+  --grain-op: 0.04;
 }
+
+/*
+ * NOTE: do NOT add an unlayered universal reset (margin/padding 0) here.
+ * Tailwind v4 utilities live in `@layer utilities`, and unlayered rules beat
+ * layered ones regardless of specificity — a universal reset would silently
+ * override every padding and margin utility app-wide. Tailwind's Preflight
+ * (in @layer base) already resets box-sizing, margins, and list padding.
+ */
 
 html,
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   min-height: 100vh;
+}
+
+body {
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+/* Editorial atmosphere — soft radial warmth + faint grain behind all content.
+   Content sits above via a relative/z-10 wrapper (components/app-chrome.tsx). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      1200px 700px at 78% -8%,
+      color-mix(in srgb, var(--orange) 9%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at 5% 8%,
+      color-mix(in srgb, var(--gold) 7%, transparent),
+      transparent 55%
+    );
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--grain-op);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Nav theme-toggle icon swap — moon while dark, sun while light. */
+[data-theme="dark"] .theme-toggle .i-sun {
+  display: none;
+}
+[data-theme="light"] .theme-toggle .i-moon {
+  display: none;
 }
 
 .page {
@@ -194,7 +284,7 @@ body {
 }
 
 .field-input {
-  background: #221c17;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--fg);
@@ -207,7 +297,7 @@ body {
 .field-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .field-input:disabled {
@@ -342,7 +432,7 @@ body {
 
 .chat-message-user .chat-message-body {
   align-self: flex-end;
-  background: #2a231d;
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.65rem 0.85rem;
@@ -481,14 +571,14 @@ body {
   font-family:
     ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.85em;
-  background: #2a231d;
+  background: var(--surface-2);
   border: 1px solid var(--border);
   padding: 0.05rem 0.3rem;
   border-radius: 3px;
 }
 
 .markdown pre {
-  background: #221c17;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.65rem 0.85rem;
@@ -535,7 +625,7 @@ body {
 }
 
 .markdown th {
-  background: #221c17;
+  background: var(--surface);
   font-weight: 600;
 }
 
@@ -548,7 +638,7 @@ body {
 
 .chat-input {
   flex: 1;
-  background: #221c17;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--fg);
@@ -561,7 +651,7 @@ body {
 .chat-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .chat-error {
@@ -595,7 +685,7 @@ body {
   padding: 3rem 1.5rem;
   border: 1.5px dashed var(--border);
   border-radius: 10px;
-  background: #221c17;
+  background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   transition: border-color 120ms ease, background 120ms ease;
@@ -605,13 +695,13 @@ body {
 .dropzone:hover,
 .dropzone:focus-visible {
   border-color: var(--accent);
-  background: #2a231d;
+  background: var(--surface-2);
   outline: none;
 }
 
 .dropzone-over {
   border-color: var(--accent);
-  background: rgba(212, 175, 55, 0.06);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .dropzone-busy {
@@ -764,7 +854,7 @@ body {
 }
 
 .ticker-mono {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--cream, var(--fg));
@@ -802,7 +892,7 @@ body {
 }
 
 .weight-num {
-  font-family: Georgia, "Times New Roman", "Iowan Old Style", serif;
+  font-family: var(--font-serif);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
   color: var(--fg);
@@ -812,106 +902,6 @@ body {
   font-size: 0.8rem;
   color: var(--muted);
   white-space: nowrap;
-}
-
-/* Recent moves narrative list */
-.recent-moves-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.recent-move-row {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-}
-
-.recent-move-row:last-child {
-  border-bottom: none;
-}
-
-.move-date {
-  font-size: 1.25rem;
-  color: var(--fg);
-  font-style: italic;
-  min-width: 4rem;
-}
-
-.move-ticker {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--fg);
-  letter-spacing: 0.04em;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.1rem 0.4rem;
-}
-
-.move-chip {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: 4px;
-  padding: 0.15rem 0.5rem;
-  border: 1px solid transparent;
-}
-
-.chip-buy {
-  color: #8FA86E;
-  background: color-mix(in srgb, #8FA86E 12%, transparent);
-  border-color: color-mix(in srgb, #8FA86E 35%, transparent);
-}
-
-.chip-sell {
-  color: #C26B6B;
-  background: color-mix(in srgb, #C26B6B 12%, transparent);
-  border-color: color-mix(in srgb, #C26B6B 35%, transparent);
-}
-
-.chip-hedge {
-  color: #D4AF37;
-  background: color-mix(in srgb, #D4AF37 12%, transparent);
-  border-color: color-mix(in srgb, #D4AF37 35%, transparent);
-}
-
-.chip-cover {
-  color: #A98BC9;
-  background: color-mix(in srgb, #A98BC9 12%, transparent);
-  border-color: color-mix(in srgb, #A98BC9 35%, transparent);
-}
-
-.chip-other {
-  color: var(--muted);
-  background: color-mix(in srgb, var(--border) 40%, transparent);
-  border-color: var(--border);
-}
-
-.move-price {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.move-note {
-  font-size: 0.82rem;
-  color: var(--muted-deep);
-  font-style: italic;
-}
-
-.move-analyst {
-  font-size: 0.75rem;
-  color: color-mix(in srgb, var(--muted-deep) 70%, transparent);
-  margin-left: auto;
 }
 
 /* ---------- Reading layout (fund strategy / thesis / digest pages) ---------- */
@@ -925,7 +915,7 @@ body {
 .reading-prose .markdown h2,
 .reading-prose .markdown h3,
 .reading-prose .markdown h4 {
-  font-family: Georgia, "Times New Roman", "Iowan Old Style", serif;
+  font-family: var(--font-serif);
   font-weight: 600;
 }
 

@@ -1,20 +1,17 @@
 "use client";
 
 /**
- * ActiveThreadProvider — shared "which conversation is active" state across the
- * drawer (components/drawer-chat.tsx) and the full-screen /chat view
- * (app/(app)/chat/ChatView.tsx).
+ * ActiveThreadProvider — holds "which conversation is active" for the assistant
+ * drawer (components/drawer-chat.tsx).
  *
  * Mounted once in app/(app)/layout.tsx alongside PageContextRoot, so it lives in
- * the persistent layout subtree and survives route navigation (the layout does
- * not remount between sibling routes). This is what satisfies the slice #10 AC
- * "drawer and /chat view the same active thread": selecting a thread in /chat
- * sets activeThreadId; the next time the drawer opens it resumes that thread
- * instead of defaulting to the most-recent one (and vice-versa).
+ * the persistent layout subtree and survives both route navigation and the
+ * drawer unmounting on close (DrawerChat is mounted only while the drawer is
+ * open). That's what lets the drawer resume the same thread the next time it
+ * opens instead of defaulting to the most-recent one.
  *
- * In-memory only — no localStorage. The two surfaces are rarely on screen at the
- * same time (/chat is a full route), so shared in-memory state across navigation
- * is sufficient; localStorage persistence across full reloads is optional polish.
+ * In-memory only — no localStorage. Persisting the active thread across full
+ * page reloads is optional polish.
  */
 
 import { createContext, useContext, useState, type ReactNode } from "react";

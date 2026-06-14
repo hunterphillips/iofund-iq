@@ -79,6 +79,7 @@ export default async function ArticleDetailPage({ params }: Props) {
         body={bodyWithoutFrontmatter}
         backHref="/articles"
         backLabel="Articles"
+        assistantCta
         footer={<ArticleFooter tickers={row.tickers ?? []} url={row.url} />}
       />
     </>

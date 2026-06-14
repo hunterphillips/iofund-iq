@@ -6,14 +6,43 @@ import {
   getThesisLastModified,
   getThesisThemeChips,
 } from "@/lib/fund/docs";
+import { getIofBook } from "@/lib/portfolio/iof-book";
+import { categoryColorVar } from "@/lib/portfolio/categories";
 import { MarkdownBody } from "@/components/markdown-body";
 
 export const dynamic = "force-dynamic";
+
+/** "2026-05-22" → "May 22, 2026" */
+function formatLongDate(date: string): string {
+  return new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** "2026-05-20" → "May 20" */
+function formatShortDate(date: string): string {
+  return new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function moveTone(action: string): string {
+  const u = action.toUpperCase();
+  if (u.startsWith("BUY")) return "text-cat-energy";
+  if (u.startsWith("SELL")) return "text-cat-memory";
+  return "text-gold";
+}
 
 export default async function FundPage() {
   const digests = listDigests(); // sorted newest first
   const newest = digests[0] ? readDigest(digests[0].date) : null;
   const pastDigests = digests.slice(1);
+
+  const { stats, trades } = await getIofBook();
+  const recentMoves = trades.slice(0, 3);
 
   const strategyPullQuote = getStrategyPullQuote();
   const strategyChips = getStrategyHeadingChips();
@@ -21,132 +50,187 @@ export default async function FundPage() {
   const thesisChips = getThesisThemeChips();
 
   return (
-    <div className="max-w-[1100px] mx-auto px-8 py-12">
+    <div className="max-w-[1180px] mx-auto px-8 pb-32">
       {/* ── Page header ── */}
-      <div className="mb-10">
-        <div className="text-xs uppercase tracking-[0.18em] mb-3 text-orange">
-          Fund
+      <div className="pt-16 pb-10">
+        <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
+          Fund Overview
+          {newest ? ` · Week of ${formatLongDate(newest.date)}` : ""}
         </div>
-        <h1 className="font-serif text-5xl leading-tight tracking-tight text-cream">
-          Overview
+        <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5">
+          The week
+          <br />
+          in review.
         </h1>
       </div>
 
-      {/* ── Newest digest — inline at top ── */}
+      {/* ── KPI dashboard ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[18px]">
+        <KpiCard
+          href="/portfolio"
+          dotColor={categoryColorVar(stats.topThemeName)}
+          label="Top theme"
+          value={stats.topThemeWeight != null ? `${Math.round(stats.topThemeWeight)}%` : "—"}
+          sub={stats.topThemeName ? `${stats.topThemeName} leads the book` : "—"}
+        />
+        <KpiCard
+          href="/portfolio"
+          dotColor="var(--color-orange)"
+          label="New trades"
+          value={newest ? String(newest.newTradesCount) : "0"}
+          sub={newest ? "Recorded this week" : "No digest yet"}
+        />
+        <KpiCard
+          href="/articles"
+          dotColor="var(--color-gold)"
+          label="New articles"
+          value={newest ? String(newest.newArticlesCount) : "0"}
+          sub={newest ? "Distilled this week" : "No digest yet"}
+        />
+        <KpiCard
+          href="/portfolio"
+          dotColor="var(--color-cat-energy)"
+          label="Positions held"
+          value={String(stats.positionsHeld)}
+          sub={`Across ${stats.activeThemes} active themes`}
+        />
+      </div>
+
+      {/* ── Digest hero — summary + highlights + full digest behind disclosure ── */}
       {newest && (
-        <section className="mb-14">
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="font-serif text-2xl tracking-tight text-cream">
-              Latest digest
+        <section className="mt-16">
+          <div className="flex items-baseline justify-between mb-5">
+            <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
+              This week&apos;s digest
             </h2>
-            <span className="text-xs text-muted tabular-nums">{newest.date}</span>
+            <span className="text-[13px] text-muted font-mono tabular-nums">
+              {formatLongDate(newest.date)}
+            </span>
           </div>
-          <div className="border border-border rounded-lg bg-surface px-8 py-8">
-            <MarkdownBody>{newest.body}</MarkdownBody>
+
+          <div className="border border-border rounded-2xl bg-surface p-8 md:p-11 grid md:grid-cols-[1.4fr_1fr] gap-10 items-start">
+            <div>
+              {newest.summary && (
+                <h3 className="font-serif text-2xl md:text-3xl font-medium leading-[1.14] tracking-[-0.015em] text-cream">
+                  {newest.summary}
+                </h3>
+              )}
+              <details className="group mt-6 border-t border-border pt-5">
+                <summary className="list-none cursor-pointer text-sm font-semibold text-orange inline-flex items-center gap-2 select-none">
+                  <span className="transition-transform group-open:rotate-90">›</span>
+                  Read the full digest
+                </summary>
+                <div className="mt-5 reading-prose">
+                  <MarkdownBody>{newest.body}</MarkdownBody>
+                </div>
+              </details>
+            </div>
+
+            {newest.highlights.length > 0 && (
+              <ul className="flex flex-col gap-3.5">
+                {newest.highlights.map((h) => (
+                  <li key={h.lead} className="flex gap-3 text-[15px] leading-relaxed text-cream">
+                    <span className="flex-none w-1.5 h-1.5 rounded-full bg-orange mt-2" />
+                    <span>
+                      <b className="text-gold font-semibold">{h.lead}.</b>{" "}
+                      {h.rest}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       )}
 
       {/* ── Strategy + Thesis cards ── */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
-        {/* Strategy card */}
-        <Link
+      <section className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-[18px]">
+        <DocCard
           href="/fund/strategy"
-          className="group block border border-border bg-surface rounded-lg p-6 hover:border-muted-deep transition-colors"
-        >
-          <div className="text-[0.65rem] uppercase tracking-[0.16em] text-muted mb-2">
-            Strategy
-          </div>
-          <h3 className="font-serif text-xl leading-snug text-cream mb-3 group-hover:text-gold transition-colors">
-            Alert decoding, sizing & hedging
-          </h3>
-          {strategyPullQuote && (
-            <p className="text-sm text-muted leading-relaxed mb-4 line-clamp-3">
-              {strategyPullQuote}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {strategyChips.map((chip) => (
-              <span
-                key={chip}
-                className="text-[0.65rem] uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border border-border text-muted-deep"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-          <span className="text-xs text-orange group-hover:text-gold transition-colors">
-            Read strategy →
-          </span>
-        </Link>
-
-        {/* Thesis card */}
-        <Link
+          eyebrow="The framework"
+          title="Strategy"
+          blurb={strategyPullQuote || "Alert decoding, position sizing, and the hedging framework that governs every move."}
+          chips={strategyChips}
+        />
+        <DocCard
           href="/fund/thesis"
-          className="group block border border-border bg-surface rounded-lg p-6 hover:border-muted-deep transition-colors"
-        >
-          <div className="text-[0.65rem] uppercase tracking-[0.16em] text-muted mb-2">
-            Thesis
-          </div>
-          <h3 className="font-serif text-xl leading-snug text-cream mb-3 group-hover:text-gold transition-colors">
-            Conviction history & theme evolution
-          </h3>
-          {thesisLastModified && (
-            <p className="text-xs text-muted-deep mb-3 tabular-nums">
-              Last distilled: {thesisLastModified}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {thesisChips.map((chip) => (
-              <span
-                key={chip}
-                className="text-[0.65rem] uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border border-border text-muted-deep"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-          <span className="text-xs text-orange group-hover:text-gold transition-colors">
-            Read thesis →
-          </span>
-        </Link>
+          eyebrow={thesisLastModified ? `Updated ${formatShortDate(thesisLastModified)}` : "The conviction"}
+          title="Thesis"
+          blurb="Per-ticker conviction history and the theme evolution behind the current book."
+          chips={thesisChips}
+        />
       </section>
 
-      {/* ── Past digests list ── */}
+      {/* ── Recent moves preview ── */}
+      {recentMoves.length > 0 && (
+        <section className="mt-16">
+          <div className="flex items-baseline justify-between mb-5">
+            <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
+              Recent moves
+            </h2>
+            <Link href="/portfolio" className="text-sm font-semibold text-orange hover:underline">
+              Open Portfolio →
+            </Link>
+          </div>
+          <div className="border border-border rounded-2xl bg-surface px-6">
+            {recentMoves.map((t, i) => (
+              <div
+                key={t.id}
+                className={
+                  "grid grid-cols-[88px_64px_1fr_auto] gap-5 items-center py-4 " +
+                  (i > 0 ? "border-t border-border" : "")
+                }
+              >
+                <span className="font-serif text-[15px] text-muted">
+                  {formatShortDate(t.tradeDate)}
+                </span>
+                <span className="font-bold text-[15px] tracking-wide">{t.ticker}</span>
+                <span className="text-sm text-muted truncate">
+                  <span className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${moveTone(t.action)}`}>
+                    {t.action}
+                  </span>
+                  {t.note}
+                </span>
+                <span className="font-mono text-sm tabular-nums text-cream">
+                  {t.price ? `$${parseFloat(t.price).toFixed(2)}` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Past digests ── */}
       {pastDigests.length > 0 && (
-        <section>
-          <h2 className="font-serif text-2xl tracking-tight text-cream mb-4">
+        <section className="mt-16">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream mb-5">
             Past digests
           </h2>
-          <div className="flex flex-col divide-y divide-border">
-            {pastDigests.map((d) => (
+          <div className="border border-border rounded-2xl bg-surface px-6">
+            {pastDigests.map((d, i) => (
               <Link
                 key={d.slug}
                 href={`/fund/digests/${d.slug}`}
-                className="group flex items-start gap-6 py-4 hover:bg-surface/50 -mx-3 px-3 rounded transition-colors"
+                className={
+                  "group grid grid-cols-[88px_1fr_auto] gap-5 items-center py-4 " +
+                  (i > 0 ? "border-t border-border" : "")
+                }
               >
-                <span className="flex-none text-sm text-muted-deep tabular-nums pt-0.5 w-24">
-                  {d.date}
+                <span className="font-serif text-[15px] text-muted">
+                  {formatShortDate(d.date)}
                 </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm text-cream group-hover:text-gold transition-colors line-clamp-2 mb-1">
-                    {d.summary}
-                  </span>
-                  {d.tickers.length > 0 && (
-                    <span className="flex flex-wrap gap-1">
-                      {d.tickers.map((t) => (
-                        <span
-                          key={t}
-                          className="text-[0.6rem] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-border text-muted-deep font-mono"
-                        >
-                          {t}
-                        </span>
-                      ))}
+                <span className="text-sm text-muted group-hover:text-cream transition-colors truncate">
+                  {d.summary}
+                </span>
+                <span className="flex flex-wrap gap-1.5 justify-end">
+                  {d.tickers.slice(0, 3).map((t) => (
+                    <span
+                      key={t}
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-border text-muted font-mono"
+                    >
+                      {t}
                     </span>
-                  )}
-                </span>
-                <span className="flex-none text-xs text-muted group-hover:text-orange transition-colors pt-0.5">
-                  Read →
+                  ))}
                 </span>
               </Link>
             ))}
@@ -154,5 +238,82 @@ export default async function FundPage() {
         </section>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function KpiCard({
+  href,
+  dotColor,
+  label,
+  value,
+  sub,
+}: {
+  href: string;
+  dotColor: string;
+  label: string;
+  value: string;
+  sub: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group relative overflow-hidden border border-border rounded-2xl bg-surface px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors"
+    >
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide font-semibold text-muted">
+        <span className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
+        {label}
+      </div>
+      <div className="font-serif font-semibold text-[42px] leading-none tracking-[-0.02em] text-cream mt-4 mb-1.5 tabular-nums">
+        {value}
+      </div>
+      <div className="text-[13px] text-muted-deep">{sub}</div>
+      <span className="absolute right-[18px] top-5 text-muted-deep group-hover:text-orange group-hover:translate-x-0.5 transition-all">
+        →
+      </span>
+    </Link>
+  );
+}
+
+function DocCard({
+  href,
+  eyebrow,
+  title,
+  blurb,
+  chips,
+}: {
+  href: string;
+  eyebrow: string;
+  title: string;
+  blurb: string;
+  chips: string[];
+}) {
+  return (
+    <Link
+      href={href}
+      className="group border border-border rounded-2xl bg-surface p-7 flex flex-col gap-3.5 hover:border-muted-deep hover:-translate-y-0.5 transition-all"
+    >
+      <div className="text-[11px] uppercase tracking-[0.16em] font-semibold text-muted-deep">
+        {eyebrow}
+      </div>
+      <h3 className="font-serif text-2xl font-semibold text-cream">{title}</h3>
+      <p className="text-sm text-muted leading-relaxed flex-1 line-clamp-3">{blurb}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {chips.map((chip) => (
+          <span
+            key={chip}
+            className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-border text-muted bg-surface-2/60"
+          >
+            {chip}
+          </span>
+        ))}
+      </div>
+      <span className="mt-1 w-[34px] h-[34px] rounded-full border border-border grid place-items-center text-cream group-hover:bg-orange group-hover:border-orange group-hover:text-white transition-colors">
+        →
+      </span>
+    </Link>
   );
 }

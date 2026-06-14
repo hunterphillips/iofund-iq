@@ -2,25 +2,10 @@
 
 import { useState } from "react";
 import type { IofPosition } from "@/lib/portfolio/iof-book";
-
-// ---------------------------------------------------------------------------
-// Category → swatch color mapping (references globals.css --color-cat-* tokens)
-// ---------------------------------------------------------------------------
-
-const CATEGORY_VAR: Record<string, string> = {
-  "AI Accelerators": "var(--color-cat-accelerators)",
-  "AI Networking": "var(--color-cat-networking)",
-  "AI Memory": "var(--color-cat-memory)",
-  "AI Energy": "var(--color-cat-energy)",
-  "AI Software": "var(--color-cat-software)",
-  Cryptocurrency: "var(--color-cat-crypto)",
-};
-const OTHER_COLOR_VAR = "var(--color-cat-other)";
-
-function swatchColor(category: string | null): string {
-  if (!category) return OTHER_COLOR_VAR;
-  return CATEGORY_VAR[category] ?? OTHER_COLOR_VAR;
-}
+import {
+  categoryColorVar,
+  OTHER_CATEGORY_COLOR_VAR,
+} from "@/lib/portfolio/categories";
 
 // ---------------------------------------------------------------------------
 // Sorting
@@ -166,7 +151,7 @@ export function PositionsTable({ rows }: Props) {
             const weight = row.baselineWeightPct
               ? parseFloat(row.baselineWeightPct)
               : null;
-            const color = swatchColor(row.category);
+            const color = categoryColorVar(row.category);
             const entry = row.firstEntryDate
               ? new Date(row.firstEntryDate + "T00:00:00").toLocaleDateString(
                   "en-US",
@@ -196,7 +181,7 @@ export function PositionsTable({ rows }: Props) {
                     <span className="theme-cell">
                       <span
                         className="theme-dot"
-                        style={{ background: OTHER_COLOR_VAR }}
+                        style={{ background: OTHER_CATEGORY_COLOR_VAR }}
                         aria-hidden="true"
                       />
                       <span className="theme-label text-muted-deep">

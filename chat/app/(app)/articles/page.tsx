@@ -39,18 +39,15 @@ export default async function ArticlesPage({
   ]);
 
   return (
-    <div className="max-w-[1100px] mx-auto px-8 py-12">
+    <div className="max-w-[1180px] mx-auto px-8 pb-32">
       {/* Hero header — always shows the full corpus count, not the filtered count */}
-      <div className="mb-10">
-        <div className="text-xs uppercase tracking-[0.18em] mb-3 text-orange">
-          The library
+      <div className="pt-16 pb-9">
+        <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange tabular-nums">
+          The Library · {corpusTotal} distilled {corpusTotal === 1 ? "article" : "articles"}
         </div>
-        <h1 className="font-serif text-5xl leading-tight tracking-tight text-cream mb-2">
+        <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5">
           Articles
         </h1>
-        <p className="text-sm text-muted tabular-nums">
-          {corpusTotal} distilled {corpusTotal === 1 ? "article" : "articles"} from the I/O Fund research corpus
-        </p>
       </div>
 
       {/* Client browse: search + chips + list */}

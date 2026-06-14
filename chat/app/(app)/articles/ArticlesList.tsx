@@ -149,76 +149,77 @@ export function ArticlesList({
     setCategory((prev) => (prev === cat ? "" : cat));
   }
 
+  function runSearch() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    fetchArticles({ q, ticker, category, since });
+  }
+
+  const hasFilters = !!(q || ticker || category || since);
+  // Editorial featured cards only on the unfiltered view, where "newest 2" reads
+  // as a deliberate highlight rather than an arbitrary slice of a filtered set.
+  const featured = hasFilters ? [] : rows.slice(0, 2);
+  const listRows = hasFilters ? rows : rows.slice(2);
+
   return (
     <div>
       {/* Search bar */}
-      <div className="mb-6">
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+      <div className="flex gap-3 max-w-[680px] mb-5">
+        <div className="flex-1 flex items-center gap-3 bg-surface border border-border rounded-2xl px-[18px] h-14 transition-[border-color,box-shadow] focus-within:border-orange focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-orange)_14%,transparent)]">
+          <span className="text-muted-deep pointer-events-none">
             <SearchIcon />
           </span>
           <input
             type="search"
             value={q}
             onChange={(e) => handleQChange(e.target.value)}
-            placeholder="Search articles…"
-            className="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-3 text-sm text-cream placeholder:text-muted focus:outline-none focus:border-muted transition-colors"
+            onKeyDown={(e) => e.key === "Enter" && runSearch()}
+            placeholder="Search IOF's research — try “optical networking”, “NVDA”, “power”…"
+            className="flex-1 bg-transparent border-none outline-none text-base text-cream placeholder:text-muted-deep min-w-0"
           />
         </div>
+        <button
+          type="button"
+          onClick={runSearch}
+          className="h-14 px-6 rounded-2xl bg-cream text-bg font-semibold text-[15px] hover:brightness-[1.06] transition-[filter]"
+        >
+          Search
+        </button>
       </div>
 
       {/* Filter chips row */}
-      <div className="flex flex-wrap items-center gap-2 mb-8">
-        {/* Category chips */}
+      <div className="flex flex-wrap items-center gap-2.5 mb-9">
         {allCategories.map((cat) => (
-          <button
+          <FilterChip
             key={cat}
-            type="button"
+            on={category === cat}
+            tone="orange"
             onClick={() => toggleCategory(cat)}
-            className={
-              "text-[0.65rem] uppercase tracking-[0.12em] px-3 py-1 rounded-full border transition-colors " +
-              (category === cat
-                ? "border-orange text-orange bg-orange/10"
-                : "border-border text-muted-deep hover:border-muted hover:text-muted")
-            }
           >
             {categoryLabel(cat)}
-          </button>
+          </FilterChip>
         ))}
 
-        {/* Date-range: simple "since" shortcut chips */}
         {[
-          { label: "Last 30d", value: sinceDates.d30 },
-          { label: "Last 90d", value: sinceDates.d90 },
+          { label: "Last 30 days", value: sinceDates.d30 },
+          { label: "Last 90 days", value: sinceDates.d90 },
         ].map(({ label, value }) => (
-          <button
+          <FilterChip
             key={label}
-            type="button"
+            on={since === value}
+            tone="gold"
             onClick={() => setSince((prev) => (prev === value ? "" : value))}
-            className={
-              "text-[0.65rem] uppercase tracking-[0.12em] px-3 py-1 rounded-full border transition-colors " +
-              (since === value
-                ? "border-gold text-gold bg-gold/10"
-                : "border-border text-muted-deep hover:border-muted hover:text-muted")
-            }
           >
             {label}
-          </button>
+          </FilterChip>
         ))}
 
-        {/* Ticker filter — shown when ticker is set via deep link */}
         {ticker && (
-          <button
-            type="button"
-            onClick={() => setTicker("")}
-            className="text-[0.65rem] uppercase tracking-[0.12em] px-3 py-1 rounded-full border border-gold text-gold bg-gold/10 hover:bg-gold/20 transition-colors"
-          >
+          <FilterChip on tone="gold" onClick={() => setTicker("")}>
             {ticker} ×
-          </button>
+          </FilterChip>
         )}
 
-        {/* Active filter count + clear */}
-        {(q || ticker || category || since) && (
+        {hasFilters && (
           <button
             type="button"
             onClick={() => {
@@ -228,21 +229,30 @@ export function ArticlesList({
               setSince("");
               fetchArticles({ q: "", ticker: "", category: "", since: "" });
             }}
-            className="ml-auto text-[0.65rem] uppercase tracking-[0.12em] text-muted-deep hover:text-muted transition-colors"
+            className="ml-auto text-xs font-semibold tracking-wide text-muted-deep hover:text-muted transition-colors"
           >
             Clear filters
           </button>
         )}
       </div>
 
+      {/* Featured cards (unfiltered only) */}
+      {featured.length > 0 && (
+        <div className="grid md:grid-cols-[1.3fr_1fr] gap-[18px] mb-10">
+          {featured.map((row, i) => (
+            <FeatureCard key={row.slug} row={row} big={i === 0} />
+          ))}
+        </div>
+      )}
+
       {/* Result count */}
-      <div className="text-xs text-muted-deep mb-5 tabular-nums">
+      <div className="text-xs text-muted-deep mb-4 tabular-nums">
         {loading ? (
           <span className="opacity-60">Searching…</span>
         ) : (
           <span>
             {total} {total === 1 ? "article" : "articles"}
-            {q || ticker || category || since ? " matching filters" : ""}
+            {hasFilters ? " matching filters" : ""}
           </span>
         )}
       </div>
@@ -251,9 +261,9 @@ export function ArticlesList({
       {rows.length === 0 && !loading ? (
         <EmptyState q={q} ticker={ticker} category={category} since={since} />
       ) : (
-        <div className={`flex flex-col divide-y divide-border ${loading ? "opacity-60" : ""} transition-opacity`}>
-          {rows.map((row) => (
-            <ArticleRow key={row.slug} row={row} />
+        <div className={`flex flex-col ${loading ? "opacity-60" : ""} transition-opacity`}>
+          {listRows.map((row) => (
+            <ArticleListRow key={row.slug} row={row} />
           ))}
         </div>
       )}
@@ -261,57 +271,111 @@ export function ArticlesList({
   );
 }
 
-function ArticleRow({ row }: { row: ArticleRow }) {
+function FilterChip({
+  on,
+  tone,
+  onClick,
+  children,
+}: {
+  on: boolean;
+  tone: "orange" | "gold";
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const onClasses =
+    tone === "orange"
+      ? "bg-orange border-orange text-white"
+      : "bg-gold border-gold text-bg";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "text-[13px] font-semibold px-[15px] py-2 rounded-full border transition-colors " +
+        (on
+          ? onClasses
+          : "bg-surface border-border text-muted hover:text-cream hover:border-muted-deep")
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function FeatureCard({ row, big }: { row: ArticleRow; big: boolean }) {
   return (
     <Link
       href={`/articles/${row.slug}`}
-      className="group py-6 -mx-2 px-2 rounded transition-colors hover:bg-surface/60 block"
+      className={
+        "group relative overflow-hidden border border-border rounded-2xl bg-surface p-7 flex flex-col gap-4 hover:-translate-y-0.5 hover:border-muted-deep transition-all " +
+        (big ? "justify-end min-h-[230px]" : "min-h-[230px]")
+      }
     >
-      <div className="flex items-baseline gap-4">
-        {/* Date */}
-        <span className="flex-none text-xs text-muted-deep tabular-nums w-28 pt-0.5">
+      {row.category && (
+        <span className="self-start text-[10.5px] uppercase tracking-[0.16em] font-bold px-3 py-1.5 border border-border rounded-full text-muted">
+          {categoryLabel(row.category)}
+        </span>
+      )}
+      <div className="mt-auto">
+        <h3
+          className={
+            "font-serif font-semibold leading-[1.08] tracking-[-0.02em] text-cream group-hover:text-orange transition-colors " +
+            (big ? "text-2xl md:text-3xl" : "text-2xl")
+          }
+        >
+          {row.title}
+        </h3>
+        <div className="font-mono text-[13px] text-muted-deep mt-3">
           {formatDate(row.pubDate)}
-        </span>
-
-        <div className="flex-1 min-w-0">
-          {/* Category eyebrow */}
-          {row.category && (
-            <div className="text-[0.6rem] uppercase tracking-[0.16em] text-orange mb-1">
-              {categoryLabel(row.category)}
-            </div>
-          )}
-
-          {/* Title */}
-          <h2 className="font-serif text-lg leading-snug text-cream group-hover:text-gold transition-colors mb-1">
-            {row.title}
-          </h2>
-
-          {/* Preview takeaway */}
-          {row.preview && (
-            <p className="text-sm text-muted leading-relaxed line-clamp-2 mb-2">
-              {row.preview}
-            </p>
-          )}
-
-          {/* Ticker chips */}
-          {row.tickers && row.tickers.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {row.tickers.map((t) => (
-                <span
-                  key={t}
-                  className="text-[0.6rem] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-border text-muted-deep font-mono"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
+          {row.tickers && row.tickers.length > 0
+            ? " · " + row.tickers.slice(0, 4).join(" · ")
+            : ""}
         </div>
-
-        <span className="flex-none text-xs text-muted group-hover:text-orange transition-colors pt-0.5">
-          Read →
-        </span>
       </div>
+    </Link>
+  );
+}
+
+function ArticleListRow({ row }: { row: ArticleRow }) {
+  return (
+    <Link
+      href={`/articles/${row.slug}`}
+      className="group grid grid-cols-[96px_1fr] sm:grid-cols-[118px_1fr_150px] gap-5 sm:gap-7 items-start py-6 px-2 -mx-2 border-t border-border rounded-xl transition-colors hover:bg-surface/60"
+    >
+      {/* Date */}
+      <span className="font-serif text-sm text-muted pt-1">
+        {formatDate(row.pubDate)}
+      </span>
+
+      <div className="min-w-0">
+        {row.category && (
+          <div className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-orange mb-2">
+            {categoryLabel(row.category)}
+          </div>
+        )}
+        <h2 className="font-serif text-[23px] font-semibold leading-[1.18] tracking-[-0.01em] text-cream group-hover:text-orange transition-colors">
+          {row.title}
+        </h2>
+        {row.preview && (
+          <p className="text-[14.5px] text-muted leading-relaxed mt-2.5 max-w-[62ch] line-clamp-2">
+            {row.preview}
+          </p>
+        )}
+      </div>
+
+      {/* Ticker chips */}
+      {row.tickers && row.tickers.length > 0 && (
+        <div className="hidden sm:flex flex-wrap gap-1.5 justify-end pt-1">
+          {row.tickers.slice(0, 4).map((t) => (
+            <span
+              key={t}
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-border text-muted font-mono"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
     </Link>
   );
 }

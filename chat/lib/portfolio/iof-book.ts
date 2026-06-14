@@ -42,10 +42,19 @@ export interface IofBookStats {
   tradesLast30d: number;
 }
 
+/** One theme slice for the portfolio pie / theme-bar charts. */
+export interface CategoryWeight {
+  category: string;
+  weight: number; // summed baseline weight % across held positions in the theme
+  sharePct: number; // weight normalized so the tracked book sums to 100
+  count: number; // held positions in the theme
+}
+
 export interface IofBook {
   positions: IofPosition[];
   trades: IofTrade[];
   stats: IofBookStats;
+  categoryBreakdown: CategoryWeight[]; // sorted by weight desc
 }
 
 // ---------------------------------------------------------------------------
@@ -104,30 +113,35 @@ export async function getIofBook(): Promise<IofBook> {
   ]);
 
   // Derive category-level stats from held positions.
-  const categoryWeights: Map<string, number> = new Map();
-  let activeThemes = 0;
+  const categoryWeights = new Map<string, number>();
+  const categoryCounts = new Map<string, number>();
 
   for (const p of positions) {
     if (!p.category) continue;
     const w = parseFloat(p.baselineWeightPct ?? "0");
     categoryWeights.set(p.category, (categoryWeights.get(p.category) ?? 0) + w);
+    categoryCounts.set(p.category, (categoryCounts.get(p.category) ?? 0) + 1);
   }
-  activeThemes = categoryWeights.size;
+  const activeThemes = categoryWeights.size;
 
-  // Top theme by summed weight.
-  let topThemeName: string | null = null;
-  let topThemeWeight: number | null = null;
-  for (const [cat, weight] of categoryWeights.entries()) {
-    if (topThemeWeight === null || weight > topThemeWeight) {
-      topThemeName = cat;
-      topThemeWeight = weight;
-    }
-  }
+  // Normalize summed weights into shares of the tracked book (baseline weights
+  // need not sum to 100), then sort heaviest theme first.
+  const totalWeight = [...categoryWeights.values()].reduce((a, b) => a + b, 0);
+  const categoryBreakdown: CategoryWeight[] = [...categoryWeights.entries()]
+    .map(([category, weight]) => ({
+      category,
+      weight,
+      sharePct: totalWeight > 0 ? (weight / totalWeight) * 100 : 0,
+      count: categoryCounts.get(category) ?? 0,
+    }))
+    .sort((a, b) => b.weight - a.weight);
+
+  const top = categoryBreakdown[0] ?? null;
 
   const stats: IofBookStats = {
     positionsHeld: positions.length,
-    topThemeName,
-    topThemeWeight,
+    topThemeName: top?.category ?? null,
+    topThemeWeight: top?.weight ?? null,
     activeThemes,
     tradesLast30d: recentTrades.length,
   };
@@ -136,5 +150,6 @@ export async function getIofBook(): Promise<IofBook> {
     positions: positions as IofPosition[],
     trades: recentTrades as IofTrade[],
     stats,
+    categoryBreakdown,
   };
 }

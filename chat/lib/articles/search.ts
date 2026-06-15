@@ -109,7 +109,11 @@ export async function searchArticles(
         pubDate: tables.articles.pubDate,
         tickers: tables.articles.tickers,
         category: tables.articles.category,
-        body: tables.articles.body,
+        // Only the head of the body is needed — extractPreview() returns the
+        // first prose line (after frontmatter + headings). Slicing in SQL keeps
+        // us from shipping ~50 full distilled bodies over the wire per request,
+        // which was the source of the perceptible /articles navigation delay.
+        body: drizzleSql<string>`LEFT(${tables.articles.body}, 1000)`,
       })
       .from(tables.articles)
       .where(where)

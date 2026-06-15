@@ -23,7 +23,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DrawerChat } from "./drawer-chat";
-import { usePageContext } from "@/lib/page-context/context";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
@@ -112,7 +111,7 @@ export function AppChrome({
                 >
                   {n.label}
                   {active && (
-                    <span className="absolute left-4 right-4 -bottom-[18px] h-0.5 rounded bg-orange" />
+                    <span className="absolute left-4 right-4 -bottom-[14px] h-0.5 rounded bg-orange" />
                   )}
                 </Link>
               );
@@ -222,7 +221,6 @@ export function AppChrome({
                 ×
               </button>
             </div>
-            <AwarenessChip pathname={pathname} />
             <DrawerChat />
           </aside>
         </>
@@ -241,38 +239,6 @@ function toggleTheme() {
   } catch {
     /* private mode / disabled storage — theme still applies for the session */
   }
-}
-
-/** "Aware of: <page>" chip in the drawer head, derived from the live context. */
-function AwarenessChip({ pathname }: { pathname: string | null }) {
-  const ctx = usePageContext();
-  const label = contextLabel(pathname, ctx?.tickers?.length ?? 0, !!ctx?.articleSlug);
-  return (
-    <div className="px-5 pt-3.5 text-xs text-muted-deep flex items-center gap-2">
-      Aware of:
-      <span className="px-2 py-1 rounded-md bg-surface-2 border border-border text-muted font-semibold">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function contextLabel(
-  pathname: string | null,
-  tickerCount: number,
-  isArticle: boolean,
-): string {
-  if (!pathname) return "I/O Fund";
-  if (isArticle) return "This article";
-  if (pathname.startsWith("/articles")) return "Articles";
-  if (pathname.startsWith("/portfolio")) {
-    return tickerCount > 0 ? `Portfolio (${tickerCount} tickers)` : "Portfolio";
-  }
-  if (pathname.startsWith("/fund/strategy")) return "Strategy";
-  if (pathname.startsWith("/fund/thesis")) return "Thesis";
-  if (pathname.startsWith("/fund")) return "Fund Overview";
-  if (pathname.startsWith("/profile")) return "Profile";
-  return "I/O Fund";
 }
 
 function MenuLink({

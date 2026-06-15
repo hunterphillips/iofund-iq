@@ -1,18 +1,19 @@
-name: poll-trades
+name: ingest-portfolio
 
 on:
   schedule:
-    # Every 30 minutes, weekdays UTC. ~240 runs/week. Each ~10s.
-    # POSIX cron: 0=Sunday, so 1-5 = Mon-Fri.
-    - cron: '*/30 * * * 1-5'
+    # Daily at 14:30 UTC (after discover-articles). IOF updates the portfolio
+    # PDF "within 24/48 hours" of new positions, so a daily refresh keeps
+    # weights + themes current.
+    - cron: '30 14 * * *'
   workflow_dispatch:
 
 concurrency:
-  group: poll-trades
+  group: ingest-portfolio
   cancel-in-progress: false
 
 jobs:
-  poll:
+  ingest:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,12 +28,9 @@ jobs:
       - name: Install deps
         run: pip install -r scripts/requirements.txt
 
-      - name: Ingest IOF trades
+      - name: Ingest IOF portfolio
         env:
           IO_FUND_USERNAME: ${{ secrets.IO_FUND_USERNAME }}
           IO_FUND_PASSWORD: ${{ secrets.IO_FUND_PASSWORD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          # Enables LLM theme classification when enriching new positions.
-          # Absent → company-only enrichment still runs.
-          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-        run: python3 scripts/ingest_trades.py
+        run: python3 scripts/ingest_portfolio.py

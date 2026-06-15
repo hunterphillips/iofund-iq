@@ -35,6 +35,7 @@
   --color-cat-energy: #8fa86e;
   --color-cat-software: #a98bc9;
   --color-cat-crypto: #d97706;
+  --color-cat-semis: #5e9aa0;
   --color-cat-other: #7a6f66;
 
   /* Type — Fraunces (display serif), Hanken Grotesk (body), Spline Sans Mono
@@ -80,6 +81,7 @@
   --color-cat-energy: #5f7a45;
   --color-cat-software: #7e5ba6;
   --color-cat-crypto: #b26206;
+  --color-cat-semis: #3f767c;
   --color-cat-other: #8a8072;
 
   --bg: #f1eadb;

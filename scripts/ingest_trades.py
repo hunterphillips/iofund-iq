@@ -33,6 +33,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -50,6 +51,30 @@ UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
+
+# --- Position metadata enrichment --------------------------------------------
+# New tickers that IOF buys after the last positions-bootstrap.yaml snapshot are
+# created here by the trade-replay piggyback with no company / category / weight
+# (a trade record doesn't carry them). Enrichment fills the two that ARE
+# auto-derivable: company name from Yahoo (deterministic) and investment theme
+# from the LLM (an inference — marked provisional via source='trade_replay+
+# enriched'). Weight is NOT auto-derivable — it lives only in IOF's published
+# pie chart — so it stays NULL until the authoritative bootstrap refresh, which
+# overwrites company/category/weight + source and clears the provisional mark.
+YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
+YAHOO_TICKER_REMAP = {"BTCUSD": "BTC-USD", "ETHUSD": "ETH-USD", "LINKUSD": "LINK-USD"}
+AI_GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions"
+CLASSIFY_MODEL = "anthropic/claude-sonnet-4-6"
+# Mirrors the themes in data/positions-bootstrap.yaml; "Other" is the fallback.
+POSITION_THEMES = [
+    "AI Accelerators",
+    "AI Memory",
+    "AI Networking",
+    "AI Energy",
+    "AI Software",
+    "Cryptocurrency",
+    "Other",
+]
 
 NEXT_DATA_RE = re.compile(
     r'<script id="__NEXT_DATA__" type="application/json">(.+?)</script>',
@@ -297,6 +322,160 @@ def update_position_from_trade(conn: psycopg.Connection, trade: dict) -> None:
     conn.commit()
 
 
+def fetch_company_name(ticker: str) -> str | None:
+    """Yahoo Finance chart-endpoint `meta.longName` (no API key, no auth).
+
+    Same unauthenticated endpoint chat/lib/portfolio/prices.ts uses for quotes;
+    its `meta` block carries the company name too. Returns None on any failure
+    so a single bad ticker never blocks the rest.
+    """
+    symbol = YAHOO_TICKER_REMAP.get(ticker.upper(), ticker)
+    url = f"{YAHOO_CHART_URL}/{urllib.parse.quote(symbol)}?interval=1d&range=1d"
+    for attempt in range(2):  # one retry on transient 429 rate-limiting
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                meta = json.loads(resp.read())["chart"]["result"][0]["meta"]
+            name = meta.get("longName") or meta.get("shortName")
+            return name.strip() if isinstance(name, str) and name.strip() else None
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429 and attempt == 0:
+                time.sleep(2)
+                continue
+            log(f"enrich: company lookup failed for {ticker!r}: {exc!r}")
+            return None
+        except Exception as exc:  # noqa: BLE001 — best-effort, never fatal
+            log(f"enrich: company lookup failed for {ticker!r}: {exc!r}")
+            return None
+    return None
+
+
+def classify_themes(
+    named: list[tuple[str, str | None]], ai_key: str
+) -> dict[str, str]:
+    """LLM-classify tickers into IOF themes. Returns {ticker: theme}.
+
+    `named` is (ticker, company_or_None). One batched AI Gateway call for all
+    tickers. Any ticker the model omits or labels off-taxonomy is dropped (the
+    caller leaves those category=NULL rather than guessing).
+    """
+    if not named:
+        return {}
+    listing = "\n".join(f"{t} — {c or '?'}" for t, c in named)
+    system = (
+        "You classify US-listed tickers into one of I/O Fund's investment "
+        "themes (a tech-growth fund focused on the AI buildout). Themes: "
+        f"{', '.join(POSITION_THEMES)}. Choose the single best fit; use "
+        "'Other' only if none apply. Respond with ONLY a JSON object mapping "
+        "each ticker to its theme, no prose."
+    )
+    payload = {
+        "model": CLASSIFY_MODEL,
+        "temperature": 0,
+        "max_tokens": 400,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": listing},
+        ],
+    }
+    req = urllib.request.Request(
+        AI_GATEWAY_URL,
+        data=json.dumps(payload).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {ai_key}",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        content = json.loads(resp.read())["choices"][0]["message"]["content"]
+    # Models sometimes wrap JSON in ```json fences — strip to the outer braces.
+    start, end = content.find("{"), content.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError(f"classifier returned no JSON object: {content!r}")
+    raw = json.loads(content[start : end + 1])
+    valid = set(POSITION_THEMES)
+    out: dict[str, str] = {}
+    for ticker, theme in raw.items():
+        if isinstance(theme, str) and theme in valid:
+            out[ticker.upper()] = theme
+        else:
+            log(f"enrich: dropping off-taxonomy theme {theme!r} for {ticker!r}")
+    return out
+
+
+def enrich_positions(conn: psycopg.Connection, ai_key: str | None) -> int:
+    """Fill company + category on held positions that are missing them.
+
+    Only ever fills NULLs (COALESCE) so authoritative bootstrap values are
+    never clobbered. Company comes from Yahoo; category from the LLM (skipped
+    when ai_key is absent — company-only enrichment still runs). Returns the
+    number of rows updated. Idempotent: a fully-enriched book matches no rows.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT ticker, company, category FROM positions
+            WHERE status = 'held' AND (company IS NULL OR category IS NULL)
+            ORDER BY ticker
+            """
+        )
+        pending = cur.fetchall()
+    if not pending:
+        return 0
+    log(f"enrich: {len(pending)} held position(s) missing metadata")
+
+    # Company names (for the missing-company rows; also context for the
+    # classifier on missing-category rows).
+    names: dict[str, str] = {}
+    for i, (ticker, company, _category) in enumerate(pending):
+        if company:
+            names[ticker] = company
+            continue
+        if i:
+            time.sleep(0.4)  # be polite to Yahoo's unauthenticated endpoint
+        names[ticker] = fetch_company_name(ticker) or ""
+
+    # Themes for the missing-category rows, in one batched call.
+    themes: dict[str, str] = {}
+    needs_theme = [(t, names.get(t) or None) for t, _c, cat in pending if not cat]
+    if needs_theme:
+        if ai_key:
+            try:
+                themes = classify_themes(needs_theme, ai_key)
+            except Exception as exc:  # noqa: BLE001 — never fatal to the poll
+                log(f"enrich: theme classification failed: {exc!r}")
+        else:
+            log("enrich: AI_GATEWAY_API_KEY unset — skipping theme classification")
+
+    updated = 0
+    with conn.cursor() as cur:
+        for ticker, company, category in pending:
+            new_company = company or (names.get(ticker) or None)
+            new_category = category or themes.get(ticker)
+            if not new_company and not new_category:
+                continue
+            cur.execute(
+                """
+                UPDATE positions
+                SET company = COALESCE(company, %s),
+                    category = COALESCE(category, %s),
+                    source = CASE WHEN source = 'trade_replay'
+                                  THEN 'trade_replay+enriched' ELSE source END,
+                    updated_at = now()
+                WHERE ticker = %s AND status = 'held'
+                """,
+                (new_company, new_category, ticker),
+            )
+            updated += cur.rowcount
+            log(
+                f"enrich: {ticker} → company={new_company!r} "
+                f"category={new_category!r}"
+            )
+    conn.commit()
+    return updated
+
+
 def reconcile_legacy_rows(conn: psycopg.Connection, analyst: str | None) -> tuple[int, int]:
     """Two one-shot cleanups. Both idempotent (no-op once converged).
 
@@ -330,6 +509,9 @@ def main() -> int:
     user = require_env("IO_FUND_USERNAME")
     password = require_env("IO_FUND_PASSWORD")
     db_url = require_env("DATABASE_URL")
+    # Optional: enables LLM theme classification during enrichment. Absent →
+    # company-only enrichment still runs (graceful degradation).
+    ai_key = os.environ.get("AI_GATEWAY_API_KEY")
 
     log("auth: signing in to Firebase")
     id_token = sign_in(user, password)
@@ -365,6 +547,15 @@ def main() -> int:
                 update_position_from_trade(conn, trade)
             except Exception as exc:
                 log(f"position update failed for {trade.get('id')!r}: {exc!r}")
+
+        # Backfill company + theme on any held position still missing them
+        # (new tickers from this or prior runs). Best-effort: never fatal.
+        try:
+            enriched = enrich_positions(conn, ai_key)
+            if enriched:
+                log(f"enrich: filled metadata on {enriched} position(s)")
+        except Exception as exc:
+            log(f"enrich: failed (non-fatal): {exc!r}")
 
     return 0
 

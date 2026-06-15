@@ -10,6 +10,7 @@ export const CATEGORY_COLOR_VAR: Record<string, string> = {
   "AI Memory": "var(--color-cat-memory)",
   "AI Energy": "var(--color-cat-energy)",
   "AI Software": "var(--color-cat-software)",
+  "AI Semis": "var(--color-cat-semis)",
   Cryptocurrency: "var(--color-cat-crypto)",
 };
 

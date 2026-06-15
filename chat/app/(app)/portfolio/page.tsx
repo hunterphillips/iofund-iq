@@ -41,26 +41,12 @@ function todayLabel(): string {
 
 export default async function PortfolioPage() {
   const { positions, trades, stats, categoryBreakdown } = await getIofBook();
-  const { positionsHeld, topThemeName, topThemeWeight, activeThemes } = stats;
-
-  const headlineCount =
-    positionsHeld === 1
-      ? "One name"
-      : positionsHeld < 20
-        ? numberWord(positionsHeld) + " names"
-        : `${positionsHeld} names`;
-
-  const themesPhrase =
-    activeThemes === 1
-      ? "one theme"
-      : activeThemes < 10
-        ? numberWord(activeThemes) + " themes"
-        : `${activeThemes} themes`;
+  const { topThemeName, topThemeWeight } = stats;
 
   const topThemeIntro =
     topThemeName != null && topThemeWeight != null
       ? `${topThemeName} leads at ${Math.round(topThemeWeight)}% of book weight`
-      : "across five AI infrastructure themes";
+      : "Five AI-infrastructure themes anchor the book";
 
   const heldTickers = positions.map((p) => p.ticker);
 
@@ -75,7 +61,7 @@ export default async function PortfolioPage() {
             {todayLabel()} · The IOF book
           </div>
           <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5 max-w-[34rem]">
-            {headlineCount}, {themesPhrase}, one book.
+            Portfolio.
           </h1>
           <p className="text-lg text-muted leading-relaxed max-w-[60ch] mt-5">
             {topThemeIntro}. Below is the current book — viewable as a table, a
@@ -150,39 +136,4 @@ export default async function PortfolioPage() {
       </div>
     </>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Utility: small integers to words
-// ---------------------------------------------------------------------------
-
-const WORDS = [
-  "",
-  "one",
-  "two",
-  "three",
-  "four",
-  "five",
-  "six",
-  "seven",
-  "eight",
-  "nine",
-  "ten",
-  "eleven",
-  "twelve",
-  "thirteen",
-  "fourteen",
-  "fifteen",
-  "sixteen",
-  "seventeen",
-  "eighteen",
-  "nineteen",
-  "twenty",
-];
-
-function numberWord(n: number): string {
-  if (n >= 1 && n < WORDS.length) {
-    return WORDS[n].charAt(0).toUpperCase() + WORDS[n].slice(1);
-  }
-  return String(n);
 }

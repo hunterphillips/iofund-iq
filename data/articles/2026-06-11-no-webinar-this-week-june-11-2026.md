@@ -13,8 +13,9 @@ This is an administrative notice, not an analytical article. No investment thesi
 - No financial metrics cited.
 
 ## Decision-relevant takeaways
-- Weekly webinar is cancelled for June 11; sessions resume June 18 at 1:30 PM PST.
-- Subscribers should check their dashboard for Knox Ridley's daily market updates and trade commentary in the interim.
+- Weekly webinar is cancelled for June 11; next session resumes June 18 at 1:30 PM PST.
+- Topic for the June 18 session will be announced closer to the date.
+- Daily market updates and trade commentary from Knox Ridley remain available on the member dashboard in the interim.
 
 ## Risks / watch-fors
-- No risks or investment watch-fors discussed in this notice.
+- No investment risks discussed in this notice.

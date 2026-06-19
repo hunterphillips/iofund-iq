@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-20
+last_distilled: 2026-06-19
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -39,7 +39,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | Category | Ticker | One-line thesis | Risk |
 |---|---|---|---|
 | Accelerators | **AVGO** | Top accelerator pick. AI rev "in excess of $100B in 2027" + $50B networking. ~30% QoQ sustainable 7–8 qtrs | Debt $66B; Google diversifying with MediaTek |
-| Accelerators | **ARM** | AGI CPU for agentic orchestration. New entrant. CPU cores 30M→120M per GW | Premium valuation (29 fwd PS); IP→merchant transition risk |
+| Accelerators | **ARM** | AGI CPU for agentic orchestration. CPU:GPU ratio shifting from 1:4–1:8 today toward 1:1 or better; CEO guiding 8×–10× CPU core growth per GW (up from prior 4× figure). New customers: Oracle, ByteDance joining Meta, OpenAI, Cloudflare. $15B FY31 revenue target. Eight new Arm-based DC chips expected in 2027 vs. three in 2026. | Premium valuation (shares +~100% in ~one month post-earnings); supply constraints at TSMC limit AGI CPU revenue recognition timing; near-term FQ2 growth dips to ~18% YoY before re-acceleration |
 | Accelerators | **AMD** | >60% DC annual growth 3–5 yrs (mgmt). MI400/Helios H2 2026 catalyst. ~50% more memory than Rubin | CoWoS allocation only ~7% of 2026 supply vs >50% NVDA |
 | Accelerators | **TSM** | CoWoS is the linchpin for all accelerators | Geopolitical |
 | Memory | **MU** | "Doors blown off." FQ3 guide: rev $33.5B (+260%), GM 81%, OM 76% | Cyclical-vs-secular debate |
@@ -77,7 +77,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | Ticker | Q4 2025 | Q1 2026 | Q2 2026 | Net trajectory |
 |---|---|---|---|---|
 | **NVDA** | ✓ #1 accelerator | ✓ "greater emphasis on memory" | ✗ **closed** | Closed at $209.67 (2026-04-27) on Rubin delay + custom silicon competition |
-| **AVGO** | ✓ #2 accelerator | ✓ Ethernet + custom silicon | ↑ **#1 accelerator** | Promoted as NVDA exited |
+| **AVBO** | ✓ #2 accelerator | ✓ Ethernet + custom silicon | ↑ **#1 accelerator** | Promoted as NVDA exited |
 | **AMD** | ✓ #3 accelerator | ✓ "element of surprise" | ✓ "underestimated/misunderstood" | Consistent hold; thesis around H2 2026 MI400 |
 | **TSM** | ✓ #5 (5/10 fundamentals) | ✓ multi-year visibility | ✓ CoWoS linchpin | Consistent hold; framing shifted to capacity bottleneck |
 | **MU** | ✓ #4 accelerator | ↑ memory crown from compute | ↑ "doors blown off" | Promoted each quarter; secular re-rating ongoing |
@@ -96,7 +96,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges → ↓ **~50% trimmed 2026-05-18** | Half position remains after trim @ $133.51 |
 | **META** | — (honorable mention) | (honorable mention) | ✓ **added** (Mag 7) | Promoted from honorable mention to held |
 | **GOOG** | — | — | + **Added** (Mag 7) | New Q2 entrant |
-| **ARM** | — | — | + **Added** (AGI CPU) | New Q2 entrant |
+| **ARM** | — | — | + **Added** (AGI CPU) | New Q2 entrant; thesis extended 2026-06-16: CPU:GPU ratio toward 1:1, CEO hints 8×–10× core/GW, $15B FY31 target, 8 new DC chips in 2027 |
 | **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1,300% from entry | Consistent hold; capacity ramping into 2026-2027 |
 | **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold |
 | Bitcoin Miner | ✓ #3 energy (Discovery) | ✓ Discovery only | ✓ Discovery only | Gated to Discovery tier across all 3 |
@@ -115,7 +115,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | **Inference** | Implicit in software section | NEW #3 explicit theme | Subsumed into "AI Monetization Supercycle" |
 | **Memory** | Inside accelerators (MU/HBM) | NEW separate section (MU + SNDK) | Major section; pricing-power thesis |
 | **Cooling** | Mentioned in passing | Minor mention | NEW: Re-elevated as Rubin's air-cooling becomes impossible |
-| **CPU/orchestration** | — | — | NEW: ARM AGI CPU thesis (agentic AI shifts bottleneck) |
+| **CPU/orchestration** | — | — | NEW: ARM AGI CPU thesis (agentic AI shifts bottleneck); CPU:GPU ratio moving toward 1:1; CEO hints 8×–10× core/GW growth |
 | **Bitcoin Miners** | #3 energy (gated) | Gated | Thematic discussion, less explicit pick |
 
 **Cross-quarter pattern:** themes broaden each quarter rather than rotate. Picks rotate; themes accrete.

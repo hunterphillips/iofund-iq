@@ -92,6 +92,7 @@ For the cron workflows to run, the GitHub repo needs `IO_FUND_USERNAME`, `IO_FUN
 ## Further reading
 
 - [`CLAUDE.md`](./CLAUDE.md) — AI-agent orientation: file map, env contract, conventions. Read this if you're contributing or extending the codebase.
+- [`WRITING.md`](./WRITING.md) — voice and style guide for all user-facing prose (strategy/thesis pages, digests, distilled summaries, chat, UI copy) and the LLM prompts that generate it. Read before editing any of those or their prompts.
 - [`thoughts/shared/plans/`](./thoughts/shared/plans/) — design docs for each Phase 0 task. (Local-only; not checked in.)
 - [`data/io-fund-strategy.md`](./data/io-fund-strategy.md) and [`data/io-fund-thesis.md`](./data/io-fund-thesis.md) — distilled framework docs the chat loads on demand.
 

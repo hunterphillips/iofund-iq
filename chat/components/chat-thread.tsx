@@ -138,7 +138,7 @@ export function ChatThread({
           <div className="my-auto flex flex-col items-center text-center gap-4 px-6">
             <Engraving name="owl" className="w-24 sm:w-28 h-auto opacity-90" />
             <p className="chat-empty !my-0 max-w-[22rem]">
-              Ask about a ticker, IOF&rsquo;s thesis, or recent activity.
+              Ask about a ticker, I/O Fund&rsquo;s thesis, or recent activity.
             </p>
           </div>
         ) : (
@@ -162,7 +162,7 @@ export function ChatThread({
         <input
           className="chat-input"
           type="text"
-          placeholder="Ask about IOF..."
+          placeholder="Ask about I/O Fund..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={busy}

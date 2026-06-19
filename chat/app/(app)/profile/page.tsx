@@ -36,7 +36,7 @@ export default async function ProfilePage() {
           href="/onboarding/connect-iof"
           className="block px-4 py-2 rounded border border-border text-sm text-cream hover:bg-surface transition-colors"
         >
-          Re-connect IOF credentials
+          Re-connect I/O Fund credentials
         </Link>
         <Link
           href="/onboarding/upload-portfolio"

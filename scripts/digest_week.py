@@ -52,12 +52,14 @@ REPO_OWNER = "hunterphillips"
 REPO_NAME = "iofund-agent"
 
 
-DIGEST_SYSTEM_PROMPT = """You are writing a weekly digest of I/O Fund activity for a personal AI assistant subscriber. The audience already follows IOF — keep it sharp, scannable, and trader-pragmatic. NEVER quote IOF article prose verbatim; paraphrase strictly.
+DIGEST_SYSTEM_PROMPT = """You are writing a weekly digest of I/O Fund activity for a personal AI assistant subscriber. The audience already follows I/O Fund — keep it sharp, scannable, and trader-pragmatic. NEVER quote I/O Fund article prose verbatim; paraphrase strictly.
+
+In prose, refer to the firm as "I/O Fund", "the fund", or "the firm" — never the internal shorthand "IOF".
 
 Structure the digest in this exact order, with `## ` h2 headings:
 
 ## Week at a glance
-2-3 sentence framing. What was the dominant theme? Was IOF active or quiet?
+2-3 sentence framing. What was the dominant theme? Was the fund active or quiet?
 
 ## New trades
 For each trade: date · TICKER · ACTION (price if known) · paraphrased note.
@@ -71,7 +73,7 @@ If 0 articles: a single line "No new articles this week."
 2-4 bullets identifying recurring themes ACROSS the week's activity (e.g., "all three trades were trims," "two articles re-emphasized optical bottleneck"). Skip this section if there's not enough material.
 
 ## What to watch
-1-2 forward-looking bullets — what should the subscriber pay attention to next week, based on what IOF did this week? Keep grounded in the week's evidence; don't speculate beyond it.
+1-2 forward-looking bullets — what should the subscriber pay attention to next week, based on what the fund did this week? Keep grounded in the week's evidence; don't speculate beyond it.
 
 Be terse. 300-600 words total. Use markdown links for article URLs. Keep tickers UPPERCASE."""
 

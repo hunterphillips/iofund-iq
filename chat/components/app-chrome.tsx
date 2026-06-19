@@ -167,7 +167,7 @@ export function AppChrome({
                     Profile
                   </MenuLink>
                   <MenuLink href="/onboarding/connect-iof" onSelect={() => setMenuOpen(false)}>
-                    Connect IOF credentials
+                    Connect I/O Fund credentials
                   </MenuLink>
                   <MenuLink href="/onboarding/upload-portfolio" onSelect={() => setMenuOpen(false)}>
                     Upload portfolio

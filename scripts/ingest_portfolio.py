@@ -34,6 +34,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -52,9 +53,10 @@ UA = (
 )
 
 # The three embedded PDFs end in PieChart.pdf / History.pdf / Portfolio.pdf —
-# we want the table ("...-Portfolio.pdf").
+# we want the table ("...-Portfolio.pdf"). The version segment (v3, v4, …) is
+# matched loosely so a future IOF version bump doesn't break discovery.
 TABLE_PDF_RE = re.compile(
-    r'https://[^"\']*?Portfolio_v3-Portfolio\.pdf', re.IGNORECASE
+    r'https://[^"\']*?Portfolio_v\d+-Portfolio\.pdf', re.IGNORECASE
 )
 DATE_RE = re.compile(r"\d{1,2}/\d{1,2}/\d{2}")
 PCT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%")
@@ -109,17 +111,30 @@ def find_table_pdf_url(id_token: str) -> str:
 
     The Prismic URL embeds a content hash that changes every time IOF
     publishes a new portfolio, so it must be re-discovered each run.
+
+    Retries once on a transient miss (fetch error, or a page that loads
+    without the PDF link — e.g. caught mid-publish, as on 2026-06-18).
     """
-    req = urllib.request.Request(
-        PORTFOLIO_URL,
-        headers={"User-Agent": UA, "Cookie": f"io_fund_session_token={id_token}"},
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        html = resp.read().decode("utf-8", "replace")
-    match = TABLE_PDF_RE.search(html)
-    if not match:
-        sys.exit("ERROR: Portfolio table PDF URL not found on /premium/portfolio")
-    return match.group(0)
+    last_err = "fetch failed"
+    for attempt in range(2):  # initial try + 1 retry
+        if attempt:
+            log(f"retry: re-fetching /premium/portfolio (attempt {attempt + 1}/2)")
+            time.sleep(5)
+        try:
+            req = urllib.request.Request(
+                PORTFOLIO_URL,
+                headers={"User-Agent": UA, "Cookie": f"io_fund_session_token={id_token}"},
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                html = resp.read().decode("utf-8", "replace")
+        except Exception as e:
+            last_err = f"fetch error: {e!r}"
+            continue
+        match = TABLE_PDF_RE.search(html)
+        if match:
+            return match.group(0)
+        last_err = "Portfolio table PDF URL not found on /premium/portfolio"
+    sys.exit(f"ERROR: {last_err}")
 
 
 def download_pdf_text(url: str) -> str:

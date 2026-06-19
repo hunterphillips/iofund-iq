@@ -7,11 +7,12 @@
 //     active tab gets a 2px orange underline), and the nav-right cluster: a
 //     light/dark theme toggle, the "Assistant" button that opens the chat
 //     drawer, and the avatar dropdown;
-//   · a right-side drawer <aside> (~420px, capped at 92vw) housing the working
-//     assistant chat (<DrawerChat />), mounted only while open so its thread
-//     list reloads each time and no chat state lingers while closed.
+//   · a centered assistant modal (<AssistantModal />) — two-pane layout with a
+//     conversation sidebar + chat surface, full-screen on mobile — mounted only
+//     while open so its thread list reloads each time and no chat state lingers
+//     while closed.
 //
-// Chat lives ONLY in this drawer — there is no separate /chat destination.
+// Chat lives ONLY in this modal — there is no separate /chat destination.
 //
 // State (drawer open/closed, dropdown open/closed) lives here, in the layout's
 // client subtree, so it persists across route navigation (the layout does not
@@ -22,7 +23,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { DrawerChat } from "./drawer-chat";
+import { AssistantModal } from "./assistant-modal";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
@@ -119,24 +120,6 @@ export function AppChrome({
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/articles"
-              aria-label="Search articles"
-              className="grid w-[38px] h-[38px] rounded-[10px] border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors place-items-center"
-            >
-              <SearchGlyph />
-            </Link>
-
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label="Toggle light or dark theme"
-              className="theme-toggle w-[38px] h-[38px] rounded-[10px] border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors grid place-items-center"
-            >
-              <SunGlyph />
-              <MoonGlyph />
-            </button>
-
             <button
               type="button"
               onClick={() => setDrawerOpen((v) => !v)}
@@ -148,6 +131,16 @@ export function AppChrome({
               Assistant
             </button>
 
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle light or dark theme"
+              className="theme-toggle w-[38px] h-[38px] rounded-[10px] border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors grid place-items-center"
+            >
+              <SunGlyph />
+              <MoonGlyph />
+            </button>
+
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
@@ -155,7 +148,7 @@ export function AppChrome({
                 aria-label="Account menu"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="w-[38px] h-[38px] rounded-full grid place-items-center text-xs font-bold text-[#1a1612] bg-gradient-to-br from-gold to-orange"
+                className="w-[38px] h-[38px] rounded-full grid place-items-center text-xs font-bold border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors"
               >
                 {initials}
               </button>
@@ -192,39 +185,10 @@ export function AppChrome({
 
       <main>{children}</main>
 
-      {/* Right-side assistant drawer — fixed ~420px (capped at 92vw on narrow
-          viewports). Mounted only while open so the thread list reloads fresh. */}
-      {drawerOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40"
-            onClick={() => setDrawerOpen(false)}
-            aria-hidden="true"
-          />
-          <aside
-            aria-label="Assistant"
-            className="fixed top-0 right-0 h-screen w-[min(420px,92vw)] bg-surface border-l border-border shadow-2xl z-50 flex flex-col"
-          >
-            <div className="flex items-center justify-between px-5 h-[68px] border-b border-border">
-              <span className="font-serif text-lg font-semibold tracking-tight flex items-center gap-2">
-                <span className="text-orange">
-                  <SparkGlyph />
-                </span>
-                Assistant
-              </span>
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(false)}
-                aria-label="Close assistant"
-                className="text-muted hover:text-cream transition-colors text-xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-            <DrawerChat />
-          </aside>
-        </>
-      )}
+      {/* Centered assistant modal — two-pane layout (conversation sidebar + chat),
+          full-screen on mobile. Mounted only while open so the thread list
+          reloads fresh and no chat state lingers while closed. */}
+      {drawerOpen && <AssistantModal onClose={() => setDrawerOpen(false)} />}
     </div>
   );
 }
@@ -259,15 +223,6 @@ function MenuLink({
     >
       {children}
     </Link>
-  );
-}
-
-function SearchGlyph() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
   );
 }
 

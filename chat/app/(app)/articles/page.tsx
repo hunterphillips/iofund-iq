@@ -3,6 +3,7 @@ import { db, tables } from "@/db";
 import { isNotNull } from "drizzle-orm";
 import { searchArticles } from "@/lib/articles/search";
 import { ArticlesList } from "./ArticlesList";
+import { Engraving } from "@/components/engraving";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +34,19 @@ export default async function ArticlesPage({
 
   return (
     <div className="max-w-[1180px] mx-auto px-8 pb-32">
-      <div className="pt-16 pb-9">
-        <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
-          The Library
+      <div className="relative pt-16 pb-9">
+        <Engraving
+          name="book"
+          className="hidden md:block absolute right-8 lg:right-12 top-0 w-[340px] lg:w-[400px] h-auto opacity-[0.12] -rotate-6"
+        />
+        <div className="relative z-10">
+          <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
+            The Library
+          </div>
+          <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5">
+            Articles
+          </h1>
         </div>
-        <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5">
-          Articles
-        </h1>
       </div>
 
       {/* Client browse: search + chips + list */}

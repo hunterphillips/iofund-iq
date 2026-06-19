@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MarkdownBody } from "./markdown-body";
+import { Engraving, type EngravingName } from "./engraving";
 import { slugify } from "@/lib/fund/markdown";
 import { openAssistant } from "@/lib/chat/open-assistant";
 
@@ -38,6 +39,7 @@ interface ReadingLayoutProps {
   backLabel?: string;
   footer?: React.ReactNode; // optional content appended after the prose body
   assistantCta?: boolean; // show an "Ask about this" button in the sidebar
+  engraving?: EngravingName; // optional faint brand etching atop the TOC rail
 }
 
 /**
@@ -54,6 +56,7 @@ export function ReadingLayout({
   backLabel = "Fund",
   footer,
   assistantCta = false,
+  engraving,
 }: ReadingLayoutProps) {
   const toc = extractHeadings(body);
   const [activeId, setActiveId] = useState<string>("");
@@ -119,11 +122,17 @@ export function ReadingLayout({
         </article>
 
         {/* Sticky TOC + optional assistant CTA — hidden on mobile, visible lg+ */}
-        {(toc.length > 0 || assistantCta) && (
+        {(toc.length > 0 || assistantCta || engraving) && (
           <nav
             aria-label="Table of contents"
             className="hidden lg:block flex-none w-52 sticky top-[88px] self-start"
           >
+            {engraving && (
+              <Engraving
+                name={engraving}
+                className="w-24 h-auto opacity-[0.13] mb-7"
+              />
+            )}
             {toc.length > 0 && (
               <>
                 <div className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-deep mb-3">

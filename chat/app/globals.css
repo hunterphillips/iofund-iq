@@ -64,8 +64,26 @@
   --grain-op: 0.035;
 }
 
+/*
+ * Classical engraving illustrations (Titan-inspired). Transparent black-ink
+ * PNGs in /public/engravings, rendered via <Engraving> (components/engraving.tsx).
+ * The ink is dark, so under the default warm-dark theme we invert it to a warm
+ * off-white etching; under warm-light it stays near-black with a faint sepia
+ * warmth. Sizing + opacity are caller-controlled via Tailwind utilities.
+ */
+.engraving {
+  filter: var(--engraving-filter);
+  user-select: none;
+  pointer-events: none;
+}
+
+:root {
+  --engraving-filter: invert(0.92) sepia(0.08) brightness(1.03) contrast(1.02);
+}
+
 /* Warm-light "printed paper" — overrides @theme tokens + legacy vars together. */
 [data-theme="light"] {
+  --engraving-filter: sepia(0.22) brightness(0.92) contrast(1.03);
   --color-bg: #f1eadb;
   --color-surface: #fbf7ee;
   --color-surface-2: #f6efe1;
@@ -255,6 +273,58 @@ body::after {
 
 .auth-container {
   max-width: 28rem;
+}
+
+/*
+ * Force the Neon Auth form into a warm "printed paper" light palette on the
+ * auth pages, independent of next-themes (bundled in NeonAuthUIProvider), which
+ * toggles a `.dark` class on <html> from the OS/stored preference. The auth-ui
+ * Tailwind utilities read these --color-* tokens; declaring them on a wrapper
+ * around just the form wins for that subtree (a closer ancestor than <html>),
+ * so the form stays light without fighting next-themes. Scoped to the form only
+ * — these names (--color-muted, --color-border) collide with our own tokens.
+ */
+.auth-light {
+  /* auth-ui compiles its utilities with `@theme inline`, so they read the
+     --neon-* source tokens directly; we override those (the --color-* aliases
+     too, for any utility that uses them). */
+  --neon-background: #fbf7ee;
+  --neon-foreground: #241d14;
+  --neon-card: #fbf7ee;
+  --neon-card-foreground: #241d14;
+  --neon-popover: #fbf7ee;
+  --neon-popover-foreground: #241d14;
+  --neon-primary: #d2401a;
+  --neon-primary-foreground: #fdf8ee;
+  --neon-secondary: #f1eadb;
+  --neon-secondary-foreground: #241d14;
+  --neon-muted: #f1eadb;
+  --neon-muted-foreground: #6e6557;
+  --neon-accent: #f1eadb;
+  --neon-accent-foreground: #241d14;
+  --neon-border: #ded2be;
+  --neon-input: #ded2be;
+  --neon-ring: #d2401a;
+  --neon-destructive: #b42318;
+
+  --color-background: var(--neon-background);
+  --color-foreground: var(--neon-foreground);
+  --color-card: var(--neon-card);
+  --color-card-foreground: var(--neon-card-foreground);
+  --color-popover: var(--neon-popover);
+  --color-popover-foreground: var(--neon-popover-foreground);
+  --color-primary: var(--neon-primary);
+  --color-primary-foreground: var(--neon-primary-foreground);
+  --color-secondary: var(--neon-secondary);
+  --color-secondary-foreground: var(--neon-secondary-foreground);
+  --color-muted: var(--neon-muted);
+  --color-muted-foreground: var(--neon-muted-foreground);
+  --color-accent: var(--neon-accent);
+  --color-accent-foreground: var(--neon-accent-foreground);
+  --color-border: var(--neon-border);
+  --color-input: var(--neon-input);
+  --color-ring: var(--neon-ring);
+  --color-destructive: var(--neon-destructive);
 }
 
 .title-sm {
@@ -954,4 +1024,19 @@ body::after {
 
 .reading-prose .markdown hr {
   margin: 2rem 0;
+}
+
+/* ---------- Accessibility ---------- */
+
+/* Honor reduced-motion: neutralize the chat "thinking" pulse, theme-flip
+   transitions, and any hover transforms for users who request less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

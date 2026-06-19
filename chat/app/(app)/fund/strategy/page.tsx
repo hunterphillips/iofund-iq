@@ -15,11 +15,11 @@ export default function StrategyPage() {
   return (
     <ReadingLayout
       eyebrow="Strategy"
-      title="Alert Decoding, Sizing & Hedging"
-      meta="I/O Fund operational reference — distilled 2026-05-17"
+      title="How I/O Fund runs the portfolio"
       body={body}
       backHref="/fund"
       backLabel="Fund"
+      engraving="book"
     />
   );
 }

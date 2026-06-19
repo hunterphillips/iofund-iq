@@ -25,6 +25,7 @@ export default async function DigestPage({ params }: Props) {
       body={digest.body}
       backHref="/fund"
       backLabel="Fund"
+      engraving="hourglass"
     />
   );
 }

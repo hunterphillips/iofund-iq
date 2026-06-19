@@ -13,18 +13,14 @@ export default function ThesisPage() {
 
   const body = stripFrontmatter(raw);
 
-  // Extract last_distilled from frontmatter for the meta line
-  const lastDistilledMatch = raw.match(/^last_distilled:\s*(\S+)/m);
-  const lastDistilled = lastDistilledMatch ? lastDistilledMatch[1] : null;
-
   return (
     <ReadingLayout
       eyebrow="Thesis"
-      title="Conviction History & Theme Evolution"
-      meta={lastDistilled ? `Last distilled: ${lastDistilled}` : undefined}
+      title="What I/O Fund believes"
       body={body}
       backHref="/fund"
       backLabel="Fund"
+      engraving="peer-review"
     />
   );
 }

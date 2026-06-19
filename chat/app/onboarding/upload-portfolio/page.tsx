@@ -27,7 +27,7 @@ export default async function UploadPortfolioPage() {
         </h1>
         <p className="status">
           Drop a screenshot of your brokerage holdings. The assistant uses it
-          to compare your book against I/O Fund&apos;s current positions. We
+          to compare your portfolio against I/O Fund&apos;s current positions. We
           extract just the ticker symbols and share counts — no dollar amounts
           stored. Skip if you&apos;d rather do this later.
         </p>

@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * useChatThreads — thread-list lifecycle hook for the assistant drawer
- * (components/drawer-chat.tsx).
+ * useChatThreads — thread-list lifecycle hook for the assistant modal
+ * (components/assistant-modal.tsx).
  *
  * Owns the list of the user's threads and the mutations against the threads API
  * (slice #8): load/reload, create, rename, delete. It does NOT own which thread

@@ -9,6 +9,7 @@ import {
 import { getIofBook } from "@/lib/portfolio/iof-book";
 import { categoryColorVar } from "@/lib/portfolio/categories";
 import { MarkdownBody } from "@/components/markdown-body";
+import { Engraving, RuleOrnament } from "@/components/engraving";
 
 export const dynamic = "force-dynamic";
 
@@ -51,27 +52,34 @@ export default async function FundPage() {
 
   return (
     <div className="max-w-[1180px] mx-auto px-8 pb-32">
-      {/* ── Page header ── */}
-      <div className="pt-16 pb-10">
-        <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
-          Fund Overview
-          {newest ? ` · Week of ${formatLongDate(newest.date)}` : ""}
+      {/* ── Page header + KPIs — a tall hourglass runs down the right edge and
+          tucks behind the cards (z-0), giving the masthead depth. `isolate`
+          keeps its overflow from painting over the digest section below. ── */}
+      <div className="relative isolate">
+        <Engraving
+          name="hourglass"
+          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.12] z-0"
+        />
+        <div className="relative z-10 pt-16 pb-10">
+          <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
+            Fund Overview
+            {newest ? ` · Week of ${formatLongDate(newest.date)}` : ""}
+          </div>
+          <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5">
+            The week
+            <br />
+            in review.
+          </h1>
         </div>
-        <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5">
-          The week
-          <br />
-          in review.
-        </h1>
-      </div>
 
-      {/* ── KPI dashboard ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[18px]">
+        {/* ── KPI dashboard ── */}
+        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-[18px]">
         <KpiCard
           href="/portfolio"
           dotColor={categoryColorVar(stats.topThemeName)}
-          label="Top theme"
+          label="Top portfolio theme"
           value={stats.topThemeWeight != null ? `${Math.round(stats.topThemeWeight)}%` : "—"}
-          sub={stats.topThemeName ? `${stats.topThemeName} leads the book` : "—"}
+          sub={stats.topThemeName ? stats.topThemeName : "—"}
         />
         <KpiCard
           href="/portfolio"
@@ -94,15 +102,21 @@ export default async function FundPage() {
           value={String(stats.positionsHeld)}
           sub={`Across ${stats.activeThemes} active themes`}
         />
+        </div>
       </div>
 
       {/* ── Digest hero — summary + highlights + full digest behind disclosure ── */}
       {newest && (
         <section className="mt-16">
           <div className="flex items-baseline justify-between mb-5">
-            <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
-              This week&apos;s digest
-            </h2>
+            <div className="flex items-baseline gap-3">
+              <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
+                01
+              </span>
+              <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
+                This week&apos;s digest
+              </h2>
+            </div>
             <span className="text-[13px] text-muted font-mono tabular-nums">
               {formatLongDate(newest.date)}
             </span>
@@ -143,8 +157,10 @@ export default async function FundPage() {
         </section>
       )}
 
+      <RuleOrnament className="mt-16" />
+
       {/* ── Strategy + Thesis cards ── */}
-      <section className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-[18px]">
+      <section className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-[18px]">
         <DocCard
           href="/fund/strategy"
           eyebrow="The framework"
@@ -156,7 +172,7 @@ export default async function FundPage() {
           href="/fund/thesis"
           eyebrow={thesisLastModified ? `Updated ${formatShortDate(thesisLastModified)}` : "The conviction"}
           title="Thesis"
-          blurb="Per-ticker conviction history and the theme evolution behind the current book."
+          blurb="Per-ticker conviction history and the theme evolution behind the current portfolio."
           chips={thesisChips}
         />
       </section>
@@ -165,9 +181,14 @@ export default async function FundPage() {
       {recentMoves.length > 0 && (
         <section className="mt-16">
           <div className="flex items-baseline justify-between mb-5">
-            <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
-              Recent moves
-            </h2>
+            <div className="flex items-baseline gap-3">
+              <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
+                02
+              </span>
+              <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
+                Recent moves
+              </h2>
+            </div>
             <Link href="/portfolio" className="text-sm font-semibold text-orange hover:underline">
               Open Portfolio →
             </Link>
@@ -203,9 +224,14 @@ export default async function FundPage() {
       {/* ── Past digests ── */}
       {pastDigests.length > 0 && (
         <section className="mt-16">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream mb-5">
-            Past digests
-          </h2>
+          <div className="flex items-baseline gap-3 mb-5">
+            <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
+              03
+            </span>
+            <h2 className="font-serif text-2xl font-semibold tracking-tight text-cream">
+              Past digests
+            </h2>
+          </div>
           <div className="border border-border rounded-2xl bg-surface px-6">
             {pastDigests.map((d, i) => (
               <Link

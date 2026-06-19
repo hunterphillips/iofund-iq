@@ -2,12 +2,12 @@
 
 /**
  * ActiveThreadProvider — holds "which conversation is active" for the assistant
- * drawer (components/drawer-chat.tsx).
+ * modal (components/assistant-modal.tsx).
  *
  * Mounted once in app/(app)/layout.tsx alongside PageContextRoot, so it lives in
  * the persistent layout subtree and survives both route navigation and the
- * drawer unmounting on close (DrawerChat is mounted only while the drawer is
- * open). That's what lets the drawer resume the same thread the next time it
+ * modal unmounting on close (AssistantModal is mounted only while the modal is
+ * open). That's what lets the modal resume the same thread the next time it
  * opens instead of defaulting to the most-recent one.
  *
  * In-memory only — no localStorage. Persisting the active thread across full

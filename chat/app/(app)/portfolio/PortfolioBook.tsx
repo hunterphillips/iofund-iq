@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PortfolioBook — the "01 — The book" surface with a Table / Pie / Themes
+ * PortfolioBook — the "01 — Holdings" surface with a Table / Pie / Themes
  * view-cycler (slice: 2026-06-14 redesign). The pie pulls the deferred
  * Portfolio-v2 donut forward, rendered with recharts; the themes view uses
  * lightweight CSS weight-bars (matching the approved mockup). All three share
@@ -40,14 +40,14 @@ export function PortfolioBook({
           <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
             01
           </span>
-          <h2 className="font-serif text-2xl text-cream tracking-tight">The book</h2>
+          <h2 className="font-serif text-2xl text-cream tracking-tight">Holdings</h2>
         </div>
 
         {hasCharts && (
           <div
             className="inline-flex bg-surface-2 border border-border rounded-[10px] p-1 gap-0.5"
             role="tablist"
-            aria-label="Book view"
+            aria-label="Portfolio view"
           >
             {VIEWS.map((v) => (
               <button
@@ -118,6 +118,9 @@ function PieView({
             </Pie>
             <Tooltip
               cursor={false}
+              // Lift the tooltip above the absolutely-positioned center "N names"
+              // overlay, which otherwise paints over it (it's later in the DOM).
+              wrapperStyle={{ zIndex: 50 }}
               formatter={(value, name) => [`${value}%`, name]}
               contentStyle={{
                 background: "var(--color-surface)",

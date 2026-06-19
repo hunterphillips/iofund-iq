@@ -18,7 +18,8 @@ export function getStrategyPullQuote(): string {
   return "";
 }
 
-/** Extract the short heading label from a strategy ## heading like "## 1. Alert Semantics (load-bearing)" */
+/** Short label from a strategy ## heading, e.g. "## Reading the trade alerts" →
+ * "Reading the trade alerts". Also tolerates legacy "## N. Foo (note)" forms. */
 function strategyHeadingLabel(heading: string): string {
   // Remove "## N. " prefix and anything in parens at the end
   return heading
@@ -41,14 +42,21 @@ export function getStrategyHeadingChips(): string[] {
   return chips.slice(0, 6);
 }
 
+// The thesis card chips + last-modified come from the agent doc
+// (io-fund-thesis.agent.md): it keeps the structured `### Active themes` list
+// and the digest-maintained `last_distilled` field that the human-facing page
+// no longer carries. The themes themselves are investment themes (no agent
+// meta), so they're safe to surface.
+const THESIS_AGENT_DOC = "io-fund-thesis.agent.md";
+
 /** Thesis card: last-modified date from the frontmatter `last_distilled` field. */
 export function getThesisLastModified(): string {
-  const raw = readFileSync(join(DATA_DIR, "io-fund-thesis.md"), "utf8");
+  const raw = readFileSync(join(DATA_DIR, THESIS_AGENT_DOC), "utf8");
   const m = raw.match(/^last_distilled:\s*(\S+)/m);
   if (m) return m[1];
   // Fall back to file mtime
   try {
-    const mtime = statSync(join(DATA_DIR, "io-fund-thesis.md")).mtime;
+    const mtime = statSync(join(DATA_DIR, THESIS_AGENT_DOC)).mtime;
     return mtime.toISOString().slice(0, 10);
   } catch {
     return "";
@@ -57,7 +65,7 @@ export function getThesisLastModified(): string {
 
 /** Thesis card chips: active themes from ## 1 section's numbered list. */
 export function getThesisThemeChips(): string[] {
-  const raw = readFileSync(join(DATA_DIR, "io-fund-thesis.md"), "utf8");
+  const raw = readFileSync(join(DATA_DIR, THESIS_AGENT_DOC), "utf8");
   const lines = raw.split("\n");
   const chips: string[] = [];
   let inThemesSection = false;

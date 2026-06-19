@@ -52,7 +52,7 @@ function describeContext(ctx: PageContext): string {
 
     case "/portfolio": {
       const tail = tickers.length
-        ? ` The IOF book currently in view holds: ${tickers.join(", ")}.`
+        ? ` The IOF portfolio currently in view holds: ${tickers.join(", ")}.`
         : "";
       return (
         `[Page context] The user is viewing the I/O Fund portfolio ` +

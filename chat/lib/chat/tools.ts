@@ -212,7 +212,7 @@ export const chatTools = {
 
   analyze_portfolio_gap: tool({
     description:
-      "Compare the user's uploaded portfolio holdings against IOF's current book using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their book compares to IOF's, or which positions are over/under-weighted. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } if no portfolio is uploaded — when this happens, mention they can upload a brokerage screenshot at /portfolio.",
+      "Compare the user's uploaded portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } if no portfolio is uploaded — when this happens, mention they can upload a brokerage screenshot at /portfolio.",
     inputSchema: z.object({}),
     execute: async () => {
       const { data: session } = await auth.getSession();

@@ -1,6 +1,6 @@
 /**
- * Lets any page open the assistant drawer without threading drawer state down
- * through the tree. The drawer owner (components/app-chrome.tsx) listens for
+ * Lets any page open the assistant modal without threading modal state down
+ * through the tree. The modal owner (components/app-chrome.tsx) listens for
  * this window event; deep CTAs (e.g. "Ask about this article") dispatch it.
  */
 

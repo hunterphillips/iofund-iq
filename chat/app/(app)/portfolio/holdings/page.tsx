@@ -25,7 +25,7 @@ export default async function PortfolioHoldingsPage() {
         </h1>
         <p className="status">
           Upload a screenshot of your brokerage holdings. The assistant
-          compares your book against I/O Fund's current positions to surface
+          compares your portfolio against I/O Fund's current positions to surface
           gaps and over/under-weightings.
         </p>
         <PortfolioForm

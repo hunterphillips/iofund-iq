@@ -4,8 +4,11 @@
 Runs weekly via .github/workflows/weekly-digest.yml (Friday 21:00 UTC).
 Reads past-7d trades + articles from Postgres, drafts a structured digest
 via AI Gateway (Sonnet 4.6), writes data/digests/YYYY-MM-DD.md, commits.
-Then: second LLM call checks for staleness in data/io-fund-thesis.md; if
-drift, opens a PR with proposed edits. Finally emails the summary via
+Then: second LLM call checks for staleness in data/io-fund-thesis.agent.md
+(the agent doc, which holds the per-ticker picks table the drift check reads).
+If drift is found, a third call regenerates the human-facing io-fund-thesis.md
+page from the same evidence in its own editorial voice, and a single PR proposes
+edits to both docs so they stay in sync automatically. Finally emails the summary via
 Resend to hkphillips42@gmail.com.
 
 This is the ONLY outbound email from the system per the locked scope
@@ -284,7 +287,7 @@ def commit_and_push_digest(repo_root: Path, target: Path, run_date: date) -> Non
 STALENESS_SYSTEM_PROMPT = """You are reviewing whether I/O Fund's published thesis doc needs updates based on this week's activity.
 
 You will be given:
-1. The current data/io-fund-thesis.md content (load-bearing — describes IOF's current investment thesis, per-ticker conviction, themes, headline moves).
+1. The current data/io-fund-thesis.agent.md content (load-bearing — describes IOF's current investment thesis, per-ticker conviction, themes, headline moves).
 2. This week's IOF trades (table format).
 3. This week's distilled IOF articles (with thesis + key numbers).
 
@@ -304,9 +307,29 @@ If no drift exists, respond with just: NO_CHANGES
 
 If drift exists, output the proposed replacement file. Format requirements:
 - Start your output with the `---` of the YAML frontmatter. No narrative preamble, no "Looking at this week..." reasoning, no ```markdown code fence — the output is written directly to disk and parsed by the file's frontmatter delimiter.
-- Preserve original frontmatter keys (`purpose`, `audience`, `quarters_covered`, `sources`, `companion_docs`); bump `last_distilled` to {run_date}.
+- Preserve original frontmatter keys (`purpose`, `note`, `load_priority`, `audience`, `quarters_covered`, `sources`, `companion_docs`); bump `last_distilled` to {run_date}.
 - Touch only the sections this week's activity actually warrants. Leave the rest of the file byte-identical.
 - After the proposed file, on a new line, output literally `---EVIDENCE---` followed by a bulleted list citing article URLs / trade dates+tickers that justified each change."""
+
+
+HUMAN_THESIS_UPDATE_SYSTEM_PROMPT = """You maintain the human-facing I/O Fund thesis page (data/io-fund-thesis.md). It is editorial prose written for a subscriber to read, NOT for an AI agent.
+
+The structured thesis data was just updated to reflect this week's I/O Fund activity. Your job is to bring this human page in line with those same changes, in the same voice.
+
+You will be given:
+1. The current human-facing thesis page (full file).
+2. The changes detected this week (with citations) and this week's trades.
+
+Rules:
+- Touch ONLY what the changes require: a position that was opened, trimmed, or closed; a number a new article materially supersedes; a clearly new theme. Leave everything else byte-identical.
+- Keep the page's existing voice and structure. Plain editorial prose, sentence-case headings, no "agent", no "load-bearing", no decoder or meta-commentary, no per-ticker matrix.
+- When a position's status changes, update the "What's held now" table AND any prose that names it (e.g. a closed ticker moves out of the held table and gets reflected in the surrounding prose).
+- Do not invent facts. Only reflect the provided changes.
+
+Output requirements:
+- Start your output with the `---` of the YAML frontmatter. No preamble, no ```markdown code fence — the output is written directly to disk.
+- Preserve the existing frontmatter keys (`purpose`, `audience`, `quarters_covered`, `sources`); bump `last_updated` to {run_date}.
+- If none of the changes affect this page, respond with just: NO_CHANGES"""
 
 
 def check_staleness(
@@ -378,27 +401,96 @@ def check_staleness(
     return proposed, evidence.strip()
 
 
+def update_human_thesis(
+    api_key: str,
+    run_date: date,
+    human_md: str,
+    evidence: str,
+    trades: list[dict],
+) -> str | None:
+    """Regenerate the human-facing thesis page from the drift evidence, in its own
+    voice. Returns the proposed page, or None if nothing on it needs to change.
+
+    Driven by the SAME drift evidence the agent-doc pass produced, so the two docs
+    stay consistent without a separate drift detection.
+    """
+    trade_lines = []
+    for t in trades:
+        price = f" @ ${t['price']}" if t.get("price") else ""
+        note = f" — {t['note']}" if t.get("note") else ""
+        trade_lines.append(
+            f"- {t['trade_date'].isoformat()} · {t['ticker']} · {t['action']}{price}{note}"
+        )
+
+    user_msg = "\n".join(
+        [
+            f"RUN_DATE: {run_date.isoformat()}",
+            "",
+            "=== CURRENT data/io-fund-thesis.md (human page) ===",
+            human_md,
+            "",
+            "=== CHANGES DETECTED THIS WEEK ===",
+            evidence,
+            "",
+            f"=== THIS WEEK'S TRADES ({len(trades)}) ===",
+            *trade_lines,
+        ]
+    )
+
+    raw = _call_ai_gateway(
+        api_key,
+        system=HUMAN_THESIS_UPDATE_SYSTEM_PROMPT.format(run_date=run_date.isoformat()),
+        user=user_msg,
+        max_tokens=8000,
+        temperature=0.2,
+    )
+
+    stripped = raw.strip()
+    if re.match(r'^["`]*NO_CHANGES["`]*$', stripped.split("\n", 1)[0].strip()):
+        return None
+
+    proposed = re.sub(r"^```(?:markdown|md)?\s*\n", "", stripped)
+    proposed = re.sub(r"\n```\s*$", "", proposed)
+    fm_match = re.search(r"^---\s*$", proposed, re.MULTILINE)
+    if not fm_match:
+        log("human-thesis: proposed page has no YAML frontmatter delimiter; skipping")
+        return None
+    return proposed[fm_match.start():].strip() + "\n"
+
+
 def open_thesis_pr(
     repo_root: Path,
     run_date: date,
-    proposed_thesis: str,
+    proposed_agent: str,
+    proposed_human: str | None,
     evidence: str,
 ) -> str | None:
-    """Creates branch, commits proposed thesis.md, pushes, opens PR. Returns PR URL or None."""
+    """Creates a branch, commits whichever thesis docs actually changed (the agent
+    decoder and/or the human-facing page), pushes, opens a PR. Returns PR URL or None.
+    """
     branch = f"digest/{run_date.isoformat()}-thesis-update"
-    thesis_path = repo_root / "data" / "io-fund-thesis.md"
+    agent_path = repo_root / "data" / "io-fund-thesis.agent.md"
+    human_path = repo_root / "data" / "io-fund-thesis.md"
 
-    # Sanity: byte-equal to current means no real change.
-    if proposed_thesis.strip() == thesis_path.read_text().strip():
-        log("staleness: proposed thesis is byte-equal to current; skipping PR")
+    # Only write docs that differ from what's on disk (byte-equal = no real change).
+    pending: list[tuple[Path, str]] = []
+    if proposed_agent.strip() != agent_path.read_text().strip():
+        pending.append((agent_path, proposed_agent))
+    if proposed_human and proposed_human.strip() != human_path.read_text().strip():
+        pending.append((human_path, proposed_human))
+
+    if not pending:
+        log("staleness: proposed docs are byte-equal to current; skipping PR")
         return None
 
     _run(["git", "checkout", "-b", branch], cwd=repo_root)
     try:
-        thesis_path.write_text(proposed_thesis)
-        _run(["git", "add", str(thesis_path.relative_to(repo_root))], cwd=repo_root)
+        for path, content in pending:
+            path.write_text(content)
+            _run(["git", "add", str(path.relative_to(repo_root))], cwd=repo_root)
+        changed = ", ".join(p.name for p, _ in pending)
         _run(
-            ["git", "commit", "-m", f"Digest {run_date.isoformat()}: propose thesis.md update"],
+            ["git", "commit", "-m", f"Digest {run_date.isoformat()}: propose thesis update ({changed})"],
             cwd=repo_root,
         )
         _run(["git", "push", "-u", "origin", branch], cwd=repo_root)
@@ -406,11 +498,13 @@ def open_thesis_pr(
         title = f"Thesis update — week of {run_date.isoformat()}"
         body = (
             f"Automated proposal from `weekly-digest.yml` for the week ending {run_date.isoformat()}.\n\n"
+            f"Updated: {changed}\n\n"
             f"## Evidence\n\n{evidence}\n\n"
             "## Review checklist\n"
             "- [ ] Each proposed change cites real article URLs / trade rows from this week\n"
             "- [ ] Only sections justified by this week's activity are modified\n"
-            "- [ ] `last_distilled` frontmatter bumped to the run date\n"
+            "- [ ] The human page (`io-fund-thesis.md`) keeps its plain editorial voice (no agent/decoder language)\n"
+            "- [ ] Frontmatter dates bumped (`last_distilled` on the agent doc, `last_updated` on the human page)\n"
             "- [ ] Digest itself (`data/digests/...md`) already landed on main in a prior commit\n"
         )
         result = subprocess.run(
@@ -535,7 +629,7 @@ def main() -> int:
 
     if dry_run:
         log(f"dry-run: would generate digest at {target}")
-        log(f"dry-run: would scan thesis.md for staleness against {len(articles)} articles + {len(trades)} trades")
+        log(f"dry-run: would scan thesis (agent + human docs) for staleness against {len(articles)} articles + {len(trades)} trades")
         log(f"dry-run: would email summary to {DEFAULT_RECIPIENT}")
         return 0
 
@@ -553,15 +647,22 @@ def main() -> int:
     if os.environ.get("DIGEST_SKIP_PR") == "1":
         log("staleness: skipped via DIGEST_SKIP_PR=1")
     else:
-        log("staleness: checking thesis.md drift")
-        thesis_path = repo_root / "data" / "io-fund-thesis.md"
-        thesis_md = thesis_path.read_text()
-        proposed, evidence = check_staleness(
-            ai_key, run_date, thesis_md, trades, articles
+        log("staleness: checking thesis drift")
+        agent_path = repo_root / "data" / "io-fund-thesis.agent.md"
+        agent_md = agent_path.read_text()
+        proposed_agent, evidence = check_staleness(
+            ai_key, run_date, agent_md, trades, articles
         )
-        if proposed and evidence:
-            log("staleness: drift detected; opening PR")
-            pr_url = open_thesis_pr(repo_root, run_date, proposed, evidence)
+        if proposed_agent and evidence:
+            log("staleness: drift detected; updating human page from same evidence")
+            human_md = (repo_root / "data" / "io-fund-thesis.md").read_text()
+            proposed_human = update_human_thesis(
+                ai_key, run_date, human_md, evidence, trades
+            )
+            log("staleness: opening PR")
+            pr_url = open_thesis_pr(
+                repo_root, run_date, proposed_agent, proposed_human, evidence
+            )
         else:
             log("staleness: no changes needed")
 

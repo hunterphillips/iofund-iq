@@ -2,10 +2,12 @@
 """Discover new IOF articles via RSS, distill via AI Gateway, persist to Postgres + git.
 
 Idempotent: every RSS item is checked against the articles table by URL; only
-missing ones are fetched + distilled. Webinar replays are filtered at discovery
-time (title regex). Distillations are written as YAML-frontmatter markdown to
-data/articles/YYYY-MM-DD-<slug>.md; the corresponding row in articles points
-at that path via distilled_path.
+missing ones are fetched + distilled. Non-analytical posts (webinar replays,
+invitations, and "no webinar" scheduling notices) are filtered two ways: a cheap
+title regex at discovery time (before any LLM spend) and an LLM catch-all that
+emits SKIP for administrative content the title filter misses. Distillations are
+written as YAML-frontmatter markdown to data/articles/YYYY-MM-DD-<slug>.md; the
+corresponding row in articles points at that path via distilled_path.
 
 First task to spend LLM credits via the Vercel AI Gateway. Per-article cost at
 Sonnet 4.6 is ~$0.04-0.06.
@@ -54,7 +56,21 @@ UA = (
     "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
 
-WEBINAR_RE = re.compile(r"webinar replay", re.IGNORECASE)
+# Administrative / non-analytical posts, skipped at discovery (free, before any
+# LLM spend): webinar replays, invitations, and scheduling notices like "No
+# Webinar This Week" — none carry an investment thesis. The LLM catch-all below
+# (SKIP sentinel) covers any non-analytical post this title filter misses.
+NON_ANALYTICAL_TITLE_RE = re.compile(
+    r"webinar\s+(?:replay|invitation|invite)"
+    r"|\bno\s+webinar\b"
+    r"|webinar\b.*\b(?:cancel|postpon|reschedul)"
+    r"|\b(?:cancel|postpon|reschedul)\w*\b.*\bwebinar\b",
+    re.IGNORECASE,
+)
+
+# The model is told (system prompt rule 7) to emit a bare `SKIP: <reason>` line
+# for administrative / non-analytical articles instead of a distillation.
+SKIP_RESPONSE_RE = re.compile(r"^\s*(?:```\w*\s*\n?)?SKIP\b", re.IGNORECASE)
 
 DISTILL_SYSTEM_PROMPT = """You distill a single I/O Fund (io-fund.com) research article into a transformative summary for a personal AI assistant.
 
@@ -65,6 +81,9 @@ RULES
 4. Output VALID YAML frontmatter followed by structured markdown sections. The frontmatter MUST parse as YAML.
 5. YAML string quoting: wrap url and title in double quotes ALWAYS. If the title contains a literal double quote, escape it as \\". This prevents colons inside titles from breaking YAML.
 6. Be terse. 200-400 words total is the target.
+7. If the piece is NOT analytical research — i.e. it is an administrative or scheduling notice (e.g. "No Webinar This Week"), a webinar invitation or replay announcement, a pure promotional notice, or otherwise presents no investment thesis, numbers, or analysis — DO NOT distill it. Output exactly one line and nothing else (no frontmatter, no sections):
+SKIP: <brief reason>
+Only do this when there is genuinely no investment analysis; when in doubt, distill.
 
 OUTPUT FORMAT (exactly, including the quotes):
 ---
@@ -161,9 +180,9 @@ def parse_rss(xml_bytes: bytes) -> list[dict]:
 
 def classify_item(item: dict) -> dict | None:
     """Enrich + filter. Returns dict with {url, title, slug, pub_date, category, premium}
-    or None if the item should be skipped (e.g. webinar replay).
+    or None if the item should be skipped (e.g. webinar / administrative notice).
     """
-    if WEBINAR_RE.search(item["title"]):
+    if NON_ANALYTICAL_TITLE_RE.search(item["title"]):
         return None
     parsed = urlparse(item["url"])
     parts = [p for p in parsed.path.split("/") if p]
@@ -442,7 +461,7 @@ def main() -> int:
     classified = [c for c in (classify_item(i) for i in raw_items) if c is not None]
     log(
         f"parse: {len(raw_items)} items · "
-        f"{len(raw_items) - len(classified)} filtered (webinar replays / no path) · "
+        f"{len(raw_items) - len(classified)} filtered (webinar / admin notices / no path) · "
         f"{len(classified)} candidates"
     )
 
@@ -483,6 +502,10 @@ def main() -> int:
 
                 log(f"{label}: distill")
                 distilled_md = distill_article(text, item, ai_key)
+                if SKIP_RESPONSE_RE.match(distilled_md.strip()):
+                    log(f"{label}: skip — non-analytical ({distilled_md.strip()[:80]})")
+                    fail_count += 1
+                    continue
                 fm, body = parse_frontmatter(distilled_md)
                 ok, reason = validate_distillation(fm, body, item)
                 if not ok:

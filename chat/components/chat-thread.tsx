@@ -10,9 +10,10 @@ import {
   usePageContext,
   type PageContext,
 } from "@/lib/page-context/context";
+import { Engraving } from "./engraving";
 
 /**
- * ChatThread — the pure chat surface. Both surfaces (drawer + /chat) reuse it.
+ * ChatThread — the pure chat surface, rendered inside the assistant modal.
  *
  * Lazy thread creation: a conversation may start with NO thread row
  * (`initialThreadId === null`). The thread is created on the FIRST send, not on
@@ -134,9 +135,12 @@ export function ChatThread({
     <div className="chat">
       <div className="chat-messages">
         {messages.length === 0 ? (
-          <p className="chat-empty">
-            Ask about a ticker, IOF&rsquo;s thesis, or recent activity.
-          </p>
+          <div className="my-auto flex flex-col items-center text-center gap-4 px-6">
+            <Engraving name="owl" className="w-24 sm:w-28 h-auto opacity-90" />
+            <p className="chat-empty !my-0 max-w-[22rem]">
+              Ask about a ticker, IOF&rsquo;s thesis, or recent activity.
+            </p>
+          </div>
         ) : (
           messages.map((message, index) => {
             const isLast = index === messages.length - 1;
@@ -218,7 +222,7 @@ function Message({
   return (
     <div className={`chat-message chat-message-${message.role}`}>
       <div className="chat-message-role">
-        {message.role === "user" ? "You" : "Companion"}
+        {message.role === "user" ? "You" : "Assistant"}
       </div>
       <div className="chat-message-body">
         {showThinking

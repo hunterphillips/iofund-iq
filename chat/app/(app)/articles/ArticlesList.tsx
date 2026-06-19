@@ -64,7 +64,10 @@ export function ArticlesList({
 
   // Stable since-date strings computed once at mount (Fix 3: avoid midnight cliff
   // where re-renders produce new strings that break the active-chip comparison).
-  const sinceDates = useMemo(() => ({ d30: sinceDate(30), d90: sinceDate(90) }), []);
+  const sinceDates = useMemo(
+    () => ({ d30: sinceDate(30), d90: sinceDate(90) }),
+    [],
+  );
 
   // Debounce ref for q input.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,13 +139,14 @@ export function ArticlesList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticker, category, since]);
 
-  // On search input — debounced 300ms.
+  // On search input — debounced 500ms so the query only fires once typing
+  // settles, not on every keystroke. Enter (runSearch) bypasses the wait.
   function handleQChange(value: string) {
     setQ(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchArticles({ q: value, ticker, category, since });
-    }, 300);
+    }, 600);
   }
 
   function toggleCategory(cat: string) {
@@ -261,7 +265,9 @@ export function ArticlesList({
       {rows.length === 0 && !loading ? (
         <EmptyState q={q} ticker={ticker} category={category} since={since} />
       ) : (
-        <div className={`flex flex-col ${loading ? "opacity-60" : ""} transition-opacity`}>
+        <div
+          className={`flex flex-col ${loading ? "opacity-60" : ""} transition-opacity`}
+        >
           {listRows.map((row) => (
             <ArticleListRow key={row.slug} row={row} />
           ))}
@@ -399,8 +405,7 @@ function EmptyState({
         {q ? ` for "${q}"` : ""}
         {ticker ? ` · ticker ${ticker}` : ""}
         {category ? ` · category ${category}` : ""}
-        {since ? ` · since ${since}` : ""}
-        .
+        {since ? ` · since ${since}` : ""}.
       </p>
       <p className="text-xs text-muted-deep mt-2">Try broader search terms.</p>
     </div>

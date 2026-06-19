@@ -33,6 +33,11 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# Article-body DB backups dumped by scripts/backfill_article_voice.py — contain
+# distilled paid content; never commit.
+scripts/article-bodies-backup-*.json
+scripts/deleted-junk-articles-*.json
+
 # Local scratch
 /tmp/
 tmp/

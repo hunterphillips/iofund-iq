@@ -55,7 +55,7 @@ export default async function PortfolioPage() {
             card; pointer-events-none so the view-cycler stays clickable). */}
         <Engraving
           name="colosseum"
-          className="hidden md:block absolute right-0 top-[-80px] w-[520px] lg:w-[600px] h-auto opacity-[0.06] z-10 pointer-events-none"
+          className="hidden md:block absolute right-0 top-[-80px] w-[520px] lg:w-[600px] h-auto opacity-[0.06] [[data-theme=dark]_&]:opacity-[0.12] z-10 pointer-events-none"
         />
 
         {/* ── Editorial header ── */}
@@ -64,7 +64,7 @@ export default async function PortfolioPage() {
             I/O Fund holdings · {todayLabel()}
           </div>
           <h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[0.98] tracking-[-0.025em] text-cream mt-3.5 max-w-[34rem]">
-            Portfolio.
+            Portfolio
           </h1>
         </header>
 

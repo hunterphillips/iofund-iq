@@ -190,7 +190,7 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
         >
           <div className="flex items-center gap-2 px-5 h-[60px] border-b border-border">
             <span className="text-orange">
-              <SparkGlyph />
+              <SparkleGlyph />
             </span>
             <span className="font-serif text-lg font-semibold tracking-tight">
               Assistant
@@ -369,11 +369,12 @@ function relTime(iso: string): string {
   });
 }
 
-/** Local copy of the nav spark glyph (avoids a circular import from app-chrome). */
-function SparkGlyph() {
+/** Local copy of the nav sparkle glyph (avoids a circular import from app-chrome). */
+function SparkleGlyph() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2l1.6 4.9L18.5 8.5 14 11l1.6 5L12 13.2 8.4 16 10 11 5.5 8.5l4.9-1.6z" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M10 4.5C10.7 9 13 11.3 17.5 12 13 12.7 10.7 15 10 19.5 9.3 15 7 12.7 2.5 12 7 11.3 9.3 9 10 4.5Z" />
+      <path d="M18 2.5C18.3 4.2 19.3 5.2 21 5.5 19.3 5.8 18.3 6.8 18 8.5 17.7 6.8 16.7 5.8 15 5.5 16.7 5.2 17.7 4.2 18 2.5Z" />
     </svg>
   );
 }

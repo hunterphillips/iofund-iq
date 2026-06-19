@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
 
 /**
- * Engraving — classical black-ink etching illustration (Titan-inspired brand
- * device). The source PNGs in /public/engravings are transparent with dark ink,
- * so the `.engraving` class (app/globals.css) inverts them to a warm off-white
- * etching under the default warm-dark theme and keeps them as near-black ink
- * (faint sepia) under warm-light — both driven by the themed --engraving-filter.
+ * Engraving — classical sepia-ink etching illustration (Titan-inspired brand
+ * device). The source PNGs in /public/engravings carry their own sepia ink, so
+ * under the default warm-dark theme the `.engraving` class (app/globals.css)
+ * renders them untouched (--engraving-filter: none) for a true intaglio look;
+ * under warm-light a faint sepia/contrast filter settles them onto pale paper.
  *
  * Purely decorative: rendered aria-hidden, non-interactive, non-draggable.
  * Opacity + sizing are caller-controlled via Tailwind utilities on `className`

@@ -57,8 +57,8 @@ export default async function FundPage() {
           keeps its overflow from painting over the digest section below. ── */}
       <div className="relative isolate">
         <Engraving
-          name="hourglass"
-          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.12] z-0"
+          name="peer-review"
+          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.6] z-0"
         />
         <div className="relative z-10 pt-16 pb-10">
           <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">

@@ -65,11 +65,12 @@
 }
 
 /*
- * Classical engraving illustrations (Titan-inspired). Transparent black-ink
- * PNGs in /public/engravings, rendered via <Engraving> (components/engraving.tsx).
- * The ink is dark, so under the default warm-dark theme we invert it to a warm
- * off-white etching; under warm-light it stays near-black with a faint sepia
- * warmth. Sizing + opacity are caller-controlled via Tailwind utilities.
+ * Classical engraving illustrations (Titan-inspired). Sepia-ink PNGs in
+ * /public/engravings, rendered via <Engraving> (components/engraving.tsx).
+ * Under the default warm-dark theme they render in their native tone (no
+ * filter) — the rich sepia ink reads as a real intaglio etching on dark paper.
+ * Under warm-light a faint sepia/contrast filter keeps them at home on the
+ * pale background. Sizing + opacity are caller-controlled via Tailwind utilities.
  */
 .engraving {
   filter: var(--engraving-filter);
@@ -78,7 +79,7 @@
 }
 
 :root {
-  --engraving-filter: invert(0.92) sepia(0.08) brightness(1.03) contrast(1.02);
+  --engraving-filter: none;
 }
 
 /* Warm-light "printed paper" — overrides @theme tokens + legacy vars together. */

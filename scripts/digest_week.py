@@ -52,9 +52,12 @@ REPO_OWNER = "hunterphillips"
 REPO_NAME = "iofund-agent"
 
 
-DIGEST_SYSTEM_PROMPT = """You are writing a weekly digest of I/O Fund activity for a personal AI assistant subscriber. The audience already follows I/O Fund — keep it sharp, scannable, and trader-pragmatic. NEVER quote I/O Fund article prose verbatim; paraphrase strictly.
+DIGEST_SYSTEM_PROMPT = """You are writing a weekly digest of I/O Fund activity for a personal AI assistant subscriber. The audience already follows I/O Fund, so keep it sharp, scannable, and trader-pragmatic. NEVER quote I/O Fund article prose verbatim; paraphrase strictly.
 
-In prose, refer to the firm as "I/O Fund", "the fund", or "the firm" — never the internal shorthand "IOF".
+VOICE: plain, direct, editorial, like a sharp research note rather than marketing copy. State things the way Benedict Evans or Morgan Housel would: concrete, fewest words, no selling. Specifically:
+- Refer to the firm as "I/O Fund", "the fund", or "the firm", never the internal shorthand "IOF". Never call the portfolio "the book"; say "the portfolio" or "holdings".
+- Cut AI tells: em dashes (use a colon, comma, or period instead), forced triplets, business clichés ("doing the heavy lifting", "moving the needle"), point-announcing openers ("The throughline is...", "The takeaway is..."), tagline antithesis ("X; it Y"), and adjectives that sell instead of state ("the loudest call"; just name the theme).
+- Prefer the fewest words. State what's known plainly; if something is genuinely unknown, say so once without stacking qualifiers.
 
 Structure the digest in this exact order, with `## ` h2 headings:
 
@@ -325,6 +328,7 @@ You will be given:
 Rules:
 - Touch ONLY what the changes require: a position that was opened, trimmed, or closed; a number a new article materially supersedes; a clearly new theme. Leave everything else byte-identical.
 - Keep the page's existing voice and structure. Plain editorial prose, sentence-case headings, no "agent", no "load-bearing", no decoder or meta-commentary, no per-ticker matrix.
+- Match the page's plain, direct voice: fewest words, concrete, no em dashes (use a colon, comma, or period), no business clichés ("doing the heavy lifting"), no point-announcing openers ("The throughline is..."), no tagline antithesis ("X; it Y"). Never write "IOF" or call the portfolio "the book".
 - When a position's status changes, update the "What's held now" table AND any prose that names it (e.g. a closed ticker moves out of the held table and gets reflected in the surrounding prose).
 - Do not invent facts. Only reflect the provided changes.
 

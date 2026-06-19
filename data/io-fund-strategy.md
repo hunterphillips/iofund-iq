@@ -51,7 +51,7 @@ Roughly half of new entries stop out for a small loss and get re-attempted on th
 
 ## Hedging
 
-When the book needs protection, the team shorts the most correlated liquid index ETF, usually QQQ (or SOXX when the portfolio is semiconductor-heavy). Size depends on how correlated the overall portfolio is at the time.
+When the portfolio needs protection, the team shorts the most correlated liquid index ETF, usually QQQ (or SOXX when the portfolio is semiconductor-heavy). Size depends on how correlated the overall portfolio is at the time.
 
 Two signals drive it:
 

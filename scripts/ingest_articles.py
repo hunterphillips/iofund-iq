@@ -84,6 +84,7 @@ RULES
 7. If the piece is NOT analytical research — i.e. it is an administrative or scheduling notice (e.g. "No Webinar This Week"), a webinar invitation or replay announcement, a pure promotional notice, or otherwise presents no investment thesis, numbers, or analysis — DO NOT distill it. Output exactly one line and nothing else (no frontmatter, no sections):
 SKIP: <brief reason>
 Only do this when there is genuinely no investment analysis; when in doubt, distill.
+8. VOICE: plain and direct, the way Benedict Evans explains something. Refer to the firm as "I/O Fund" or "the fund", never "IOF". Avoid em dashes (use a colon, comma, or period), business clichés ("doing the heavy lifting"), point-announcing openers ("The throughline is..."), and adjectives that sell rather than state. Fewest words that carry the fact.
 
 OUTPUT FORMAT (exactly, including the quotes):
 ---

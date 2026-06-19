@@ -12,7 +12,7 @@ on:
         default: ''
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: discover-articles
@@ -42,16 +42,5 @@ jobs:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           INGEST_MAX_PER_RUN: ${{ inputs.max_per_run }}
         run: python3 scripts/ingest_articles.py
-
-      - name: Commit new distillations
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/articles/
-          if git diff --staged --quiet; then
-            echo "No new articles"
-            exit 0
-          fi
-          n=$(git diff --staged --name-only | wc -l | tr -d ' ')
-          git commit -m "Ingest $n distilled IOF article(s)"
-          git push
+        # Articles persist to Postgres (articles.body) and render live — no git
+        # commit needed, so there's no longer a commit/push step here.

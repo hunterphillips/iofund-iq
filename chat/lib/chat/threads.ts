@@ -97,7 +97,7 @@ export async function getMessages(threadId: string): Promise<ChatMessageRow[]> {
  *
  * The render-layer Sources block (chat-thread.tsx extractSources) only reads
  * `output.title` and `output.pub_date` — not `output.body`. The body already
- * lives in `_data/articles/*.md` and `articles.body`, so persisting it in
+ * lives in `articles.body`, so persisting it in
  * jsonb doubles storage by tens of KB per message. This runs only on the copy
  * being written to the DB; the live stream is unaffected.
  */

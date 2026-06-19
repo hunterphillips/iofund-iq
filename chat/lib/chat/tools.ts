@@ -190,12 +190,12 @@ export const chatTools = {
         .select({
           title: tables.articles.title,
           pubDate: tables.articles.pubDate,
-          distilledPath: tables.articles.distilledPath,
+          body: tables.articles.body,
         })
         .from(tables.articles)
         .where(eq(tables.articles.url, url))
         .limit(1);
-      if (!row?.distilledPath) {
+      if (!row?.body) {
         return {
           found: false as const,
           message: `No distilled article for ${url}.`,
@@ -205,7 +205,7 @@ export const chatTools = {
         found: true as const,
         title: row.title,
         pub_date: row.pubDate,
-        body: readDocFile(row.distilledPath),
+        body: row.body,
       };
     },
   }),
@@ -306,13 +306,3 @@ export const chatTools = {
     },
   }),
 };
-
-function readDocFile(distilledPath: string): string {
-  const { readFileSync } = require("node:fs") as typeof import("node:fs");
-  const { basename, join } = require("node:path") as typeof import("node:path");
-  // distilledPath like "data/articles/2026-05-07-foo.md" — strip the leading
-  // "data/" since prebuild copies them under chat/_data/articles/.
-  const articleFile = basename(distilledPath);
-  const full = join(process.cwd(), "_data", "articles", articleFile);
-  return readFileSync(full, "utf8");
-}

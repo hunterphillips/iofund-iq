@@ -22,15 +22,8 @@ if [ ${#md_files[@]} -gt 0 ]; then
   cp "${md_files[@]}" "$DEST/"
 fi
 
-# Copy distilled article bodies if any exist.
-if [ -d "$SRC/articles" ]; then
-  mkdir -p "$DEST/articles"
-  shopt -s nullglob
-  article_files=("$SRC/articles"/*.md)
-  if [ ${#article_files[@]} -gt 0 ]; then
-    cp "${article_files[@]}" "$DEST/articles/"
-  fi
-fi
+# NOTE: distilled article bodies are no longer copied — they live in Postgres
+# (articles.body) and render live; data/articles/ was removed 2026-06-19.
 
 # Copy weekly digest files if any exist.
 if [ -d "$SRC/digests" ]; then

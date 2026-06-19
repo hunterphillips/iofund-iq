@@ -1,7 +1,5 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { readFileSync } from "node:fs";
-import { basename, join } from "node:path";
 import { db, tables } from "@/db";
 import { ReadingLayout } from "@/components/reading-layout";
 import { ArticlePageContext } from "./ArticlePageContext";
@@ -10,14 +8,6 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;
-}
-
-function readArticleFile(distilledPath: string): string {
-  // distilledPath like "data/articles/2026-05-07-foo.md"
-  // prebuild copies them to chat/_data/articles/
-  const file = basename(distilledPath);
-  const full = join(process.cwd(), "_data", "articles", file);
-  return readFileSync(full, "utf8");
 }
 
 export default async function ArticleDetailPage({ params }: Props) {
@@ -30,27 +20,20 @@ export default async function ArticleDetailPage({ params }: Props) {
       pubDate: tables.articles.pubDate,
       tickers: tables.articles.tickers,
       category: tables.articles.category,
-      distilledPath: tables.articles.distilledPath,
+      body: tables.articles.body,
       slug: tables.articles.slug,
     })
     .from(tables.articles)
     .where(eq(tables.articles.slug, slug))
     .limit(1);
 
-  if (!row?.distilledPath) {
+  if (!row?.body) {
     notFound();
   }
 
-  let body: string;
-  try {
-    body = readArticleFile(row.distilledPath);
-  } catch {
-    notFound();
-  }
-
-  // Strip YAML frontmatter before rendering — the reading layout provides its
-  // own eyebrow/title/meta; we only want the prose body sections.
-  const bodyWithoutFrontmatter = stripFrontmatter(body);
+  // Body is stored frontmatter-stripped in Postgres; stripFrontmatter stays as
+  // a defensive no-op in case a legacy row still carries the YAML header.
+  const bodyWithoutFrontmatter = stripFrontmatter(row.body);
 
   const categoryLabel = row.category
     ? row.category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())

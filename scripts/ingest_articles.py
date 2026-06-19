@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Discover new IOF articles via RSS, distill via AI Gateway, persist to Postgres + git.
+"""Discover new IOF articles via RSS, distill via AI Gateway, persist to Postgres.
 
 Idempotent: every RSS item is checked against the articles table by URL; only
 missing ones are fetched + distilled. Non-analytical posts (webinar replays,
 invitations, and "no webinar" scheduling notices) are filtered two ways: a cheap
 title regex at discovery time (before any LLM spend) and an LLM catch-all that
-emits SKIP for administrative content the title filter misses. Distillations are
-written as YAML-frontmatter markdown to data/articles/YYYY-MM-DD-<slug>.md; the
-corresponding row in articles points at that path via distilled_path.
+emits SKIP for administrative content the title filter misses. The distilled body
+is stored frontmatter-stripped in articles.body (FTS-indexed via body_tsv) and
+rendered live by the app — no git file is written, so distilled_path stays NULL
+on new rows. (Legacy rows may still carry a distilled_path pointing at a committed
+data/articles/*.md; nothing reads it anymore.)
 
 First task to spend LLM credits via the Vercel AI Gateway. Per-article cost at
 Sonnet 4.6 is ~$0.04-0.06.
@@ -24,8 +26,6 @@ Required env (loaded from .env when present, falls back to process env):
 Optional env:
     INGEST_MAX_PER_RUN     — int cap on new distillations per run (default unlimited)
     INGEST_DRY_RUN         — "1" skips DB writes and LLM calls; prints what would distill
-    INGEST_BACKFILL_BODY   — "1" reads existing data/articles/*.md and UPDATEs the body
-                             column for rows where body IS NULL. Skips RSS/LLM entirely.
 """
 from __future__ import annotations
 
@@ -333,16 +333,6 @@ def validate_distillation(fm: dict, body: str, item: dict) -> tuple[bool, str]:
     return True, ""
 
 
-def write_markdown(item: dict, distilled_md: str, repo_root: Path) -> Path:
-    """Writes data/articles/<pub_date>-<slug>.md. Returns repo-relative path."""
-    target_dir = repo_root / "data" / "articles"
-    target_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"{item['pub_date']}-{item['slug']}.md"
-    target = target_dir / filename
-    target.write_text(distilled_md.rstrip() + "\n")
-    return target.relative_to(repo_root)
-
-
 def normalize_tickers(raw) -> list[str]:
     if not isinstance(raw, list):
         return []
@@ -362,7 +352,7 @@ def normalize_tickers(raw) -> list[str]:
 def insert_article_row(
     conn: psycopg.Connection,
     item: dict,
-    distilled_path: str,
+    distilled_path: str | None,
     tickers: list[str],
     body: str,
 ) -> bool:
@@ -395,56 +385,14 @@ def insert_article_row(
     return row is not None
 
 
-def backfill_bodies(conn: psycopg.Connection, repo_root: Path) -> int:
-    """One-shot: read each data/articles/*.md off disk and UPDATE body where NULL.
-    Returns count of rows updated. Idempotent — re-running after success is a no-op.
-    """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT url, distilled_path FROM articles WHERE body IS NULL AND distilled_path IS NOT NULL"
-        )
-        rows = cur.fetchall()
-
-    if not rows:
-        log("backfill: 0 rows need body")
-        return 0
-
-    log(f"backfill: {len(rows)} rows need body")
-    updated = 0
-    for url, distilled_path in rows:
-        md_path = repo_root / distilled_path
-        if not md_path.is_file():
-            log(f"backfill: skip {url} — file missing at {md_path}")
-            continue
-        try:
-            raw = md_path.read_text()
-            _, body = parse_frontmatter(raw)
-        except Exception as e:
-            log(f"backfill: skip {url} — parse error: {e!r}")
-            continue
-        with conn.cursor() as cur:
-            cur.execute("UPDATE articles SET body = %s WHERE url = %s", (body, url))
-        updated += 1
-    conn.commit()
-    log(f"backfill: updated {updated} rows")
-    return updated
-
-
 def main() -> int:
     load_dotenv_if_present()
 
     dry_run = os.environ.get("INGEST_DRY_RUN") == "1"
-    backfill_only = os.environ.get("INGEST_BACKFILL_BODY") == "1"
     max_per_run_raw = os.environ.get("INGEST_MAX_PER_RUN", "").strip()
     max_per_run = int(max_per_run_raw) if max_per_run_raw else None
 
     db_url = require_env("DATABASE_URL")
-    repo_root = Path(__file__).resolve().parent.parent
-
-    if backfill_only:
-        with psycopg.connect(db_url) as conn:
-            backfill_bodies(conn, repo_root)
-        return 0
 
     user = require_env("IO_FUND_USERNAME")
     password = require_env("IO_FUND_PASSWORD")
@@ -514,14 +462,13 @@ def main() -> int:
                     continue
 
                 tickers = normalize_tickers(fm.get("tickers"))
-                rel_path = write_markdown(item, distilled_md, repo_root)
-                inserted = insert_article_row(
-                    conn, item, str(rel_path), tickers, body
-                )
+                # Body lives only in Postgres now (articles.body, FTS-indexed and
+                # rendered live by the app). No git file, so distilled_path is NULL.
+                inserted = insert_article_row(conn, item, None, tickers, body)
                 if not inserted:
                     log(f"{label}: row conflict (already inserted by concurrent run)")
                 else:
-                    log(f"{label}: ok → {rel_path} · tickers={tickers}")
+                    log(f"{label}: ok → {item['slug']} · tickers={tickers}")
                     ok_count += 1
             except Exception as e:
                 log(f"{label}: error — {e!r}")

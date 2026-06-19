@@ -168,7 +168,7 @@ export function ArticlesList({
     <div>
       {/* Search bar */}
       <div className="flex gap-3 max-w-[680px] mb-5">
-        <div className="flex-1 flex items-center gap-3 bg-surface border border-border rounded-2xl px-[18px] h-14 transition-[border-color,box-shadow] focus-within:border-orange focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-orange)_14%,transparent)]">
+        <div className="flex-1 flex items-center gap-3 bg-surface/20 backdrop-blur-sm border border-border rounded-2xl px-[18px] h-14 transition-[border-color,box-shadow] focus-within:border-orange focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-orange)_14%,transparent)]">
           <span className="text-muted-deep pointer-events-none">
             <SearchIcon />
           </span>
@@ -184,7 +184,7 @@ export function ArticlesList({
         <button
           type="button"
           onClick={runSearch}
-          className="h-14 px-6 rounded-2xl bg-cream text-bg font-semibold text-[15px] hover:brightness-[1.06] transition-[filter]"
+          className="h-14 px-6 rounded-2xl bg-cream/80 backdrop-blur-sm text-bg font-semibold text-[15px] hover:bg-cream hover:brightness-[1.06] transition-[filter,background-color]"
         >
           Search
         </button>
@@ -300,7 +300,7 @@ function FilterChip({
         "text-[13px] font-semibold px-[15px] py-2 rounded-full border transition-colors " +
         (on
           ? onClasses
-          : "bg-surface border-border text-muted hover:text-cream hover:border-muted-deep")
+          : "bg-surface/20 backdrop-blur-sm border-border text-muted hover:text-cream hover:border-muted-deep")
       }
     >
       {children}

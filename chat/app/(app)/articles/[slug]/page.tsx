@@ -52,6 +52,7 @@ export default async function ArticleDetailPage({ params }: Props) {
       {/* Page-context producer for slice #9's drawer */}
       <ArticlePageContext
         slug={row.slug}
+        url={row.url}
         tickers={row.tickers ?? []}
       />
 

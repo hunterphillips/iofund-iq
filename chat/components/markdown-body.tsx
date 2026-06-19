@@ -37,14 +37,24 @@ function H3({ children, ...props }: ComponentPropsWithoutRef<"h3">) {
 /**
  * Lightweight wrapper around react-markdown that applies the `.markdown` prose
  * class defined in globals.css. Shared by chat-thread and the fund reading pages.
- * h2/h3 headings get slugified `id` attributes so TOC anchor links resolve.
+ *
+ * `headingAnchors` (default true) slugifies h2/h3 into `id` attributes so reading
+ * pages' TOC anchors resolve. Chat messages pass `false`: heading ids are
+ * document-global, and two assistant messages with the same heading text would
+ * otherwise collide.
  */
-export function MarkdownBody({ children }: { children: string }) {
+export function MarkdownBody({
+  children,
+  headingAnchors = true,
+}: {
+  children: string;
+  headingAnchors?: boolean;
+}) {
   return (
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        components={{ h2: H2, h3: H3 }}
+        components={headingAnchors ? { h2: H2, h3: H3 } : undefined}
       >
         {children}
       </ReactMarkdown>

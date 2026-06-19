@@ -58,7 +58,7 @@ export default async function FundPage() {
       <div className="relative isolate">
         <Engraving
           name="peer-review"
-          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.6] z-0"
+          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.4] z-0"
         />
         <div className="relative z-10 pt-16 pb-10">
           <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
@@ -74,34 +74,38 @@ export default async function FundPage() {
 
         {/* ── KPI dashboard ── */}
         <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-[18px]">
-        <KpiCard
-          href="/portfolio"
-          dotColor={categoryColorVar(stats.topThemeName)}
-          label="Top portfolio theme"
-          value={stats.topThemeWeight != null ? `${Math.round(stats.topThemeWeight)}%` : "—"}
-          sub={stats.topThemeName ? stats.topThemeName : "—"}
-        />
-        <KpiCard
-          href="/portfolio"
-          dotColor="var(--color-orange)"
-          label="New trades"
-          value={newest ? String(newest.newTradesCount) : "0"}
-          sub={newest ? "Recorded this week" : "No digest yet"}
-        />
-        <KpiCard
-          href="/articles"
-          dotColor="var(--color-gold)"
-          label="New articles"
-          value={newest ? String(newest.newArticlesCount) : "0"}
-          sub={newest ? "Distilled this week" : "No digest yet"}
-        />
-        <KpiCard
-          href="/portfolio"
-          dotColor="var(--color-cat-energy)"
-          label="Positions held"
-          value={String(stats.positionsHeld)}
-          sub={`Across ${stats.activeThemes} active themes`}
-        />
+          <KpiCard
+            href="/portfolio"
+            dotColor={categoryColorVar(stats.topThemeName)}
+            label="Top portfolio theme"
+            value={
+              stats.topThemeWeight != null
+                ? `${Math.round(stats.topThemeWeight)}%`
+                : "—"
+            }
+            sub={stats.topThemeName ? stats.topThemeName : "—"}
+          />
+          <KpiCard
+            href="/portfolio"
+            dotColor="var(--color-orange)"
+            label="New trades"
+            value={newest ? String(newest.newTradesCount) : "0"}
+            sub={newest ? "Recorded this week" : "No digest yet"}
+          />
+          <KpiCard
+            href="/articles"
+            dotColor="var(--color-gold)"
+            label="New articles"
+            value={newest ? String(newest.newArticlesCount) : "0"}
+            sub={newest ? "Distilled this week" : "No digest yet"}
+          />
+          <KpiCard
+            href="/portfolio"
+            dotColor="var(--color-cat-energy)"
+            label="Positions held"
+            value={String(stats.positionsHeld)}
+            sub={`Across ${stats.activeThemes} active themes`}
+          />
         </div>
       </div>
 
@@ -122,7 +126,7 @@ export default async function FundPage() {
             </span>
           </div>
 
-          <div className="border border-border rounded-2xl bg-surface p-8 md:p-11 grid md:grid-cols-[1.4fr_1fr] gap-10 items-start">
+          <div className="border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg p-8 md:p-11 grid md:grid-cols-[1.4fr_1fr] gap-10 items-start">
             <div>
               {newest.summary && (
                 <h3 className="font-serif text-2xl md:text-3xl font-medium leading-[1.14] tracking-[-0.015em] text-cream">
@@ -131,7 +135,9 @@ export default async function FundPage() {
               )}
               <details className="group mt-6 border-t border-border pt-5">
                 <summary className="list-none cursor-pointer text-sm font-semibold text-orange inline-flex items-center gap-2 select-none">
-                  <span className="transition-transform group-open:rotate-90">›</span>
+                  <span className="transition-transform group-open:rotate-90">
+                    ›
+                  </span>
                   Read the full digest
                 </summary>
                 <div className="mt-5 reading-prose">
@@ -143,7 +149,10 @@ export default async function FundPage() {
             {newest.highlights.length > 0 && (
               <ul className="flex flex-col gap-3.5">
                 {newest.highlights.map((h) => (
-                  <li key={h.lead} className="flex gap-3 text-[15px] leading-relaxed text-cream">
+                  <li
+                    key={h.lead}
+                    className="flex gap-3 text-[15px] leading-relaxed text-cream"
+                  >
                     <span className="flex-none w-1.5 h-1.5 rounded-full bg-orange mt-2" />
                     <span>
                       <b className="text-gold font-semibold">{h.lead}.</b>{" "}
@@ -165,12 +174,19 @@ export default async function FundPage() {
           href="/fund/strategy"
           eyebrow="The framework"
           title="Strategy"
-          blurb={strategyPullQuote || "Alert decoding, position sizing, and the hedging framework that governs every move."}
+          blurb={
+            strategyPullQuote ||
+            "Alert decoding, position sizing, and the hedging framework that governs every move."
+          }
           chips={strategyChips}
         />
         <DocCard
           href="/fund/thesis"
-          eyebrow={thesisLastModified ? `Updated ${formatShortDate(thesisLastModified)}` : "The conviction"}
+          eyebrow={
+            thesisLastModified
+              ? `Updated ${formatShortDate(thesisLastModified)}`
+              : "The conviction"
+          }
           title="Thesis"
           blurb="Per-ticker conviction history and the theme evolution behind the current portfolio."
           chips={thesisChips}
@@ -189,11 +205,14 @@ export default async function FundPage() {
                 Recent moves
               </h2>
             </div>
-            <Link href="/portfolio" className="text-sm font-semibold text-orange hover:underline">
+            <Link
+              href="/portfolio"
+              className="text-sm font-semibold text-orange hover:underline"
+            >
               Open Portfolio →
             </Link>
           </div>
-          <div className="border border-border rounded-2xl bg-surface px-6">
+          <div className="border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-6">
             {recentMoves.map((t, i) => (
               <div
                 key={t.id}
@@ -205,9 +224,13 @@ export default async function FundPage() {
                 <span className="font-serif text-[15px] text-muted">
                   {formatShortDate(t.tradeDate)}
                 </span>
-                <span className="font-bold text-[15px] tracking-wide">{t.ticker}</span>
+                <span className="font-bold text-[15px] tracking-wide">
+                  {t.ticker}
+                </span>
                 <span className="text-sm text-muted truncate">
-                  <span className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${moveTone(t.action)}`}>
+                  <span
+                    className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${moveTone(t.action)}`}
+                  >
                     {t.action}
                   </span>
                   {t.note}
@@ -232,7 +255,7 @@ export default async function FundPage() {
               Past digests
             </h2>
           </div>
-          <div className="border border-border rounded-2xl bg-surface px-6">
+          <div className="border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-6">
             {pastDigests.map((d, i) => (
               <Link
                 key={d.slug}
@@ -287,10 +310,13 @@ function KpiCard({
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden border border-border rounded-2xl bg-surface px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors"
+      className="group relative overflow-hidden border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors"
     >
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide font-semibold text-muted">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
+        <span
+          className="w-2.5 h-2.5 rounded-full"
+          style={{ background: dotColor }}
+        />
         {label}
       </div>
       <div className="font-serif font-semibold text-[42px] leading-none tracking-[-0.02em] text-cream mt-4 mb-1.5 tabular-nums">
@@ -320,13 +346,15 @@ function DocCard({
   return (
     <Link
       href={href}
-      className="group border border-border rounded-2xl bg-surface p-7 flex flex-col gap-3.5 hover:border-muted-deep hover:-translate-y-0.5 transition-all"
+      className="group border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg p-7 flex flex-col gap-3.5 hover:border-muted-deep hover:-translate-y-0.5 transition-all"
     >
       <div className="text-[11px] uppercase tracking-[0.16em] font-semibold text-muted-deep">
         {eyebrow}
       </div>
       <h3 className="font-serif text-2xl font-semibold text-cream">{title}</h3>
-      <p className="text-sm text-muted leading-relaxed flex-1 line-clamp-3">{blurb}</p>
+      <p className="text-sm text-muted leading-relaxed flex-1 line-clamp-3">
+        {blurb}
+      </p>
       <div className="flex flex-wrap gap-1.5">
         {chips.map((chip) => (
           <span

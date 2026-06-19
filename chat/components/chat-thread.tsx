@@ -4,12 +4,11 @@ import { useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   usePageContext,
   type PageContext,
 } from "@/lib/page-context/context";
+import { MarkdownBody } from "./markdown-body";
 import { Engraving } from "./engraving";
 
 /**
@@ -230,7 +229,9 @@ function Message({
               if (part.type === "text") {
                 if (!part.text) return null;
                 return (
-                  <Markdown key={index}>{part.text}</Markdown>
+                  <MarkdownBody key={index} headingAnchors={false}>
+                    {part.text}
+                  </MarkdownBody>
                 );
               }
               if (part.type.startsWith("tool-")) {
@@ -239,7 +240,11 @@ function Message({
               return null;
             })
           : combinedText
-            ? <Markdown>{combinedText}</Markdown>
+            ? (
+              <MarkdownBody headingAnchors={false}>
+                {combinedText}
+              </MarkdownBody>
+            )
             : null}
         {!showThinking && sources.length > 0 ? (
           <Sources sources={sources} />
@@ -292,14 +297,6 @@ function Sources({ sources }: { sources: Source[] }) {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function Markdown({ children }: { children: string }) {
-  return (
-    <div className="markdown">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
     </div>
   );
 }

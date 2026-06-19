@@ -67,6 +67,28 @@ function main() {
     "block points the model at read_article",
   );
   assert(article.includes("NVDA"), "block lists the article tickers");
+  assert(
+    !article.includes("read_article(\""),
+    "without a URL, block does NOT hardcode a read_article(url) call",
+  );
+
+  // ── (b2) article context WITH canonical URL ────────────────────────────────
+  console.log("\n[b2] article context with url");
+  const articleUrl = "https://io-fund.com/some/nvda-deep-dive";
+  const articleWithUrl = buildSystemPrompt(BASE, {
+    route: "/articles/[slug]",
+    articleSlug: "nvda-deep-dive",
+    articleUrl,
+    tickers: ["NVDA"],
+  });
+  assert(
+    articleWithUrl.includes(`read_article("${articleUrl}")`),
+    "with a URL, block points the model straight at read_article(url)",
+  );
+  assert(
+    !articleWithUrl.includes("search_articles"),
+    "with a URL, block drops the search_articles hop",
+  );
 
   // ── (c) portfolio context ──────────────────────────────────────────────────
   console.log("\n[c] portfolio context");

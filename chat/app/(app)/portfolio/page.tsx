@@ -50,12 +50,13 @@ export default async function PortfolioPage() {
       <PortfolioPageContext tickers={heldTickers} />
 
       <div className="relative max-w-[1180px] mx-auto px-8 pb-32">
-        {/* Colosseum — large faint watermark that bleeds from the masthead down
-            over the top of the holdings table (z-10 to overlay the opaque table
-            card; pointer-events-none so the view-cycler stays clickable). */}
+        {/* Colosseum — large engraving that bleeds from the masthead down
+            *behind* the holdings card (-z-10). The frosted-glass holdings card +
+            view-cycler render on top and let it show through, blurred, so the
+            top layer's readability stays priority. pointer-events-none. */}
         <Engraving
           name="colosseum"
-          className="hidden md:block absolute right-0 top-[-80px] w-[520px] lg:w-[600px] h-auto opacity-[0.06] [[data-theme=dark]_&]:opacity-[0.12] z-10 pointer-events-none"
+          className="hidden md:block absolute right-0 top-[-80px] w-[520px] lg:w-[600px] h-auto opacity-[0.18] [[data-theme=dark]_&]:opacity-[0.12] -z-10 pointer-events-none"
         />
 
         {/* ── Editorial header ── */}
@@ -92,7 +93,7 @@ export default async function PortfolioPage() {
               No moves in the last 30 days.
             </p>
           ) : (
-            <div className="border border-border rounded-2xl bg-surface px-6">
+            <div className="border border-border rounded-2xl bg-surface/65 backdrop-blur-lg px-6">
               {trades.map((t, i) => {
                 const price = t.price
                   ? `$${parseFloat(t.price).toLocaleString('en-US', {

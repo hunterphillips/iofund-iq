@@ -45,7 +45,7 @@ export function PortfolioBook({
 
         {hasCharts && (
           <div
-            className="inline-flex bg-surface-2 border border-border rounded-[10px] p-1 gap-0.5"
+            className="inline-flex bg-surface-2/60 backdrop-blur-md border border-border rounded-[10px] p-1 gap-0.5"
             role="tablist"
             aria-label="Portfolio view"
           >
@@ -70,7 +70,7 @@ export function PortfolioBook({
         )}
       </div>
 
-      <div className="border border-border rounded-2xl bg-surface px-4 py-3">
+      <div className="border border-border rounded-2xl bg-surface/30 backdrop-blur-lg px-4 py-3">
         {view === "table" && <PositionsTable rows={rows} />}
         {view === "pie" && <PieView breakdown={breakdown} names={rows.length} />}
         {view === "themes" && <ThemesView breakdown={breakdown} />}

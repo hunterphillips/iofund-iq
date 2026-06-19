@@ -27,6 +27,9 @@ import {
 export interface PageContext {
   route: string;
   articleSlug?: string;
+  // Canonical article URL. When present, the prompt tells the model to call
+  // read_article(articleUrl) directly, skipping the search_articles hop.
+  articleUrl?: string;
   tickers?: string[];
   docName?: "strategy" | "thesis";
 }

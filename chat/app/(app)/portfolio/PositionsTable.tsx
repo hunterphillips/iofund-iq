@@ -99,12 +99,17 @@ export function PositionsTable({ rows }: Props) {
 
   const sorted = sortRows(rows, sortCol, sortDir);
 
+  // aria-sort tells assistive tech which column orders the table and in which
+  // direction; non-active columns report "none".
+  const ariaSort = (col: SortCol): "ascending" | "descending" | "none" =>
+    sortCol !== col ? "none" : sortDir === "asc" ? "ascending" : "descending";
+
   return (
     <div className="overflow-x-auto">
       <table className="positions-table">
         <thead>
           <tr>
-            <th>
+            <th aria-sort={ariaSort("ticker")}>
               <button
                 className="col-header"
                 onClick={() => handleHeader("ticker")}
@@ -112,7 +117,7 @@ export function PositionsTable({ rows }: Props) {
                 Ticker <ChevronIcon col="ticker" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
-            <th>
+            <th aria-sort={ariaSort("company")}>
               <button
                 className="col-header"
                 onClick={() => handleHeader("company")}
@@ -120,7 +125,7 @@ export function PositionsTable({ rows }: Props) {
                 Company <ChevronIcon col="company" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
-            <th>
+            <th aria-sort={ariaSort("category")}>
               <button
                 className="col-header"
                 onClick={() => handleHeader("category")}
@@ -128,7 +133,7 @@ export function PositionsTable({ rows }: Props) {
                 Theme <ChevronIcon col="category" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
-            <th className="text-right">
+            <th className="text-right" aria-sort={ariaSort("weight")}>
               <button
                 className="col-header col-header-right"
                 onClick={() => handleHeader("weight")}
@@ -136,7 +141,7 @@ export function PositionsTable({ rows }: Props) {
                 <ChevronIcon col="weight" sortCol={sortCol} sortDir={sortDir} /> Weight
               </button>
             </th>
-            <th>
+            <th aria-sort={ariaSort("firstEntry")}>
               <button
                 className="col-header"
                 onClick={() => handleHeader("firstEntry")}

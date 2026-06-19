@@ -42,11 +42,18 @@ function describeContext(ctx: PageContext): string {
       const tail = tickers.length
         ? ` It references these tickers: ${tickers.join(", ")}.`
         : "";
+      // When the producer published the canonical URL, point the model straight
+      // at read_article(url) — no search_articles hop needed.
+      const howToRead =
+        typeof ctx.articleUrl === "string" && ctx.articleUrl
+          ? `Its distilled body is available via read_article("${ctx.articleUrl}") — ` +
+            `call that directly and read it`
+          : `Its distilled body is available via the search_articles + ` +
+            `read_article tools — search for this article and read it`;
       return (
         `[Page context] The user is viewing the I/O Fund article${slug} ` +
-        `(route /articles/[slug]). Its distilled body is available via the ` +
-        `search_articles + read_article tools — search for this article and ` +
-        `read it before answering questions about "this article" or "the takeaway".${tail}`
+        `(route /articles/[slug]). ${howToRead} before answering questions ` +
+        `about "this article" or "the takeaway".${tail}`
       );
     }
 

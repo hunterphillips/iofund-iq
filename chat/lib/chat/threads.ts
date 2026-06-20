@@ -97,15 +97,19 @@ export async function getMessages(threadId: string): Promise<ChatMessageRow[]> {
  *
  * The render-layer Sources block (chat-thread.tsx extractSources) only reads
  * `output.title` and `output.pub_date` — not `output.body`. The body already
- * lives in `articles.body`, so persisting it in
- * jsonb doubles storage by tens of KB per message. This runs only on the copy
- * being written to the DB; the live stream is unaffected.
+ * lives in `articles.body`, so persisting it in jsonb doubles storage by tens of
+ * KB per message. This runs only on the copy being written to the DB; the live
+ * stream is unaffected.
+ *
+ * Note: attached portfolio images (image `file` parts) ARE persisted, so the
+ * thumbnail survives a reload in chat history — they're the user's own data in
+ * their own row. (The vision-extraction pipeline in lib/portfolio still discards
+ * its screenshots; that convention is about that flow, not chat history.)
  */
 function sanitizeForPersistence(message: UIMessage): UIMessage {
   if (!Array.isArray(message.parts)) return message;
 
   const parts = message.parts.map((part) => {
-    // Only touch tool-result parts for read_article with output.body present.
     if (
       part.type !== "tool-read_article" ||
       (part as Record<string, unknown>).state !== "output-available"
@@ -139,8 +143,9 @@ function sanitizeForPersistence(message: UIMessage): UIMessage {
  * initial messages (preserving tool-call parts → render-layer Sources).
  *
  * Assistant messages are sanitized before storage: `body` is stripped from
- * `tool-read_article` parts (the body lives in _data/ + articles.body;
- * the render-layer Sources only needs title + pub_date).
+ * `tool-read_article` parts (the body lives in _data/ + articles.body; the
+ * render-layer Sources only needs title + pub_date). User messages (incl.
+ * attached portfolio images) persist as-is.
  */
 export async function appendMessage(
   threadId: string,

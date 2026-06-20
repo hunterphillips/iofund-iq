@@ -76,7 +76,7 @@ For the cron workflows to run, the GitHub repo needs `IO_FUND_USERNAME`, `IO_FUN
 
 | Phase | Status | Scope |
 |---|---|---|
-| **0 — read-only intelligence + chat** | in progress | Trade poll ✓ · Article ingest ✓ · Chat ✓ · Weekly digest ✓ · Positions table ✓ · Portfolio gap analysis ☐ |
+| **0 — read-only intelligence + chat** | complete | Trade poll ✓ · Article ingest ✓ · Chat ✓ · Weekly digest ✓ · Positions table ✓ · Portfolio gap analysis ✓ (screenshot upload + in-chat image attach) |
 | **1 — RAG + broker read + email→webhook** | planned | pgvector hybrid with FTS · Alpaca paper read-only portfolio pull · IOF alert email → forwarder → webhook (replaces polling) |
 | **2 — multi-tenant + pitch** | planned | Postgres RLS · public sign-up · billing · formal pitch to IOF team |
 

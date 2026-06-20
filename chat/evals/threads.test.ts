@@ -176,6 +176,41 @@ async function main() {
       "stored part body is stripped",
     );
 
+    // ── Attached portfolio image persists in chat history (round-trips) ──────
+    console.log("\n[j] portfolio image persists on reload");
+    const imageUrl = "data:image/png;base64,AAAABBBBCCCCDDDD-portfolio-bytes";
+    const imagePart = {
+      type: "file" as const,
+      mediaType: "image/png",
+      url: imageUrl,
+    };
+    const msgWithImage: UIMessage = {
+      id: "u-image-test",
+      role: "user",
+      parts: [
+        imagePart as unknown as UIMessage["parts"][number],
+        { type: "text", text: "How does this compare to I/O Fund?" },
+      ],
+    };
+    await appendMessage(threadId!, "user", msgWithImage);
+    const withImage = await getMessages(threadId!);
+    const imageRow = withImage[withImage.length - 1];
+    const storedImg = imageRow.content as UIMessage;
+    const storedFile = storedImg.parts.find((p) => p.type === "file") as
+      | (Record<string, unknown> & { mediaType?: string; url?: string })
+      | undefined;
+    assert(storedFile !== undefined, "image file part persisted");
+    assert(storedFile?.mediaType === "image/png", "stored part retains mediaType");
+    assert(storedFile?.url === imageUrl, "stored part retains image bytes (url)");
+    assert(
+      storedImg.parts.some(
+        (p) =>
+          p.type === "text" &&
+          (p as { text: string }).text === "How does this compare to I/O Fund?",
+      ),
+      "user text preserved alongside image",
+    );
+
     // ── DELETE cascade ───────────────────────────────────────────────────────
     console.log("\n[h] delete cascades to messages");
     await deleteThread(threadId);

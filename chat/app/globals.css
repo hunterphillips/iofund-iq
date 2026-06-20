@@ -736,6 +736,85 @@ body::after {
   border-radius: 6px;
 }
 
+/* Staged image attachment (above the composer) */
+.chat-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.chat-attachment-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.chat-attachment-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-attachment-remove {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.chat-attachment-remove:hover {
+  color: var(--fg);
+  background: var(--surface-2, var(--surface));
+}
+
+/* Paperclip attach button in the composer */
+.chat-attach-btn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--surface);
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.chat-attach-btn:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.chat-attach-btn:disabled {
+  opacity: 0.5;
+}
+
+/* Uploaded image inside a chat message bubble */
+.chat-message-image {
+  max-width: min(320px, 100%);
+  max-height: 16rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
 /* ---------- Portfolio page ---------- */
 
 .portfolio-container {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -122,12 +122,79 @@ export function ChatThread({
 
   const busy = status === "streaming" || status === "submitted";
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  // Staged image attachment (portfolio screenshot → gap analysis). Sent with the
+  // next message, then cleared. Bytes are never persisted (stripped server-side).
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+  // Object URL for the staged thumbnail. Memoized + revoked so we don't leak a
+  // new URL on every keystroke re-render while an image is attached.
+  const filePreviewUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file],
+  );
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+    };
+  }, [filePreviewUrl]);
+
+  // Shared staging path for both file-picker selection and clipboard paste.
+  function stageFile(picked: File | null) {
+    if (!picked) return;
+    if (!picked.type.startsWith("image/")) {
+      setFileError("Please attach an image.");
+      return;
+    }
+    if (picked.size > MAX_IMAGE_BYTES) {
+      setFileError("Image is too large (max 5 MB).");
+      return;
+    }
+    setFileError(null);
+    setFile(picked);
+  }
+
+  function handleFilePick(event: React.ChangeEvent<HTMLInputElement>) {
+    const picked = event.target.files?.[0] ?? null;
+    // Reset the input so re-picking the same file fires onChange again.
+    event.target.value = "";
+    stageFile(picked);
+  }
+
+  // Paste an image straight from the clipboard (e.g. a screenshot). Falls
+  // through to normal text paste when the clipboard holds no image.
+  function handlePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+    const imageItem = Array.from(event.clipboardData.items).find((i) =>
+      i.type.startsWith("image/"),
+    );
+    if (!imageItem) return;
+    const blob = imageItem.getAsFile();
+    if (!blob) return;
+    event.preventDefault();
+    stageFile(blob);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = input.trim();
-    if (!text || busy) return;
-    sendMessage({ text });
+    if ((!text && !file) || busy) return;
+    const files = file
+      ? [
+          {
+            type: "file" as const,
+            mediaType: file.type,
+            url: await fileToDataUrl(file),
+            filename: file.name,
+          },
+        ]
+      : undefined;
+    sendMessage({ text, files });
     setInput("");
+    setFile(null);
+    setFileError(null);
   }
 
   return (
@@ -157,17 +224,61 @@ export function ChatThread({
           <div className="chat-error">Error: {error.message}</div>
         ) : null}
       </div>
+      {file && filePreviewUrl ? (
+        <div className="chat-attachment">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={filePreviewUrl}
+            alt="Attached portfolio screenshot"
+            className="chat-attachment-thumb"
+          />
+          <span className="chat-attachment-name">
+            {file.name || "Pasted image"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFile(null)}
+            aria-label="Remove attachment"
+            className="chat-attachment-remove"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+      {fileError ? <div className="chat-error">{fileError}</div> : null}
       <form className="chat-input-row" onSubmit={handleSubmit}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFilePick}
+        />
+        <button
+          type="button"
+          className="chat-attach-btn"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={busy}
+          aria-label="Attach a portfolio screenshot"
+          title="Attach a portfolio screenshot"
+        >
+          <PaperclipGlyph />
+        </button>
         <input
           className="chat-input"
           type="text"
           placeholder="Ask about I/O Fund..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onPaste={handlePaste}
           disabled={busy}
           autoFocus
         />
-        <button className="cta" type="submit" disabled={busy || !input.trim()}>
+        <button
+          className="cta"
+          type="submit"
+          disabled={busy || (!input.trim() && !file)}
+        >
           {busy ? "…" : "Send"}
         </button>
       </form>
@@ -217,6 +328,10 @@ function Message({
   const textParts = message.parts.filter((part) => part.type === "text");
   const combinedText = textParts.map((part) => part.text).join("");
   const sources = extractSources(message.parts);
+  const images = message.parts.filter(
+    (part): part is Extract<UIMessage["parts"][number], { type: "file" }> =>
+      part.type === "file" && part.mediaType?.startsWith("image/"),
+  );
 
   return (
     <div className={`chat-message chat-message-${message.role}`}>
@@ -224,6 +339,15 @@ function Message({
         {message.role === "user" ? "You" : "Assistant"}
       </div>
       <div className="chat-message-body">
+        {images.map((part, index) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={`img-${index}`}
+            src={part.url}
+            alt="Attached portfolio screenshot"
+            className="chat-message-image"
+          />
+        ))}
         {showThinking
           ? message.parts.map((part, index) => {
               if (part.type === "text") {
@@ -337,7 +461,37 @@ function describeToolCall(
     case "read_article": {
       return "Reading article…";
     }
+    case "analyze_portfolio_gap": {
+      return "Comparing your portfolio to I/O Fund…";
+    }
     default:
       return `Running ${toolName}…`;
   }
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function PaperclipGlyph() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
 }

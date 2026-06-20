@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db, tables } from "@/db";
 import { auth } from "@/lib/auth/server";
 import type { Holding } from "@/lib/portfolio/extract";
-import { fetchQuotes } from "@/lib/portfolio/prices";
+import { computePortfolioGap } from "@/lib/portfolio/compare";
 import { readDoc, type DocName } from "./docs";
 
 export const chatTools = {
@@ -212,9 +212,21 @@ export const chatTools = {
 
   analyze_portfolio_gap: tool({
     description:
-      "Compare the user's uploaded portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } if no portfolio is uploaded — when this happens, mention they can upload a brokerage screenshot at /portfolio.",
-    inputSchema: z.object({}),
-    execute: async () => {
+      "Compare the user's portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. If the user attached a portfolio/brokerage screenshot this turn, read each holding's ticker + share count from it and pass them as `holdings`; otherwise omit `holdings` to analyze their previously-saved portfolio. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } when no holdings are provided and none are saved — then mention they can attach a brokerage screenshot here in chat (or upload one at /portfolio).",
+    inputSchema: z.object({
+      holdings: z
+        .array(
+          z.object({
+            ticker: z.string().min(1).max(10),
+            shares: z.number().positive(),
+          }),
+        )
+        .optional()
+        .describe(
+          "Holdings read from a portfolio image the user attached this turn (ticker uppercased + share count). Omit to analyze the user's previously-saved portfolio.",
+        ),
+    }),
+    execute: async ({ holdings }: { holdings?: Holding[] }) => {
       const { data: session } = await auth.getSession();
       if (!session?.user) {
         return {
@@ -223,85 +235,43 @@ export const chatTools = {
         };
       }
 
-      const [row] = await db
-        .select({
-          holdings: tables.userHoldings.holdings,
-          uploadedAt: tables.userHoldings.uploadedAt,
-        })
-        .from(tables.userHoldings)
-        .where(eq(tables.userHoldings.userId, session.user.id))
-        .limit(1);
+      // Prefer holdings extracted from an attached image; else fall back to the
+      // user's saved portfolio.
+      let resolved = holdings?.length ? holdings : undefined;
+      let source: "image" | "saved" = "image";
+      let uploadedAt: Date | undefined;
 
-      if (!row) {
-        return {
-          connected: false as const,
-          message:
-            "User has not uploaded a portfolio. Direct them to /portfolio to upload a brokerage screenshot.",
-        };
-      }
+      if (!resolved) {
+        const [row] = await db
+          .select({
+            holdings: tables.userHoldings.holdings,
+            uploadedAt: tables.userHoldings.uploadedAt,
+          })
+          .from(tables.userHoldings)
+          .where(eq(tables.userHoldings.userId, session.user.id))
+          .limit(1);
 
-      const holdings = row.holdings as Holding[];
-      const { prices, missing } = await fetchQuotes(
-        holdings.map((h) => h.ticker),
-      );
-
-      // Compute live user weights from shares × current price.
-      let totalValue = 0;
-      const userBook = new Map<
-        string,
-        { shares: number; value_usd: number; weight: number }
-      >();
-      for (const h of holdings) {
-        const upper = h.ticker.toUpperCase();
-        const price = prices.get(upper);
-        if (price == null) continue;
-        const value = h.shares * price;
-        totalValue += value;
-        userBook.set(upper, { shares: h.shares, value_usd: value, weight: 0 });
-      }
-      for (const v of userBook.values()) {
-        v.weight = totalValue > 0 ? (v.value_usd / totalValue) * 100 : 0;
-      }
-
-      const iofRows = await db
-        .select({
-          ticker: tables.positions.ticker,
-          company: tables.positions.company,
-          category: tables.positions.category,
-          iofWeight: tables.positions.baselineWeightPct,
-        })
-        .from(tables.positions)
-        .where(eq(tables.positions.status, "held"));
-
-      const iofOnly = iofRows
-        .filter((r) => !userBook.has(r.ticker.toUpperCase()))
-        .map((r) => ({
-          ticker: r.ticker,
-          company: r.company,
-          category: r.category,
-          iof_weight_pct: Number(r.iofWeight),
-        }));
-
-      const overlap = iofRows
-        .filter((r) => userBook.has(r.ticker.toUpperCase()))
-        .map((r) => {
-          const yours = userBook.get(r.ticker.toUpperCase())!;
+        if (!row) {
           return {
-            ticker: r.ticker,
-            iof_weight_pct: Number(r.iofWeight),
-            your_weight_pct: Math.round(yours.weight * 10) / 10,
-            delta_pct:
-              Math.round((yours.weight - Number(r.iofWeight)) * 10) / 10,
+            connected: false as const,
+            message:
+              "No holdings provided and none saved. The user can attach a brokerage screenshot here in chat, or upload one at /portfolio.",
           };
-        });
+        }
+        resolved = row.holdings as Holding[];
+        source = "saved";
+        uploadedAt = row.uploadedAt;
+      }
+
+      const gap = await computePortfolioGap(
+        resolved.map((h) => ({ ...h, ticker: h.ticker.toUpperCase() })),
+      );
 
       return {
         connected: true as const,
-        uploaded_at: row.uploadedAt,
-        total_value_usd: Math.round(totalValue),
-        missing_prices: missing,
-        iof_only: iofOnly,
-        overlap,
+        source,
+        ...(uploadedAt ? { uploaded_at: uploadedAt } : {}),
+        ...gap,
       };
     },
   }),

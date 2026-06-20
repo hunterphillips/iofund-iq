@@ -19,7 +19,7 @@ const TICKER_REMAP: Record<string, string> = {
   LINKUSD: "LINK-USD",
 };
 
-function toYahooSymbol(ticker: string): string {
+export function toYahooSymbol(ticker: string): string {
   return TICKER_REMAP[ticker.toUpperCase()] ?? ticker;
 }
 

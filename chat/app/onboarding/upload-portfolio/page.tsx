@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
+import { isEmailAllowed } from "@/lib/auth/allowlist";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { hasUserHoldings } from "@/lib/portfolio/holdings";
 import { PortfolioForm } from "@/app/(app)/portfolio/form";
@@ -10,6 +11,9 @@ export default async function UploadPortfolioPage() {
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     redirect("/auth/sign-in");
+  }
+  if (!isEmailAllowed(session.user.email)) {
+    redirect("/not-invited");
   }
   if (!(await hasIofCredentials(session.user.id))) {
     redirect("/onboarding/connect-iof");

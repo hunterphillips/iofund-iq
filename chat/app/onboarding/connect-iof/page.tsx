@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
+import { isEmailAllowed } from "@/lib/auth/allowlist";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { ConnectIofForm } from "./form";
 
@@ -9,6 +10,9 @@ export default async function ConnectIofPage() {
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     redirect("/auth/sign-in");
+  }
+  if (!isEmailAllowed(session.user.email)) {
+    redirect("/not-invited");
   }
   if (await hasIofCredentials(session.user.id)) {
     redirect("/fund");

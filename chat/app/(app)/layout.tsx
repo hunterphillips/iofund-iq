@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
+import { isEmailAllowed } from "@/lib/auth/allowlist";
 import { AppChrome } from "@/components/app-chrome";
 import { PageContextRoot } from "@/lib/page-context/context";
 import { ActiveThreadProvider } from "@/lib/chat/active-thread";
@@ -17,6 +18,11 @@ export default async function AppLayout({
   const { data: session } = await auth.getSession();
   if (!session?.user) {
     redirect("/auth/sign-in");
+  }
+  // Defense-in-depth: the webhook gates account creation, but block any
+  // pre-existing non-allowlisted account from reaching authenticated surfaces.
+  if (!isEmailAllowed(session.user.email)) {
+    redirect("/not-invited");
   }
 
   return (

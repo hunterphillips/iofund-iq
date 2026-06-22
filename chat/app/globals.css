@@ -1013,6 +1013,13 @@ body::after {
   font-weight: 600;
   color: var(--cream, var(--fg));
   letter-spacing: 0.02em;
+  transition: color 0.15s ease;
+}
+
+/* Unlayered hover rule: the `hover:text-orange` utility on the ticker link
+   loses to .ticker-mono's unlayered color, so the hover state lives here. */
+.ticker-mono:hover {
+  color: var(--color-orange);
 }
 
 .company-cell {

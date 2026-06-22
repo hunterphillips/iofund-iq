@@ -171,7 +171,7 @@ export function PositionsTable({ rows }: Props) {
                 <td>
                   <Link
                     href={`/positions/${row.ticker}`}
-                    className="ticker-mono hover:text-orange transition-colors"
+                    className="ticker-mono"
                   >
                     {row.ticker}
                   </Link>

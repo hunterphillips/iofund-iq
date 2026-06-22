@@ -6,7 +6,6 @@ import "@neondatabase/auth-ui/css";
 import { Engraving } from "@/components/engraving";
 import { ForceTheme } from "@/components/force-theme";
 import { IoMark } from "@/components/io-mark";
-import { SparkleGlyph } from "@/components/sparkle-glyph";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +41,6 @@ export default async function AuthPage({
           <div className="inline-flex items-center gap-2 font-serif text-2xl font-semibold tracking-tight text-cream">
             <IoMark className="h-[0.9em] w-[1.34em] text-orange" />
             Fund
-            <SparkleGlyph className="h-[0.78em] w-[0.78em] text-orange" />
           </div>
           <p className="text-sm text-muted mt-2 max-w-[22rem] leading-relaxed">
             I/O Fund intelligence layer for research, trades, and portfolio

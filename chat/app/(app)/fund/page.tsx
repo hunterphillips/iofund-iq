@@ -100,7 +100,7 @@ export default async function FundPage() {
         </div>
 
         {/* ── KPI dashboard ── */}
-        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-[18px]">
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[18px]">
           <KpiCard
             href="/portfolio"
             dotColor={categoryColorVar(stats.topThemeName)}
@@ -129,6 +129,7 @@ export default async function FundPage() {
             label="Positions held"
             value={String(stats.positionsHeld)}
             sub={`Across ${stats.activeThemes} trends`}
+            className="hidden sm:block"
           />
         </div>
       </div>
@@ -324,17 +325,22 @@ function KpiCard({
   label,
   value,
   sub,
+  className = "",
 }: {
   href: string;
   dotColor: string;
   label: string;
   value: string;
   sub: string;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors"
+      className={
+        "group relative overflow-hidden border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors " +
+        className
+      }
     >
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide font-semibold text-muted">
         <span

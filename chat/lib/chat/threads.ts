@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { UIMessage } from "ai";
 import { db, tables } from "@/db";
 
@@ -165,12 +165,16 @@ export async function appendMessage(
   return row;
 }
 
-/** Bump last_message_at + updated_at to now. */
+/**
+ * Bump last_message_at + updated_at to now. Uses the DB clock (now()), not the
+ * app clock, so these stay monotonic with the row's insert defaults (also DB
+ * clock) — a JS `new Date()` here can land *before* the created timestamp when
+ * the app machine's clock lags the Postgres server's.
+ */
 export async function touchThread(id: string): Promise<void> {
-  const now = new Date();
   await db
     .update(tables.chatThreads)
-    .set({ lastMessageAt: now, updatedAt: now })
+    .set({ lastMessageAt: sql`now()`, updatedAt: sql`now()` })
     .where(eq(tables.chatThreads.id, id));
 }
 

@@ -4,10 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import {
-  usePageContext,
-  type PageContext,
-} from "@/lib/page-context/context";
+import { usePageContext, type PageContext } from "@/lib/page-context/context";
 import { MarkdownBody } from "./markdown-body";
 import { Engraving } from "./engraving";
 
@@ -17,6 +14,47 @@ const ARTICLE_SUGGESTIONS = [
   "Summarize the key points",
   "What's the main takeaway?",
   "How does this affect the portfolio?",
+];
+
+// Reusable workflow templates shown on the empty chat state (no article context).
+// Each maps to a real chat capability. Templates that need the user to supply
+// something — a ticker, or an attached holdings screenshot — `prefill` the input
+// and focus it instead of sending immediately; the rest send on click.
+const COMMAND_TEMPLATES: {
+  label: string;
+  hint: string;
+  prompt: string;
+  prefill?: boolean;
+}[] = [
+  {
+    label: "Ticker brief",
+    hint: "Recent trades, thesis & risks for one name",
+    prompt: "Give me a brief on ",
+    prefill: true,
+  },
+  {
+    label: "Latest trades",
+    hint: "What just moved, and what it signals",
+    prompt: "What are the most recent trades, and what do they signal?",
+  },
+  {
+    label: "What changed in the thesis",
+    hint: "Recent shifts in the investment thesis",
+    prompt: "Summarize the most recent changes in the investment thesis.",
+  },
+  {
+    label: "Compare my portfolio",
+    hint: "Gap vs. the fund — attach a screenshot",
+    prompt:
+      "Compare my portfolio against the fund. (Attach a screenshot of your holdings.)",
+    prefill: true,
+  },
+  {
+    label: "Risks to my holdings",
+    hint: "Biggest risks across the current book",
+    prompt:
+      "What are the biggest risks to the fund's current positions right now?",
+  },
 ];
 
 /**
@@ -48,6 +86,7 @@ export function ChatThread({
   onThreadCreated?: (id: string) => void;
 }) {
   const [input, setInput] = useState("");
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   // Per-turn page context: build the `x-page-context` header from the current
   // route + whatever the page published via useSetPageContext(). The transport
@@ -140,6 +179,25 @@ export function ChatThread({
   function sendSuggestion(text: string) {
     if (busy) return;
     sendMessage({ text });
+  }
+
+  // Run a command template: either send it straight away, or prefill the input
+  // and focus it (cursor at end) so the user can finish the prompt — used for
+  // templates that need a ticker or an attached screenshot.
+  function runTemplate(t: (typeof COMMAND_TEMPLATES)[number]) {
+    if (busy) return;
+    if (t.prefill) {
+      setInput(t.prompt);
+      // Focus after the value lands so the caret sits at the end.
+      requestAnimationFrame(() => {
+        const el = textInputRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      });
+      return;
+    }
+    sendMessage({ text: t.prompt });
   }
 
   // Staged image attachment (portfolio screenshot → gap analysis). Sent with the
@@ -245,9 +303,30 @@ export function ChatThread({
                 </div>
               </>
             ) : (
-              <p className="chat-empty !my-0 max-w-[22rem]">
-                Ask about a ticker, I/O Fund&rsquo;s thesis, or recent activity.
-              </p>
+              <>
+                <p className="chat-empty !my-0 max-w-[22rem]">
+                  Ask about a ticker, I/O Fund&rsquo;s thesis, or recent
+                  activity.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-[30rem] text-left">
+                  {COMMAND_TEMPLATES.map((t) => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      onClick={() => runTemplate(t)}
+                      disabled={busy}
+                      className="group rounded-xl border border-border bg-surface-2/40 px-3.5 py-2.5 hover:border-muted-deep hover:bg-surface-2/70 transition-colors disabled:opacity-50"
+                    >
+                      <div className="text-[13.5px] font-semibold text-cream">
+                        {t.label}
+                      </div>
+                      <div className="text-[11.5px] text-muted-deep mt-0.5 leading-snug">
+                        {t.hint}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         ) : (
@@ -298,8 +377,7 @@ export function ChatThread({
             ✦
           </span>
           <span className="truncate">
-            Asking about{" "}
-            <span className="text-cream">{articleTitle}</span>
+            Asking about <span className="text-cream">{articleTitle}</span>
           </span>
         </div>
       )}
@@ -322,6 +400,7 @@ export function ChatThread({
           <PaperclipGlyph />
         </button>
         <input
+          ref={textInputRef}
           className="chat-input"
           type="text"
           placeholder="Ask about I/O Fund..."
@@ -405,28 +484,24 @@ function Message({
             className="chat-message-image"
           />
         ))}
-        {showThinking
-          ? message.parts.map((part, index) => {
-              if (part.type === "text") {
-                if (!part.text) return null;
-                return (
-                  <MarkdownBody key={index} headingAnchors={false}>
-                    {part.text}
-                  </MarkdownBody>
-                );
-              }
-              if (part.type.startsWith("tool-")) {
-                return <ThinkingLine key={index} part={part} />;
-              }
-              return null;
-            })
-          : combinedText
-            ? (
-              <MarkdownBody headingAnchors={false}>
-                {combinedText}
-              </MarkdownBody>
-            )
-            : null}
+        {showThinking ? (
+          message.parts.map((part, index) => {
+            if (part.type === "text") {
+              if (!part.text) return null;
+              return (
+                <MarkdownBody key={index} headingAnchors={false}>
+                  {part.text}
+                </MarkdownBody>
+              );
+            }
+            if (part.type.startsWith("tool-")) {
+              return <ThinkingLine key={index} part={part} />;
+            }
+            return null;
+          })
+        ) : combinedText ? (
+          <MarkdownBody headingAnchors={false}>{combinedText}</MarkdownBody>
+        ) : null}
         {!showThinking && sources.length > 0 ? (
           <Sources sources={sources} />
         ) : null}
@@ -513,7 +588,9 @@ function describeToolCall(
     }
     case "search_articles": {
       const query = typeof input?.query === "string" ? input.query : null;
-      return query ? `Searching articles for "${query}"…` : "Searching articles…";
+      return query
+        ? `Searching articles for "${query}"…`
+        : "Searching articles…";
     }
     case "read_article": {
       return "Reading article…";

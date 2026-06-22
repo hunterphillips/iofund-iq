@@ -149,7 +149,7 @@ export function PortfolioContent({
                 <div
                   key={t.id}
                   className={
-                    "grid grid-cols-[88px_64px_1fr_auto] gap-5 items-center py-4 " +
+                    "grid grid-cols-[auto_auto_1fr_auto] gap-3 sm:grid-cols-[88px_64px_1fr_auto] sm:gap-5 items-center py-4 " +
                     (i > 0 ? "border-t border-border" : "")
                   }
                 >

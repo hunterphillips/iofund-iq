@@ -79,14 +79,14 @@ export default async function FundPage() {
   const thesisChips = getThesisThemeChips();
 
   return (
-    <div className="max-w-[1180px] mx-auto px-8 pb-32">
+    <div className="max-w-[1180px] mx-auto px-8 pb-32 overflow-x-clip">
       {/* ── Page header + KPIs — a tall hourglass runs down the right edge and
           tucks behind the cards (z-0), giving the masthead depth. `isolate`
           keeps its overflow from painting over the digest section below. ── */}
       <div className="relative isolate">
         <Engraving
           name="peer-review"
-          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.4] z-0"
+          className="absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.4] z-0"
         />
         <div className="relative z-10 pt-16 pb-10">
           <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">

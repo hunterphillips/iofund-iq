@@ -34,14 +34,14 @@ export default async function PortfolioPage() {
     <>
       <PortfolioPageContext tickers={heldTickers} />
 
-      <div className="relative max-w-[1180px] mx-auto px-8 pb-32">
+      <div className="relative max-w-[1180px] mx-auto px-8 pb-32 overflow-x-clip">
         {/* Colosseum — large engraving that bleeds from the masthead down
             *behind* the holdings card (-z-10). The frosted-glass holdings card +
             view-cycler render on top and let it show through, blurred, so the
             top layer's readability stays priority. pointer-events-none. */}
         <Engraving
           name="colosseum"
-          className="hidden md:block absolute right-0 top-[-80px] w-[520px] lg:w-[600px] h-auto opacity-[0.18] [[data-theme=dark]_&]:opacity-[0.12] -z-10 pointer-events-none"
+          className="absolute right-0 top-[-80px] w-[520px] lg:w-[600px] h-auto opacity-[0.18] [[data-theme=dark]_&]:opacity-[0.12] -z-10 pointer-events-none"
         />
 
         {/* ── Editorial header ── */}

@@ -25,6 +25,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AssistantModal } from "./assistant-modal";
 import { BottomNav } from "./bottom-nav";
+import { IoMark } from "./io-mark";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
@@ -266,24 +267,6 @@ function MenuLink({
     >
       {children}
     </Link>
-  );
-}
-
-/** The I/O Fund "io" infinity mark (traced from the brand PNG with potrace).
- *  Coords live in a 10× space flipped on Y, hence the group transform. Fills
- *  with currentColor so it inherits the button's text color. */
-function IoMark({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 930 624"
-      className={className}
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <g transform="translate(0,624) scale(0.1,-0.1)">
-        <path d="M521 6229 c-186 -31 -367 -168 -450 -341 -48 -101 -61 -161 -61 -281 0 -114 18 -186 72 -290 79 -152 236 -273 404 -313 110 -26 268 -16 366 23 317 125 478 464 371 783 -98 296 -391 470 -702 419z M6095 5810 c-684 -76 -1292 -366 -1770 -845 -184 -184 -344 -395 -482 -635 -66 -115 -2010 -3129 -2036 -3158 -23 -25 -42 -36 -124 -77 -198 -98 -417 -16 -516 193 l-32 67 -3 1616 -2 1616 -92 -34 c-298 -112 -594 -102 -891 30 l-58 26 4 -1667 c3 -1522 5 -1674 20 -1750 123 -600 551 -1040 1130 -1164 134 -28 385 -30 527 -5 189 35 382 114 550 226 93 61 274 234 337 321 22 30 237 361 477 735 241 374 453 700 472 725 31 42 1035 1603 1134 1763 24 39 81 128 126 197 292 445 836 753 1392 789 332 21 640 -39 937 -184 218 -106 361 -211 541 -398 140 -145 226 -266 317 -448 228 -451 265 -932 110 -1414 -86 -269 -232 -511 -438 -724 -298 -310 -676 -498 -1113 -556 -484 -64 -1006 84 -1392 395 -95 77 -160 116 -226 138 -339 113 -684 -133 -684 -488 0 -191 79 -323 288 -483 428 -328 909 -528 1418 -591 704 -87 1393 74 1979 463 160 106 290 214 446 370 167 168 245 262 370 450 234 352 386 749 456 1191 26 166 26 665 0 830 -59 372 -174 706 -349 1011 -143 251 -284 435 -483 634 -441 438 -1000 721 -1615 816 -152 24 -581 35 -725 19z" />
-      </g>
-    </svg>
   );
 }
 

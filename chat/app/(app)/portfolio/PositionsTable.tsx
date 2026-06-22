@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { IofPosition } from "@/lib/portfolio/iof-book";
 import {
   categoryColorVar,
@@ -168,7 +169,12 @@ export function PositionsTable({ rows }: Props) {
             return (
               <tr key={row.ticker}>
                 <td>
-                  <span className="ticker-mono">{row.ticker}</span>
+                  <Link
+                    href={`/positions/${row.ticker}`}
+                    className="ticker-mono hover:text-orange transition-colors"
+                  >
+                    {row.ticker}
+                  </Link>
                 </td>
                 <td className="company-cell">
                   {row.company ?? <span className="text-muted-deep">—</span>}

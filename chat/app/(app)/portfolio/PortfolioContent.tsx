@@ -13,6 +13,7 @@
  */
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type {
   IofPosition,
   IofTrade,
@@ -147,9 +148,12 @@ export function PortfolioContent({
                   <span className="font-serif text-[15px] text-muted">
                     {formatTradeDate(t.tradeDate)}
                   </span>
-                  <span className="font-bold text-[15px] tracking-wide">
+                  <Link
+                    href={`/positions/${t.ticker}`}
+                    className="font-bold text-[15px] tracking-wide hover:text-orange transition-colors"
+                  >
                     {t.ticker}
-                  </span>
+                  </Link>
                   <div className="min-w-0 truncate">
                     <MoveDescription action={t.action} note={t.note} />
                   </div>

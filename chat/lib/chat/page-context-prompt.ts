@@ -69,6 +69,19 @@ function describeContext(ctx: PageContext): string {
       );
     }
 
+    case "/positions/[ticker]": {
+      const sym = ctx.positionTicker;
+      if (!sym) return "";
+      const co = ctx.positionCompany ? ` (${ctx.positionCompany})` : "";
+      return (
+        `[Page context] The user is viewing the I/O Fund position dossier for ` +
+        `${sym}${co} (route /positions/[ticker]). For questions about "this ` +
+        `position", "this ticker", or its trades, use query_trades for ${sym}'s ` +
+        `trade history and search_articles to find what the fund has written ` +
+        `about it.`
+      );
+    }
+
     case "/fund/strategy": {
       return (
         `[Page context] The user is viewing the I/O Fund strategy doc ` +

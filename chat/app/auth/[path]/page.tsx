@@ -53,6 +53,9 @@ export default async function AuthPage({
         <div className="auth-light w-full flex justify-center">
           <AuthView pathname={path} />
         </div>
+        <p className="text-xs text-muted mt-2 max-w-[22rem] text-center leading-relaxed">
+          For informational purposes only. Not investment advice.
+        </p>
       </div>
     </main>
   );

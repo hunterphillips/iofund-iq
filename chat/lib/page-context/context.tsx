@@ -35,6 +35,10 @@ export interface PageContext {
   articleUrl?: string;
   tickers?: string[];
   docName?: "strategy" | "thesis";
+  // Position dossier context (/positions/[ticker]): the ticker in view + its
+  // company name, so chat can ground a "this position" question.
+  positionTicker?: string;
+  positionCompany?: string;
 }
 
 interface PageContextState {

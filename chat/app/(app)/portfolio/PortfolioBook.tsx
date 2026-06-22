@@ -129,6 +129,24 @@ export function PortfolioBook({
             onToggle={toggle}
           />
         )}
+
+        {/*
+          Filtered holdings beneath the chart. When a category is selected in the
+          Pie or Trends view, show the matching holdings here so the user doesn't
+          have to switch back to the Table view to see what's in the slice.
+        */}
+        {view !== "table" && selected && (
+          <div className="mt-2 border-t border-border pt-3 px-2 md:px-4">
+            <div className="flex items-center gap-2 mb-3 text-[12px] uppercase tracking-[0.14em] text-muted-deep font-mono">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ background: categoryColorVar(selected) }}
+              />
+              {categoryLabel(selected)} holdings
+            </div>
+            <PositionsTable rows={tableRows} />
+          </div>
+        )}
       </div>
     </>
   );

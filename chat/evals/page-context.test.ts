@@ -142,6 +142,25 @@ function main() {
     "docName fallback names the strategy doc + keeps base",
   );
 
+  // ── (e2) position dossier context ──────────────────────────────────────────
+  console.log("\n[e2] position dossier context");
+  const position = buildSystemPrompt(BASE, {
+    route: "/positions/[ticker]",
+    positionTicker: "MTSI",
+    positionCompany: "MACOM Technology",
+  });
+  assert(position.includes(BASE), "result still contains the base prompt");
+  assert(position !== BASE, "result differs from the base (block prepended)");
+  assert(position.includes("MTSI"), "block names the position ticker");
+  assert(
+    position.includes("query_trades"),
+    "block points the model at query_trades",
+  );
+  assert(
+    position.includes("search_articles"),
+    "block points the model at search_articles",
+  );
+
   // ── (e) unrecognized route, no doc specifics → base unchanged ───────────────
   console.log("\n[e] unrecognized route with no docName leaves base unchanged");
   assert(

@@ -226,6 +226,14 @@ export function AppChrome({
 
       <main>{children}</main>
 
+      <footer className="mt-16 border-t border-border pt-6 pb-24 md:pb-8">
+        <div className="max-w-[1180px] mx-auto px-8 text-xs leading-relaxed text-muted">
+          For informational purposes only. Not investment advice. Content is
+          distilled from I/O Fund research; do your own due diligence before
+          making any investment decision.
+        </div>
+      </footer>
+
       {/* Mobile primary nav — fixed bottom tab bar (hidden md+). The desktop
           nav above is hidden below md, so this is the only nav on phones. */}
       <BottomNav items={NAV} isActive={(href) => isActive(pathname, href)} />

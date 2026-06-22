@@ -177,7 +177,7 @@ export function ArticlesList({
             value={q}
             onChange={(e) => handleQChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            placeholder="Search I/O Fund's research — try “optical networking”, “NVDA”, “power”…"
+            placeholder="Search recent articles and tickers…"
             className="flex-1 bg-transparent border-none outline-none text-base text-cream placeholder:text-muted-deep min-w-0"
           />
         </div>

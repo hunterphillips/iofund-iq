@@ -92,9 +92,11 @@ export function AppChrome({
         <div className="relative max-w-[1180px] mx-auto px-8 h-[68px] flex items-center justify-between gap-4">
           <Link
             href="/fund"
-            className="font-serif text-xl font-semibold tracking-tight whitespace-nowrap"
+            aria-label="I/O Fund"
+            className="inline-flex items-center gap-1.5 font-serif text-xl font-semibold tracking-tight whitespace-nowrap"
           >
-            I/<span className="text-orange">O</span> Fund
+            <IoMark className="h-[0.9em] w-[1.34em] text-orange" />
+            Fund
           </Link>
 
           <nav className="flex items-center gap-1 absolute left-1/2 -translate-x-1/2">

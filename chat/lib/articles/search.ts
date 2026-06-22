@@ -141,3 +141,27 @@ export async function searchArticles(
     total,
   };
 }
+
+export interface RecentArticle {
+  title: string;
+  slug: string;
+  pubDate: string | null;
+}
+
+/**
+ * Distilled articles published on or after `since` (ISO YYYY-MM-DD), newest
+ * first. The Fund overview uses the length as the "new articles" count and the
+ * head of the list as clickable title previews, so it returns full rows rather
+ * than just a count.
+ */
+export async function recentArticles(since: string): Promise<RecentArticle[]> {
+  return db
+    .select({
+      title: tables.articles.title,
+      slug: tables.articles.slug,
+      pubDate: tables.articles.pubDate,
+    })
+    .from(tables.articles)
+    .where(gte(tables.articles.pubDate, since))
+    .orderBy(desc(tables.articles.pubDate));
+}

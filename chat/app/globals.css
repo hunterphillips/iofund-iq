@@ -45,10 +45,6 @@
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-spline-mono), ui-monospace, "SF Mono", Menlo, Consolas,
     monospace;
-
-  /* Extra-small breakpoint (below Tailwind's sm/640px) for narrow-phone tweaks
-     like the Fund KPI grid collapsing to a single column. */
-  --breakpoint-xs: 30rem;
 }
 
 /* Warm-dark legacy vars (consumed by the pre-Tailwind class system). */

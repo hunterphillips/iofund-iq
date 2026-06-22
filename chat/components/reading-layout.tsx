@@ -119,6 +119,20 @@ export function ReadingLayout({
 
           {/* Optional footer slot (e.g. ticker chips + external link on article detail) */}
           {footer}
+
+          {/* Mobile/tablet assistant CTA — the sidebar rail (with its own CTA) is
+              hidden below lg, so surface the action inline here instead. */}
+          {assistantCta && (
+            <div className="lg:hidden mt-10">
+              <button
+                type="button"
+                onClick={openAssistant}
+                className="w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg border border-border text-sm font-semibold text-cream hover:border-orange hover:text-orange transition-colors"
+              >
+                <span className="text-orange">✦</span> Ask about this article
+              </button>
+            </div>
+          )}
         </article>
 
         {/* Sticky TOC + optional assistant CTA — hidden on mobile, visible lg+ */}

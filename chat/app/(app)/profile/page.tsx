@@ -33,7 +33,7 @@ export default async function ProfilePage() {
 
       <div className="mt-10 flex flex-col gap-3 max-w-sm">
         <Link
-          href="/onboarding/connect-iof"
+          href="/onboarding/connect-iof?reconnect=1"
           className="block px-4 py-2 rounded border border-border text-sm text-cream hover:bg-surface transition-colors"
         >
           Re-connect I/O Fund credentials

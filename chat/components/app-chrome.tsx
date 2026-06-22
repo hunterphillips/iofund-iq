@@ -25,6 +25,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AssistantModal } from "./assistant-modal";
 import { BottomNav } from "./bottom-nav";
+import { IoMark } from "./io-mark";
+import { SparkleGlyph } from "./sparkle-glyph";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
@@ -36,10 +38,12 @@ const NAV: { label: string; href: string }[] = [
 export function AppChrome({
   email,
   name,
+  iofConnected = false,
   children,
 }: {
   email: string | null;
   name: string | null;
+  iofConnected?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -147,29 +151,67 @@ export function AppChrome({
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                aria-label="Account menu"
+                aria-label={
+                  iofConnected
+                    ? "Account menu"
+                    : "Account menu — I/O Fund not connected"
+                }
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="w-[38px] h-[38px] rounded-full grid place-items-center text-xs font-bold border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors"
+                className="relative w-[38px] h-[38px] rounded-full grid place-items-center text-xs font-bold border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors"
               >
                 {initials}
+                {/* Attention dot when I/O Fund isn't connected yet — a required
+                    setup step the user might not realize is pending. */}
+                {!iofConnected && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-orange border-2 border-bg"
+                    aria-hidden="true"
+                  />
+                )}
               </button>
 
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-2 w-60 rounded-md border border-border bg-surface py-1 shadow-lg z-50"
+                  className="absolute right-0 mt-2 w-64 rounded-md border border-border bg-surface py-1 shadow-lg z-50"
                 >
                   {email && (
                     <div className="px-4 py-2 text-xs text-muted-deep truncate border-b border-border">
                       {email}
                     </div>
                   )}
+
+                  {/* I/O Fund connection status + connect/reconnect affordance. */}
+                  <div className="px-4 py-2.5 border-b border-border">
+                    <div className="flex items-center gap-2 text-[13px] text-cream">
+                      <span
+                        className={
+                          "w-1.5 h-1.5 rounded-full " +
+                          (iofConnected ? "bg-cat-energy" : "bg-orange")
+                        }
+                        aria-hidden="true"
+                      />
+                      {iofConnected
+                        ? "I/O Fund connected"
+                        : "I/O Fund not connected"}
+                    </div>
+                    <Link
+                      href={
+                        iofConnected
+                          ? "/onboarding/connect-iof?reconnect=1"
+                          : "/onboarding/connect-iof"
+                      }
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      className="mt-1 inline-block text-xs font-semibold text-orange hover:underline"
+                    >
+                      {iofConnected ? "Reconnect" : "Connect now"}
+                    </Link>
+                  </div>
+
                   <MenuLink href="/profile" onSelect={() => setMenuOpen(false)}>
                     Profile
-                  </MenuLink>
-                  <MenuLink href="/onboarding/connect-iof" onSelect={() => setMenuOpen(false)}>
-                    Connect I/O Fund credentials
                   </MenuLink>
                   <div className="my-1 border-t border-border" />
                   <MenuLink href="/auth/sign-out" onSelect={() => setMenuOpen(false)}>
@@ -226,35 +268,6 @@ function MenuLink({
     >
       {children}
     </Link>
-  );
-}
-
-/** The I/O Fund "io" infinity mark (traced from the brand PNG with potrace).
- *  Coords live in a 10× space flipped on Y, hence the group transform. Fills
- *  with currentColor so it inherits the button's text color. */
-function IoMark({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 930 624"
-      className={className}
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <g transform="translate(0,624) scale(0.1,-0.1)">
-        <path d="M521 6229 c-186 -31 -367 -168 -450 -341 -48 -101 -61 -161 -61 -281 0 -114 18 -186 72 -290 79 -152 236 -273 404 -313 110 -26 268 -16 366 23 317 125 478 464 371 783 -98 296 -391 470 -702 419z M6095 5810 c-684 -76 -1292 -366 -1770 -845 -184 -184 -344 -395 -482 -635 -66 -115 -2010 -3129 -2036 -3158 -23 -25 -42 -36 -124 -77 -198 -98 -417 -16 -516 193 l-32 67 -3 1616 -2 1616 -92 -34 c-298 -112 -594 -102 -891 30 l-58 26 4 -1667 c3 -1522 5 -1674 20 -1750 123 -600 551 -1040 1130 -1164 134 -28 385 -30 527 -5 189 35 382 114 550 226 93 61 274 234 337 321 22 30 237 361 477 735 241 374 453 700 472 725 31 42 1035 1603 1134 1763 24 39 81 128 126 197 292 445 836 753 1392 789 332 21 640 -39 937 -184 218 -106 361 -211 541 -398 140 -145 226 -266 317 -448 228 -451 265 -932 110 -1414 -86 -269 -232 -511 -438 -724 -298 -310 -676 -498 -1113 -556 -484 -64 -1006 84 -1392 395 -95 77 -160 116 -226 138 -339 113 -684 -133 -684 -488 0 -191 79 -323 288 -483 428 -328 909 -528 1418 -591 704 -87 1393 74 1979 463 160 106 290 214 446 370 167 168 245 262 370 450 234 352 386 749 456 1191 26 166 26 665 0 830 -59 372 -174 706 -349 1011 -143 251 -284 435 -483 634 -441 438 -1000 721 -1615 816 -152 24 -581 35 -725 19z" />
-      </g>
-    </svg>
-  );
-}
-
-/** Two-point "sparkle" — the AI mark for the assistant (a large four-point
- *  star with a smaller companion), replacing the old single-star glyph. */
-function SparkleGlyph() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M10 4.5C10.7 9 13 11.3 17.5 12 13 12.7 10.7 15 10 19.5 9.3 15 7 12.7 2.5 12 7 11.3 9.3 9 10 4.5Z" />
-      <path d="M18 2.5C18.3 4.2 19.3 5.2 21 5.5 19.3 5.8 18.3 6.8 18 8.5 17.7 6.8 16.7 5.8 15 5.5 16.7 5.2 17.7 4.2 18 2.5Z" />
-    </svg>
   );
 }
 

@@ -79,14 +79,14 @@ export default async function FundPage() {
   const thesisChips = getThesisThemeChips();
 
   return (
-    <div className="max-w-[1180px] mx-auto px-8 pb-32">
+    <div className="max-w-[1180px] mx-auto px-8 pb-32 overflow-x-clip">
       {/* ── Page header + KPIs — a tall hourglass runs down the right edge and
           tucks behind the cards (z-0), giving the masthead depth. `isolate`
           keeps its overflow from painting over the digest section below. ── */}
       <div className="relative isolate">
         <Engraving
           name="peer-review"
-          className="hidden md:block absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.4] z-0"
+          className="absolute right-0 top-0 w-[440px] lg:w-[520px] h-auto opacity-[0.14] [[data-theme=dark]_&]:opacity-[0.4] z-0"
         />
         <div className="relative z-10 pt-16 pb-10">
           <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">
@@ -100,7 +100,7 @@ export default async function FundPage() {
         </div>
 
         {/* ── KPI dashboard ── */}
-        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-[18px]">
+        <div className="relative z-10 grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-[18px]">
           <KpiCard
             href="/portfolio"
             dotColor={categoryColorVar(stats.topThemeName)}
@@ -129,6 +129,7 @@ export default async function FundPage() {
             label="Positions held"
             value={String(stats.positionsHeld)}
             sub={`Across ${stats.activeThemes} trends`}
+            className="hidden xs:block"
           />
         </div>
       </div>
@@ -241,7 +242,7 @@ export default async function FundPage() {
               <div
                 key={t.id}
                 className={
-                  "grid grid-cols-[88px_64px_1fr_auto] gap-5 items-center py-4 " +
+                  "grid grid-cols-[auto_auto_1fr_auto] gap-3 sm:grid-cols-[88px_64px_1fr_auto] sm:gap-5 items-center py-4 " +
                   (i > 0 ? "border-t border-border" : "")
                 }
               >
@@ -285,7 +286,7 @@ export default async function FundPage() {
                 key={d.slug}
                 href={`/fund/digests/${d.slug}`}
                 className={
-                  "group grid grid-cols-[88px_1fr_auto] gap-5 items-center py-4 " +
+                  "group grid grid-cols-[auto_1fr_auto] gap-3 sm:grid-cols-[88px_1fr_auto] sm:gap-5 items-center py-4 " +
                   (i > 0 ? "border-t border-border" : "")
                 }
               >
@@ -324,17 +325,22 @@ function KpiCard({
   label,
   value,
   sub,
+  className = "",
 }: {
   href: string;
   dotColor: string;
   label: string;
   value: string;
   sub: string;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors"
+      className={
+        "group relative overflow-hidden border border-border rounded-2xl bg-surface/65 [[data-theme=light]_&]:bg-surface/30 backdrop-blur-lg px-[22px] pt-[22px] pb-5 hover:border-muted-deep transition-colors " +
+        className
+      }
     >
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide font-semibold text-muted">
         <span

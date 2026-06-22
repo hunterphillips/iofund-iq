@@ -45,6 +45,10 @@
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-spline-mono), ui-monospace, "SF Mono", Menlo, Consolas,
     monospace;
+
+  /* Extra-small breakpoint (below Tailwind's sm/640px) for narrow-phone tweaks
+     like the Fund KPI grid collapsing to a single column. */
+  --breakpoint-xs: 30rem;
 }
 
 /* Warm-dark legacy vars (consumed by the pre-Tailwind class system). */
@@ -433,7 +437,9 @@ body::after {
   max-width: 48rem;
   width: 100%;
   margin: 0 auto;
-  padding: 1rem 1.25rem;
+  /* Bottom inset clears the iOS home indicator when the modal is full-screen
+   * on mobile; falls back to 1rem where the inset is 0 (desktop / Android). */
+  padding: 1rem 1.25rem max(1rem, env(safe-area-inset-bottom));
   gap: 0.75rem;
 }
 
@@ -1054,6 +1060,20 @@ body::after {
   font-size: 0.8rem;
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* On narrow screens the 5-column table still scrolls horizontally, but tightening
+ * the cell padding and clamping the (already-truncating) company column pulls the
+ * decision-relevant Trend + Weight columns into view with far less scrolling. */
+@media (max-width: 640px) {
+  .positions-table th,
+  .positions-table td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .company-cell {
+    max-width: 7.5rem;
+  }
 }
 
 /* ---------- Reading layout (fund strategy / thesis / digest pages) ---------- */

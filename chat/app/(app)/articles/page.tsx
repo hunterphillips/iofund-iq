@@ -33,11 +33,11 @@ export default async function ArticlesPage({
   ]);
 
   return (
-    <div className="max-w-[1180px] mx-auto px-8 pb-32">
+    <div className="max-w-[1180px] mx-auto px-8 pb-32 overflow-x-clip">
       <div className="relative pt-16 pb-9">
         <Engraving
           name="book"
-          className="hidden md:block absolute right-8 lg:right-12 top-0 w-[340px] lg:w-[400px] h-auto opacity-[0.12] [[data-theme=dark]_&]:opacity-[0.36] -rotate-6 -z-10 pointer-events-none"
+          className="absolute right-8 lg:right-12 top-0 w-[340px] lg:w-[400px] h-auto opacity-[0.12] [[data-theme=dark]_&]:opacity-[0.36] -rotate-6 -z-10 pointer-events-none"
         />
         <div className="relative z-10">
           <div className="text-[11px] uppercase tracking-[0.22em] font-semibold text-orange">

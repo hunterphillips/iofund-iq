@@ -87,7 +87,7 @@ export function ReadingLayout({
   }, [toc.length]);
 
   return (
-    <div className="max-w-[1100px] mx-auto px-8 py-12">
+    <div className="max-w-[1100px] mx-auto px-8 pt-12 pb-28 md:pb-12">
       {/* Back breadcrumb */}
       <a
         href={backHref}

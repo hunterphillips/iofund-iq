@@ -24,6 +24,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AssistantModal } from "./assistant-modal";
+import { BottomNav } from "./bottom-nav";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
@@ -99,7 +100,7 @@ export function AppChrome({
             Fund
           </Link>
 
-          <nav className="flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {NAV.map((n) => {
               const active = isActive(pathname, n.href);
               return (
@@ -182,6 +183,10 @@ export function AppChrome({
       </header>
 
       <main>{children}</main>
+
+      {/* Mobile primary nav — fixed bottom tab bar (hidden md+). The desktop
+          nav above is hidden below md, so this is the only nav on phones. */}
+      <BottomNav items={NAV} isActive={(href) => isActive(pathname, href)} />
 
       {/* Centered assistant modal — two-pane layout (conversation sidebar + chat),
           full-screen on mobile. Mounted only while open so the thread list

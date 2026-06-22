@@ -1,5 +1,5 @@
 import { getIofBook } from '@/lib/portfolio/iof-book';
-import { PortfolioBook } from './PortfolioBook';
+import { PortfolioContent } from './PortfolioContent';
 import { PortfolioPageContext } from './PortfolioPageContext';
 import { Engraving } from '@/components/engraving';
 
@@ -8,24 +8,6 @@ export const dynamic = 'force-dynamic';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Format a trade date as a short serif display date, e.g. "Jun 9" */
-function formatTradeDate(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-/** Action → tone class for the inline action label. */
-function actionTone(action: string): string {
-  const u = action.toUpperCase();
-  if (u.startsWith('BUY')) return 'text-cat-energy';
-  if (u.startsWith('SELL')) return 'text-cat-memory';
-  if (u.startsWith('HEDGE')) return 'text-gold';
-  if (u.startsWith('COVER')) return 'text-cat-software';
-  return 'text-muted';
-}
 
 /** Today formatted as "June 13, 2026" */
 function todayLabel(): string {
@@ -41,9 +23,12 @@ function todayLabel(): string {
 // ---------------------------------------------------------------------------
 
 export default async function PortfolioPage() {
-  const { positions, trades, categoryBreakdown } = await getIofBook();
+  // Fetch up to 6 months of trades so the Recent-moves range selector
+  // (30d / 3m / 6m) can filter client-side without a refetch.
+  const { positions, trades, categoryBreakdown } = await getIofBook(180);
 
   const heldTickers = positions.map((p) => p.ticker);
+  const asOf = new Date().toISOString().slice(0, 10);
 
   return (
     <>
@@ -69,69 +54,14 @@ export default async function PortfolioPage() {
           </h1>
         </header>
 
-        {/* ── 01 — Holdings (Table / Pie / Themes) ── */}
-        <section className="mt-4">
-          <PortfolioBook rows={positions} breakdown={categoryBreakdown} />
-        </section>
-
-        {/* ── 02 — Recent moves ── */}
-        <section className="mt-16">
-          <div className="flex items-baseline justify-between mb-6">
-            <div className="flex items-baseline gap-3">
-              <span className="text-[0.65rem] uppercase tracking-[0.18em] text-muted-deep font-mono">
-                02
-              </span>
-              <h2 className="font-serif text-2xl text-cream tracking-tight">
-                Recent moves
-              </h2>
-            </div>
-            <span className="text-[13px] text-muted">Last 30 days</span>
-          </div>
-
-          {trades.length === 0 ? (
-            <p className="text-muted-deep text-sm">
-              No moves in the last 30 days.
-            </p>
-          ) : (
-            <div className="border border-border rounded-2xl bg-surface/65 backdrop-blur-lg px-6">
-              {trades.map((t, i) => {
-                const price = t.price
-                  ? `$${parseFloat(t.price).toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                  : null;
-                return (
-                  <div
-                    key={t.id}
-                    className={
-                      'grid grid-cols-[88px_64px_1fr_auto] gap-5 items-center py-4 ' +
-                      (i > 0 ? 'border-t border-border' : '')
-                    }
-                  >
-                    <span className="font-serif text-[15px] text-muted">
-                      {formatTradeDate(t.tradeDate)}
-                    </span>
-                    <span className="font-bold text-[15px] tracking-wide">
-                      {t.ticker}
-                    </span>
-                    <span className="text-sm text-muted truncate">
-                      <span
-                        className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${actionTone(t.action)}`}
-                      >
-                        {t.action}
-                      </span>
-                      {t.note}
-                    </span>
-                    <span className="font-mono text-sm tabular-nums text-cream">
-                      {price ?? ''}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        {/* ── Holdings (01) + Recent moves (02) — share the category filter,
+            so both live in one client surface. ── */}
+        <PortfolioContent
+          positions={positions}
+          breakdown={categoryBreakdown}
+          trades={trades}
+          asOf={asOf}
+        />
       </div>
     </>
   );

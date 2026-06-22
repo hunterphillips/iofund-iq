@@ -72,8 +72,14 @@ function daysAgo(n: number): string {
 // Data fetching
 // ---------------------------------------------------------------------------
 
-export async function getIofBook(): Promise<IofBook> {
+/**
+ * @param tradesSinceDays  How far back to fetch the trades list (default 30).
+ *   `/portfolio` passes a wider window to power its range selector; the
+ *   `tradesLast30d` stat stays pinned to the last 30 days regardless.
+ */
+export async function getIofBook(tradesSinceDays = 30): Promise<IofBook> {
   const since30d = daysAgo(30);
+  const sinceTrades = daysAgo(Math.max(tradesSinceDays, 30));
 
   const [positions, recentTrades] = await Promise.all([
     // All held positions, sorted weight desc for default table order.
@@ -108,7 +114,7 @@ export async function getIofBook(): Promise<IofBook> {
         analyst: tables.trades.analyst,
       })
       .from(tables.trades)
-      .where(gte(tables.trades.tradeDate, since30d))
+      .where(gte(tables.trades.tradeDate, sinceTrades))
       .orderBy(desc(tables.trades.tradeDate)),
   ]);
 
@@ -143,7 +149,7 @@ export async function getIofBook(): Promise<IofBook> {
     topThemeName: top?.category ?? null,
     topThemeWeight: top?.weight ?? null,
     activeThemes,
-    tradesLast30d: recentTrades.length,
+    tradesLast30d: recentTrades.filter((t) => t.tradeDate >= since30d).length,
   };
 
   return {

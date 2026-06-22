@@ -41,7 +41,10 @@ export const viewport: Viewport = {
 
 // Applies the saved theme (or the OS preference, falling back to warm-dark)
 // to <html> before first paint, so the toggle never flashes the wrong theme.
-const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+// Auth pages always render light, so pin that here on a hard load too — this is
+// the head-script home for the no-flash logic (ForceTheme handles client nav),
+// which lets the auth page drop its own inline <script> (React warns on those).
+const THEME_INIT = `(function(){try{if(location.pathname.indexOf('/auth')===0){document.documentElement.setAttribute('data-theme','light');return;}var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
 
 export default function RootLayout({
   children,

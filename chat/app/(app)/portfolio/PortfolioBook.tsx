@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * PortfolioBook — the "01 — Holdings" surface with a Table / Pie / Themes
+ * PortfolioBook — the "01 — Holdings" surface with a Table / Pie / Trends
  * view-cycler (slice: 2026-06-14 redesign). The pie pulls the deferred
- * Portfolio-v2 donut forward, rendered with recharts; the themes view uses
+ * Portfolio-v2 donut forward, rendered with recharts; the trends view uses
  * lightweight CSS weight-bars (matching the approved mockup). All three share
  * the single-source category colors in lib/portfolio/categories.ts, so they
  * re-theme with light/dark.
@@ -12,15 +12,15 @@
 import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { IofPosition, CategoryWeight } from "@/lib/portfolio/iof-book";
-import { categoryColorVar } from "@/lib/portfolio/categories";
+import { categoryColorVar, categoryLabel } from "@/lib/portfolio/categories";
 import { PositionsTable } from "./PositionsTable";
 
-type View = "table" | "pie" | "themes";
+type View = "table" | "pie" | "trends";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "table", label: "Table" },
   { id: "pie", label: "Pie" },
-  { id: "themes", label: "Themes" },
+  { id: "trends", label: "Trends" },
 ];
 
 export function PortfolioBook({
@@ -73,7 +73,7 @@ export function PortfolioBook({
       <div className="border border-border rounded-2xl bg-surface/30 backdrop-blur-lg px-4 py-3">
         {view === "table" && <PositionsTable rows={rows} />}
         {view === "pie" && <PieView breakdown={breakdown} names={rows.length} />}
-        {view === "themes" && <ThemesView breakdown={breakdown} />}
+        {view === "trends" && <TrendsView breakdown={breakdown} />}
       </div>
     </>
   );
@@ -91,7 +91,7 @@ function PieView({
   names: number;
 }) {
   const data = breakdown.map((b) => ({
-    name: b.category,
+    name: categoryLabel(b.category),
     value: Number(b.sharePct.toFixed(1)),
     color: categoryColorVar(b.category),
   }));
@@ -152,7 +152,7 @@ function PieView({
               className="w-[11px] h-[11px] rounded-[3px]"
               style={{ background: categoryColorVar(b.category) }}
             />
-            <span className="text-cream">{b.category}</span>
+            <span className="text-cream">{categoryLabel(b.category)}</span>
             <span className="font-mono text-muted tabular-nums">
               {Math.round(b.sharePct)}%
             </span>
@@ -164,10 +164,10 @@ function PieView({
 }
 
 // ---------------------------------------------------------------------------
-// Themes (weight bars) view
+// Trends (weight bars) view
 // ---------------------------------------------------------------------------
 
-function ThemesView({ breakdown }: { breakdown: CategoryWeight[] }) {
+function TrendsView({ breakdown }: { breakdown: CategoryWeight[] }) {
   return (
     <div className="flex flex-col gap-5 p-6 md:p-8">
       {breakdown.map((b) => (
@@ -175,7 +175,7 @@ function ThemesView({ breakdown }: { breakdown: CategoryWeight[] }) {
           key={b.category}
           className="grid grid-cols-[130px_1fr_46px] sm:grid-cols-[160px_1fr_50px] gap-4 items-center text-[14.5px]"
         >
-          <span className="text-cream truncate">{b.category}</span>
+          <span className="text-cream truncate">{categoryLabel(b.category)}</span>
           <div className="h-[13px] rounded-[7px] bg-surface-2 overflow-hidden">
             <div
               className="h-full rounded-[7px]"

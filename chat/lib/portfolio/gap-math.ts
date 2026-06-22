@@ -6,7 +6,11 @@
  * that fetches prices + the IOF book, then delegates here.
  */
 
-import type { Holding } from "./extract";
+/** One portfolio line: a ticker and the share count held. */
+export interface Holding {
+  ticker: string;
+  shares: number;
+}
 
 export interface GapResult {
   /** Live total market value of the priced holdings, USD. */

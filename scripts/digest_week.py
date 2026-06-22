@@ -72,7 +72,7 @@ If 0 trades: a single line "No new trades this week."
 For each article: title (linked to URL), pub date, 1-sentence paraphrased thesis, primary tickers tagged.
 If 0 articles: a single line "No new articles this week."
 
-## Themes & patterns
+## Trends & patterns
 2-4 bullets identifying recurring themes ACROSS the week's activity (e.g., "all three trades were trims," "two articles re-emphasized optical bottleneck"). Skip this section if there's not enough material.
 
 ## What to watch

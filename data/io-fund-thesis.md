@@ -30,7 +30,7 @@ The biggest move of the quarter was closing Nvidia, a bold call given how centra
 
 As of Q2 2026, adjusted for trades since the report:
 
-| Theme | Positions |
+| Trend | Positions |
 |---|---|
 | Accelerators | AVGO (the top pick now that Nvidia is out), AMD, ARM, TSM |
 | Memory | MU, SNDK |

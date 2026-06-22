@@ -3,8 +3,8 @@
  * (Postgres), then delegates the arithmetic to the pure `diffHoldingsAgainstBook`
  * in gap-math.ts (which has no DB import and is unit-tested in evals/gap.test.ts).
  *
- * Used by the `analyze_portfolio_gap` chat tool across both its input paths:
- * holdings read from an attached image, or holdings saved in `user_holdings`.
+ * Used by the `analyze_portfolio_gap` chat tool on the holdings the model reads
+ * from a portfolio image the user attaches in chat.
  *
  * IOF's weight is the baseline % snapshot (we don't have IOF share counts, so it
  * can't be live-recomputed); the user's weight is live (shares × current price).
@@ -13,9 +13,9 @@
 import { eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { fetchQuotes } from "./prices";
-import type { Holding } from "./extract";
 import {
   diffHoldingsAgainstBook,
+  type Holding,
   type GapResult,
   type IofBookEntry,
 } from "./gap-math";

@@ -3,7 +3,7 @@ import { and, desc, eq, gte, sql as drizzleSql } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
 import { auth } from "@/lib/auth/server";
-import type { Holding } from "@/lib/portfolio/extract";
+import type { Holding } from "@/lib/portfolio/gap-math";
 import { computePortfolioGap } from "@/lib/portfolio/compare";
 import { readDoc, type DocName } from "./docs";
 
@@ -212,7 +212,7 @@ export const chatTools = {
 
   analyze_portfolio_gap: tool({
     description:
-      "Compare the user's portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. If the user attached a portfolio/brokerage screenshot this turn, read each holding's ticker + share count from it and pass them as `holdings`; otherwise omit `holdings` to analyze their previously-saved portfolio. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } when no holdings are provided and none are saved — then mention they can attach a brokerage screenshot here in chat (or upload one at /portfolio).",
+      "Compare the user's portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. The user supplies holdings by attaching a portfolio/brokerage screenshot in chat — read each holding's ticker + share count from it and pass them as `holdings`. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } when no holdings are provided — then ask the user to attach a brokerage screenshot here in chat.",
     inputSchema: z.object({
       holdings: z
         .array(
@@ -223,7 +223,7 @@ export const chatTools = {
         )
         .optional()
         .describe(
-          "Holdings read from a portfolio image the user attached this turn (ticker uppercased + share count). Omit to analyze the user's previously-saved portfolio.",
+          "Holdings read from a portfolio image the user attached this turn (ticker uppercased + share count).",
         ),
     }),
     execute: async ({ holdings }: { holdings?: Holding[] }) => {
@@ -235,44 +235,19 @@ export const chatTools = {
         };
       }
 
-      // Prefer holdings extracted from an attached image; else fall back to the
-      // user's saved portfolio.
-      let resolved = holdings?.length ? holdings : undefined;
-      let source: "image" | "saved" = "image";
-      let uploadedAt: Date | undefined;
-
-      if (!resolved) {
-        const [row] = await db
-          .select({
-            holdings: tables.userHoldings.holdings,
-            uploadedAt: tables.userHoldings.uploadedAt,
-          })
-          .from(tables.userHoldings)
-          .where(eq(tables.userHoldings.userId, session.user.id))
-          .limit(1);
-
-        if (!row) {
-          return {
-            connected: false as const,
-            message:
-              "No holdings provided and none saved. The user can attach a brokerage screenshot here in chat, or upload one at /portfolio.",
-          };
-        }
-        resolved = row.holdings as Holding[];
-        source = "saved";
-        uploadedAt = row.uploadedAt;
+      if (!holdings?.length) {
+        return {
+          connected: false as const,
+          message:
+            "No holdings provided. Ask the user to attach a brokerage screenshot here in chat.",
+        };
       }
 
       const gap = await computePortfolioGap(
-        resolved.map((h) => ({ ...h, ticker: h.ticker.toUpperCase() })),
+        holdings.map((h) => ({ ...h, ticker: h.ticker.toUpperCase() })),
       );
 
-      return {
-        connected: true as const,
-        source,
-        ...(uploadedAt ? { uploaded_at: uploadedAt } : {}),
-        ...gap,
-      };
+      return { connected: true as const, ...gap };
     },
   }),
 };

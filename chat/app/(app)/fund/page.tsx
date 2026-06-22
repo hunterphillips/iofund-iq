@@ -8,7 +8,7 @@ import {
   getThesisThemeChips,
 } from "@/lib/fund/docs";
 import { getIofBook } from "@/lib/portfolio/iof-book";
-import { categoryColorVar } from "@/lib/portfolio/categories";
+import { categoryColorVar, categoryLabel } from "@/lib/portfolio/categories";
 import { MarkdownBody } from "@/components/markdown-body";
 import { Engraving, RuleOrnament } from "@/components/engraving";
 
@@ -104,13 +104,13 @@ export default async function FundPage() {
           <KpiCard
             href="/portfolio"
             dotColor={categoryColorVar(stats.topThemeName)}
-            label="Top portfolio theme"
+            label="Top portfolio trend"
             value={
               stats.topThemeWeight != null
                 ? `${Math.round(stats.topThemeWeight)}%`
                 : "—"
             }
-            sub={stats.topThemeName ? stats.topThemeName : "—"}
+            sub={stats.topThemeName ? categoryLabel(stats.topThemeName) : "—"}
           />
           <KpiCard
             href="/portfolio"
@@ -128,7 +128,7 @@ export default async function FundPage() {
             dotColor="var(--color-cat-energy)"
             label="Positions held"
             value={String(stats.positionsHeld)}
-            sub={`Across ${stats.activeThemes} themes`}
+            sub={`Across ${stats.activeThemes} trends`}
           />
         </div>
       </div>

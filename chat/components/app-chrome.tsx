@@ -26,6 +26,7 @@ import { useEffect, useRef, useState } from "react";
 import { AssistantModal } from "./assistant-modal";
 import { BottomNav } from "./bottom-nav";
 import { IoMark } from "./io-mark";
+import { SparkleGlyph } from "./sparkle-glyph";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
@@ -267,17 +268,6 @@ function MenuLink({
     >
       {children}
     </Link>
-  );
-}
-
-/** Two-point "sparkle" — the AI mark for the assistant (a large four-point
- *  star with a smaller companion), replacing the old single-star glyph. */
-function SparkleGlyph() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M10 4.5C10.7 9 13 11.3 17.5 12 13 12.7 10.7 15 10 19.5 9.3 15 7 12.7 2.5 12 7 11.3 9.3 9 10 4.5Z" />
-      <path d="M18 2.5C18.3 4.2 19.3 5.2 21 5.5 19.3 5.8 18.3 6.8 18 8.5 17.7 6.8 16.7 5.8 15 5.5 16.7 5.2 17.7 4.2 18 2.5Z" />
-    </svg>
   );
 }
 

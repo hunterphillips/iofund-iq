@@ -38,7 +38,8 @@ function describeContext(ctx: PageContext): string {
 
   switch (ctx.route) {
     case "/articles/[slug]": {
-      const slug = ctx.articleSlug ? ` "${ctx.articleSlug}"` : "";
+      const name = ctx.articleTitle || ctx.articleSlug;
+      const slug = name ? ` "${name}"` : "";
       const tail = tickers.length
         ? ` It references these tickers: ${tickers.join(", ")}.`
         : "";

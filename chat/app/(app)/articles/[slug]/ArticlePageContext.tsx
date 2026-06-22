@@ -15,15 +15,17 @@ import { useSetPageContext } from "@/lib/page-context/context";
 
 interface Props {
   slug: string;
+  title: string;
   url: string;
   tickers: string[];
 }
 
-export function ArticlePageContext({ slug, url, tickers }: Props) {
+export function ArticlePageContext({ slug, title, url, tickers }: Props) {
   // Sets context on mount, clears on unmount (navigation away).
   useSetPageContext({
     route: "/articles/[slug]",
     articleSlug: slug,
+    articleTitle: title,
     articleUrl: url,
     tickers,
   });

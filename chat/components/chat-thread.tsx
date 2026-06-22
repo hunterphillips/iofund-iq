@@ -11,6 +11,14 @@ import {
 import { MarkdownBody } from "./markdown-body";
 import { Engraving } from "./engraving";
 
+// Starter questions offered in the empty state when the assistant is opened from
+// an article (sent on click). Kept generic enough to fit any article.
+const ARTICLE_SUGGESTIONS = [
+  "Summarize the key points",
+  "What's the main takeaway?",
+  "How does this affect the portfolio?",
+];
+
 /**
  * ChatThread — the pure chat surface, rendered inside the assistant modal.
  *
@@ -122,6 +130,18 @@ export function ChatThread({
 
   const busy = status === "streaming" || status === "submitted";
 
+  // When the assistant was opened from an article, surface that scope to the
+  // user (a chip + starter questions) so the "Ask about this article" action
+  // visibly carries context. Falls back to the slug if a title isn't present.
+  const articleCtx = published?.route === "/articles/[slug]" ? published : null;
+  const articleTitle =
+    articleCtx?.articleTitle ?? articleCtx?.articleSlug ?? null;
+
+  function sendSuggestion(text: string) {
+    if (busy) return;
+    sendMessage({ text });
+  }
+
   // Staged image attachment (portfolio screenshot → gap analysis). Sent with the
   // next message, then cleared. Bytes are never persisted (stripped server-side).
   const [file, setFile] = useState<File | null>(null);
@@ -203,9 +223,32 @@ export function ChatThread({
         {messages.length === 0 ? (
           <div className="my-auto flex flex-col items-center text-center gap-4 px-6">
             <Engraving name="owl" className="w-24 sm:w-28 h-auto opacity-90" />
-            <p className="chat-empty !my-0 max-w-[22rem]">
-              Ask about a ticker, I/O Fund&rsquo;s thesis, or recent activity.
-            </p>
+            {articleTitle ? (
+              <>
+                <p className="chat-empty !my-0 max-w-[24rem]">
+                  Ask about{" "}
+                  <span className="text-cream font-medium">{articleTitle}</span>{" "}
+                  — or anything across I/O Fund.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 max-w-[26rem]">
+                  {ARTICLE_SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => sendSuggestion(s)}
+                      disabled={busy}
+                      className="text-[12.5px] text-muted border border-border rounded-full px-3 py-1.5 hover:text-cream hover:border-muted-deep transition-colors disabled:opacity-50"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="chat-empty !my-0 max-w-[22rem]">
+                Ask about a ticker, I/O Fund&rsquo;s thesis, or recent activity.
+              </p>
+            )}
           </div>
         ) : (
           messages.map((message, index) => {
@@ -246,6 +289,20 @@ export function ChatThread({
         </div>
       ) : null}
       {fileError ? <div className="chat-error">{fileError}</div> : null}
+      {articleTitle && (
+        <div
+          className="flex items-center gap-1.5 self-start max-w-full text-[12px] text-muted bg-surface-2/60 border border-border rounded-full pl-2 pr-3 py-1 mb-0.5"
+          title={`Asking about ${articleTitle}`}
+        >
+          <span className="text-orange shrink-0" aria-hidden="true">
+            ✦
+          </span>
+          <span className="truncate">
+            Asking about{" "}
+            <span className="text-cream">{articleTitle}</span>
+          </span>
+        </div>
+      )}
       <form className="chat-input-row" onSubmit={handleSubmit}>
         <input
           ref={fileInputRef}

@@ -27,6 +27,9 @@ import {
 export interface PageContext {
   route: string;
   articleSlug?: string;
+  // Human-readable article title — used for the prompt grounding and the visible
+  // "Asking about …" chip in the chat. Falls back to the slug when absent.
+  articleTitle?: string;
   // Canonical article URL. When present, the prompt tells the model to call
   // read_article(articleUrl) directly, skipping the search_articles hop.
   articleUrl?: string;

@@ -90,6 +90,23 @@ function main() {
     "with a URL, block drops the search_articles hop",
   );
 
+  // ── (b3) article context prefers the title over the slug ───────────────────
+  console.log("\n[b3] article context prefers title");
+  const articleTitled = buildSystemPrompt(BASE, {
+    route: "/articles/[slug]",
+    articleSlug: "nvda-deep-dive",
+    articleTitle: "NVIDIA's Q1 blowout",
+    tickers: ["NVDA"],
+  });
+  assert(
+    articleTitled.includes("NVIDIA's Q1 blowout"),
+    "block names the article title when present",
+  );
+  assert(
+    !articleTitled.includes("nvda-deep-dive"),
+    "block uses the title instead of the slug",
+  );
+
   // ── (c) portfolio context ──────────────────────────────────────────────────
   console.log("\n[c] portfolio context");
   const portfolio = buildSystemPrompt(BASE, {

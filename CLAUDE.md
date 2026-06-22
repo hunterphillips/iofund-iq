@@ -1,4 +1,4 @@
-# iofund-agent
+# iofund-iq
 
 Personal AI assistant for getting more value out of an I/O Fund subscription. Long-term goal: a polished POC pitchable to the I/O Fund team as a member-facing product.
 
@@ -55,7 +55,7 @@ Personal AI assistant for getting more value out of an I/O Fund subscription. Lo
 ```bash
 cd chat
 pnpm install
-npx vercel link                              # one-time: links chat/ to the iofund-agent Vercel project
+npx vercel link                              # one-time: links chat/ to the iofund-iq Vercel project
 npx vercel env pull .env.local --environment=production
 ```
 

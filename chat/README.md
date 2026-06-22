@@ -1,4 +1,4 @@
-# chat — iofund-agent Next.js app
+# chat — iofund-iq Next.js app
 
 Phase 0 scaffold. The chat UI, IOF auth proxy, and `/api/chat` AI SDK route
 all live here. See `thoughts/shared/plans/iofund-agent-poc.md` Task #5 for the

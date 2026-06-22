@@ -1,6 +1,6 @@
 # evals — chat behavior regression gate
 
-Lightweight evals harness for the iofund-agent chat app. Runs locally and as
+Lightweight evals harness for the iofund-iq chat app. Runs locally and as
 a GH Actions gate on PRs that touch chat prompts, tools, or model picks.
 
 **Why:** every change to the chat system prompt, tool list, or model selection

@@ -28,7 +28,7 @@ const splineMono = Spline_Sans_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "iofund-agent",
+  title: "iofund-iq",
   description: "Personal AI assistant over an I/O Fund subscription.",
 };
 

@@ -100,7 +100,7 @@ export default async function FundPage() {
         </div>
 
         {/* ── KPI dashboard ── */}
-        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[18px]">
+        <div className="relative z-10 grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-[18px]">
           <KpiCard
             href="/portfolio"
             dotColor={categoryColorVar(stats.topThemeName)}
@@ -129,7 +129,7 @@ export default async function FundPage() {
             label="Positions held"
             value={String(stats.positionsHeld)}
             sub={`Across ${stats.activeThemes} trends`}
-            className="hidden sm:block"
+            className="hidden xs:block"
           />
         </div>
       </div>

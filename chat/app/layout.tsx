@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Hanken_Grotesk, Spline_Sans_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -30,6 +30,13 @@ const splineMono = Spline_Sans_Mono({
 export const metadata: Metadata = {
   title: "iofund-agent",
   description: "Personal AI assistant over an I/O Fund subscription.",
+};
+
+// viewport-fit=cover lets env(safe-area-inset-*) resolve to the real notch/home-
+// indicator insets on iOS — relied on by the fixed bottom nav and the full-screen
+// chat modal's input row. (Next injects width=device-width + initial-scale=1.)
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 // Applies the saved theme (or the OS preference, falling back to warm-dark)

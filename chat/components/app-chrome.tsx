@@ -36,10 +36,12 @@ const NAV: { label: string; href: string }[] = [
 export function AppChrome({
   email,
   name,
+  iofConnected = false,
   children,
 }: {
   email: string | null;
   name: string | null;
+  iofConnected?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -147,29 +149,67 @@ export function AppChrome({
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                aria-label="Account menu"
+                aria-label={
+                  iofConnected
+                    ? "Account menu"
+                    : "Account menu — I/O Fund not connected"
+                }
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="w-[38px] h-[38px] rounded-full grid place-items-center text-xs font-bold border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors"
+                className="relative w-[38px] h-[38px] rounded-full grid place-items-center text-xs font-bold border border-border bg-surface text-muted hover:text-cream hover:border-muted-deep transition-colors"
               >
                 {initials}
+                {/* Attention dot when I/O Fund isn't connected yet — a required
+                    setup step the user might not realize is pending. */}
+                {!iofConnected && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-orange border-2 border-bg"
+                    aria-hidden="true"
+                  />
+                )}
               </button>
 
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-2 w-60 rounded-md border border-border bg-surface py-1 shadow-lg z-50"
+                  className="absolute right-0 mt-2 w-64 rounded-md border border-border bg-surface py-1 shadow-lg z-50"
                 >
                   {email && (
                     <div className="px-4 py-2 text-xs text-muted-deep truncate border-b border-border">
                       {email}
                     </div>
                   )}
+
+                  {/* I/O Fund connection status + connect/reconnect affordance. */}
+                  <div className="px-4 py-2.5 border-b border-border">
+                    <div className="flex items-center gap-2 text-[13px] text-cream">
+                      <span
+                        className={
+                          "w-1.5 h-1.5 rounded-full " +
+                          (iofConnected ? "bg-cat-energy" : "bg-orange")
+                        }
+                        aria-hidden="true"
+                      />
+                      {iofConnected
+                        ? "I/O Fund connected"
+                        : "I/O Fund not connected"}
+                    </div>
+                    <Link
+                      href={
+                        iofConnected
+                          ? "/onboarding/connect-iof?reconnect=1"
+                          : "/onboarding/connect-iof"
+                      }
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      className="mt-1 inline-block text-xs font-semibold text-orange hover:underline"
+                    >
+                      {iofConnected ? "Reconnect" : "Connect now"}
+                    </Link>
+                  </div>
+
                   <MenuLink href="/profile" onSelect={() => setMenuOpen(false)}>
                     Profile
-                  </MenuLink>
-                  <MenuLink href="/onboarding/connect-iof" onSelect={() => setMenuOpen(false)}>
-                    Connect I/O Fund credentials
                   </MenuLink>
                   <div className="my-1 border-t border-border" />
                   <MenuLink href="/auth/sign-out" onSelect={() => setMenuOpen(false)}>

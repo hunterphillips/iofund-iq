@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { IofPosition } from "@/lib/portfolio/iof-book";
 import {
   categoryColorVar,
+  categoryLabel,
   OTHER_CATEGORY_COLOR_VAR,
 } from "@/lib/portfolio/categories";
 
@@ -130,7 +131,7 @@ export function PositionsTable({ rows }: Props) {
                 className="col-header"
                 onClick={() => handleHeader("category")}
               >
-                Theme <ChevronIcon col="category" sortCol={sortCol} sortDir={sortDir} />
+                Trend <ChevronIcon col="category" sortCol={sortCol} sortDir={sortDir} />
               </button>
             </th>
             <th className="text-right" aria-sort={ariaSort("weight")}>
@@ -180,7 +181,7 @@ export function PositionsTable({ rows }: Props) {
                         style={{ background: color }}
                         aria-hidden="true"
                       />
-                      <span className="theme-label">{row.category}</span>
+                      <span className="theme-label">{categoryLabel(row.category)}</span>
                     </span>
                   ) : (
                     <span className="theme-cell">

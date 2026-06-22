@@ -20,3 +20,13 @@ export function categoryColorVar(category: string | null | undefined): string {
   if (!category) return OTHER_CATEGORY_COLOR_VAR;
   return CATEGORY_COLOR_VAR[category] ?? OTHER_CATEGORY_COLOR_VAR;
 }
+
+/**
+ * User-facing label for a category. Strips the redundant "AI " prefix — the
+ * whole tracked book is AI, so "AI Networking" reads better as "Networking".
+ * The canonical "AI …" name stays in the DB + taxonomy (and as the color-map
+ * key), so always pass the raw category to categoryColorVar for the swatch.
+ */
+export function categoryLabel(category: string): string {
+  return category.replace(/^AI /, "");
+}

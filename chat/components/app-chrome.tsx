@@ -27,7 +27,7 @@ import { AssistantModal } from "./assistant-modal";
 import { OPEN_ASSISTANT_EVENT } from "@/lib/chat/open-assistant";
 
 const NAV: { label: string; href: string }[] = [
-  { label: "Fund", href: "/fund" },
+  { label: "Overview", href: "/fund" },
   { label: "Articles", href: "/articles" },
   { label: "Portfolio", href: "/portfolio" },
 ];
@@ -169,9 +169,6 @@ export function AppChrome({
                   </MenuLink>
                   <MenuLink href="/onboarding/connect-iof" onSelect={() => setMenuOpen(false)}>
                     Connect I/O Fund credentials
-                  </MenuLink>
-                  <MenuLink href="/onboarding/upload-portfolio" onSelect={() => setMenuOpen(false)}>
-                    Upload portfolio
                   </MenuLink>
                   <div className="my-1 border-t border-border" />
                   <MenuLink href="/auth/sign-out" onSelect={() => setMenuOpen(false)}>

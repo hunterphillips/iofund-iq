@@ -21,7 +21,7 @@ export default async function ConnectIofPage() {
   return (
     <main className="page">
       <div className="container auth-container">
-        <span className="badge">Step 2 of 3</span>
+        <span className="badge">Step 2 of 2</span>
         <h1 className="title-sm">
           Connect your <span className="accent">I/O Fund</span> account
         </h1>

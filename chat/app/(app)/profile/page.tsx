@@ -39,12 +39,6 @@ export default async function ProfilePage() {
           Re-connect I/O Fund credentials
         </Link>
         <Link
-          href="/onboarding/upload-portfolio"
-          className="block px-4 py-2 rounded border border-border text-sm text-cream hover:bg-surface transition-colors"
-        >
-          Re-upload portfolio
-        </Link>
-        <Link
           href="/auth/sign-out"
           className="block px-4 py-2 rounded border border-border text-sm text-muted hover:text-cream hover:bg-surface transition-colors"
         >

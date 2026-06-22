@@ -97,21 +97,9 @@ export const positions = pgTable(
   ],
 );
 
-export const userHoldings = pgTable("user_holdings", {
-  userId: text("user_id").primaryKey(),
-  holdings: jsonb("holdings").notNull(),
-  source: text("source").notNull(),
-  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
 // user_id is the Neon Auth user id. Plain text (no cross-schema FK to
 // neon_auth.user — that schema is managed by Neon Auth), matching
-// iof_credentials / user_holdings.
+// iof_credentials.
 export const chatThreads = pgTable(
   "chat_threads",
   {

@@ -44,9 +44,10 @@ export default async function AuthPage({
           <div className="font-serif text-2xl font-semibold tracking-tight text-cream">
             I/<span className="text-orange">O</span> Fund
           </div>
-          {/* <p className="text-sm text-muted mt-1.5 max-w-[20rem]">
-            Your intelligence layer over the I/O Fund subscription.
-          </p> */}
+          <p className="text-sm text-muted mt-2 max-w-[22rem] leading-relaxed">
+            Your private assistant for I/O Fund research, trades, and portfolio
+            comparison.
+          </p>
         </div>
         {/* auth-light pins the Neon Auth form to a warm light palette regardless
             of next-themes' .dark class on <html>; scoped here so it doesn't

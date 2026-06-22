@@ -21,6 +21,7 @@
     "test:threads": "tsx --env-file=.env.local evals/threads.test.ts",
     "test:page-context": "tsx evals/page-context.test.ts",
     "test:gap": "tsx evals/gap.test.ts",
+    "test:format-move": "tsx evals/format-move.test.ts",
     "test:webhook": "tsx evals/neon-webhook.test.ts"
   },
   "dependencies": {

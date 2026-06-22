@@ -19,6 +19,7 @@ import type {
   CategoryWeight,
 } from "@/lib/portfolio/iof-book";
 import { categoryLabel } from "@/lib/portfolio/categories";
+import { MoveDescription } from "@/components/move-description";
 import { PortfolioBook } from "./PortfolioBook";
 
 /** Format a trade date as a short serif display date, e.g. "Jun 9" */
@@ -27,16 +28,6 @@ function formatTradeDate(dateStr: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-/** Action → tone class for the inline action label. */
-function actionTone(action: string): string {
-  const u = action.toUpperCase();
-  if (u.startsWith("BUY")) return "text-cat-energy";
-  if (u.startsWith("SELL")) return "text-cat-memory";
-  if (u.startsWith("HEDGE")) return "text-gold";
-  if (u.startsWith("COVER")) return "text-cat-software";
-  return "text-muted";
 }
 
 const RANGES: { label: string; days: number; phrase: string }[] = [
@@ -159,14 +150,9 @@ export function PortfolioContent({
                   <span className="font-bold text-[15px] tracking-wide">
                     {t.ticker}
                   </span>
-                  <span className="text-sm text-muted truncate">
-                    <span
-                      className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${actionTone(t.action)}`}
-                    >
-                      {t.action}
-                    </span>
-                    {t.note}
-                  </span>
+                  <div className="min-w-0 truncate">
+                    <MoveDescription action={t.action} note={t.note} />
+                  </div>
                   <span className="font-mono text-sm tabular-nums text-cream">
                     {price ?? ""}
                   </span>

@@ -11,6 +11,7 @@ import { getIofBook } from "@/lib/portfolio/iof-book";
 import { categoryColorVar, categoryLabel } from "@/lib/portfolio/categories";
 import { MarkdownBody } from "@/components/markdown-body";
 import { Engraving, RuleOrnament } from "@/components/engraving";
+import { MoveDescription } from "@/components/move-description";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +30,6 @@ function formatShortDate(date: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function moveTone(action: string): string {
-  const u = action.toUpperCase();
-  if (u.startsWith("BUY")) return "text-cat-energy";
-  if (u.startsWith("SELL")) return "text-cat-memory";
-  return "text-gold";
 }
 
 export default async function FundPage() {
@@ -252,14 +246,9 @@ export default async function FundPage() {
                 <span className="font-bold text-[15px] tracking-wide">
                   {t.ticker}
                 </span>
-                <span className="text-sm text-muted truncate">
-                  <span
-                    className={`font-semibold uppercase text-[11px] tracking-wide mr-2 ${moveTone(t.action)}`}
-                  >
-                    {t.action}
-                  </span>
-                  {t.note}
-                </span>
+                <div className="min-w-0 truncate">
+                  <MoveDescription action={t.action} note={t.note} />
+                </div>
                 <span className="font-mono text-sm tabular-nums text-cream">
                   {t.price ? `$${parseFloat(t.price).toFixed(2)}` : ""}
                 </span>

@@ -10,8 +10,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <NeonAuthUIProvider
       authClient={authClient}
-      navigate={router.push}
-      replace={router.replace}
+      // Auth → app redirects must be a full document load, not SPA nav. The auth
+      // pages import `@neondatabase/auth-ui/css`, whose un-layered Tailwind
+      // Preflight overrides the app's @layer utilities if it lingers in the DOM
+      // after a client-side redirect — producing the post-sign-in flash of
+      // cramped headings, lost spacing, and collapsed `md:` nav links until a
+      // manual reload. A hard navigation drops that stylesheet. (In-page sign-in
+      // ↔ sign-up switching uses the `Link` prop below and stays SPA; both those
+      // pages load the auth-ui css anyway, so there's no leak.)
+      navigate={(href) => window.location.assign(href)}
+      replace={(href) => window.location.replace(href)}
       onSessionChange={() => router.refresh()}
       Link={Link}
       // TEMP (2026-06-23): "Sign in with Google" disabled. A rejected OAuth

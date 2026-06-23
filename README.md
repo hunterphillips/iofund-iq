@@ -1,8 +1,8 @@
-# iofund-agent
+# iofund-iq
 
 A personal AI assistant for getting more value out of an [I/O Fund](https://io-fund.com) subscription — natural-language chat over IOF's published research, automatic ingestion of new trades and articles, and grounded answers cited back to the source.
 
-> **Status:** private POC, Hunter-only. Long-term goal: pitch a polished member-facing version to the I/O Fund team.
+> **Status:** Live and private at [iofund-iq.vercel.app](https://iofund-iq.vercel.app). Now being shared with the I/O Fund team as a member-facing product.
 
 ## What it does today
 

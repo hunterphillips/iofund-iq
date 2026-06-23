@@ -10,7 +10,7 @@
  * delayed during market hours.
  */
 const CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
-const UA = "Mozilla/5.0 (compatible; iofund-agent/0.1)";
+const UA = "Mozilla/5.0 (compatible; iofund-iq/0.1)";
 
 /** IOF stores direct-crypto tickers as e.g. BTCUSD; Yahoo uses BTC-USD. */
 const TICKER_REMAP: Record<string, string> = {

@@ -155,7 +155,7 @@ Cash decisions are mentioned in weekly webinars but not in SMS/email alerts.
 
 ## Notes for Future Agents
 
-- This doc is the **decoder** for `data/iofund-trades.csv`. Always cross-reference an alert with the rules in §1 before reasoning about it.
+- This doc is the **decoder** for the trade log (`query_trades`, Postgres `public.trades`). Always cross-reference an alert with the rules in §1 before reasoning about it.
 - The trade log notes column should encode `% Add` / `% Trim` / `Close` etc. If parsing it loses notes, sizing reasoning will be wrong — see Phase 1 ingest pipeline.
 - Cash % is the missing variable for dollar-precise sizing. If precise dollars matter for a recommendation, flag the cash-% unknown and produce a range.
 - When a hedge is active, downstream long signals are partially neutralized — don't over-react to single long alerts during hedge windows.

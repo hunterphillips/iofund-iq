@@ -11,12 +11,12 @@ sources:
   - https://io-fund.com/premium/the-io-funds-top-15-stocks-for-q2-2026     # Apr 21 2026
 companion_docs:
   - io-fund-strategy.agent.md  # alert decoding + sizing rules (agent doc)
-  - iofund-trades.csv          # raw trade log
+  - query_trades tool          # raw trade log (Postgres public.trades)
 ---
 
 # I/O Fund — Thesis State, Evolution & Reasoning Patterns
 
-This doc is the **why** layer behind IOF's trades. For *what* they hold see `iofund-trades.csv`. For *how* they trade (alert decoding, sizing, hedging) see `io-fund-strategy.md`.
+This doc is the **why** layer behind IOF's trades. For *what* they hold, query the trade log via the `query_trades` tool. For *how* they trade (alert decoding, sizing, hedging) see `io-fund-strategy.md`.
 
 ---
 
@@ -101,7 +101,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold see `iof
 | **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold |
 | Bitcoin Miner | ✓ #3 energy (Discovery) | ✓ Discovery only | ✓ Discovery only | Gated to Discovery tier across all 3 |
 
-> Cross-reference any of these against `iofund-trades.csv` for entry/exit prices and dates.
+> Cross-reference any of these against the trade log (`query_trades`) for entry/exit prices and dates.
 
 ---
 

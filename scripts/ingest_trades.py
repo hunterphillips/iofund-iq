@@ -14,7 +14,7 @@ Run locally:
     python3 scripts/ingest_trades.py
 
 Required env (loaded from .env when present, falls back to process env):
-    IO_FUND_USERNAME      — IOF email (Hunter's subscription)
+    IO_FUND_USERNAME      — IOF email (the operator's IOF subscription)
     IO_FUND_PASSWORD      — IOF password
     DATABASE_URL          — Neon Postgres connection string
     IOF_FIREBASE_API_KEY  — override (defaults to the value baked into IOF's web app)

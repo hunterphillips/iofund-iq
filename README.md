@@ -18,7 +18,7 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Hunter's IOF subscription                  │
+│                      The user's IOF subscription                │
 │           (https://io-fund.com  — Firebase auth)                │
 └────────────────────────────┬────────────────────────────────────┘
                              │  polls
@@ -52,12 +52,12 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
        └──────────────────────────────────────────────────┘
                             ▲
                             │
-                        Hunter (or future IOF subscribers)
+                          User
 ```
 
 **Storage is hybrid.** Postgres holds everything you query or render at runtime — trade history, article metadata + the full distilled article body (FTS-indexed), ticker arrays, encrypted credentials. Git holds only the prose a human versions and reviews (the strategy doc, the thesis doc, weekly digests). The chat reads articles and trades from Postgres; the strategy/thesis docs come from markdown on disk.
 
-**Auth is two-layer.** Neon Auth handles the app identity (who's logged in). A separate `iof_credentials` table holds each user's AES-256-GCM-encrypted IOF email/password, keyed to their app user_id. The Phase 0 build is single-tenant (Hunter); Phase 2 layers Postgres RLS on top without changing the auth model.
+**Auth is two-layer.** Neon Auth handles the app identity (who's logged in). A separate `iof_credentials` table holds each user's AES-256-GCM-encrypted IOF email/password, keyed to their app user_id. The Phase 0 build is single-tenant; Phase 2 layers Postgres RLS on top without changing the auth model.
 
 **Registration is invite-only.** A Neon Auth `user.before_create` webhook rejects any email not on the `NEON_AUTH_ALLOWED_EMAILS` allowlist — for both Google OAuth and email/password — so no one can self-register into the private preview. A defense-in-depth allowlist check in the authenticated layout backstops it. Changing the allowlist requires a redeploy.
 
@@ -90,7 +90,7 @@ For the cron workflows to run, the GitHub repo needs `IO_FUND_USERNAME`, `IO_FUN
 
 - **IOF article content is paid material.** Distillations are transformative summaries; the chat system prompt enforces no-verbatim-quoting. Source URLs are cited but the prose is paraphrased.
 - **Trades source of truth is Postgres `public.trades`** — the CSV/JSON files in `data/` are historical seeds only.
-- **Personal IOF credentials never go in Vercel env vars.** They live in GitHub Actions secrets (for crons that run as Hunter) and in encrypted Postgres rows (for end-user IOF subscriptions).
+- **Personal IOF credentials never go in Vercel env vars.** They live in GitHub Actions secrets (for crons that run as the operator) and in encrypted Postgres rows (for end-user IOF subscriptions).
 - **The `IOF_CREDS_ENCRYPTION_KEY` is unrotatable.** Rotating it requires a re-encrypt migration over every stored credential.
 
 ## Further reading

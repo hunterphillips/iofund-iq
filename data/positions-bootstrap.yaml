@@ -1,5 +1,5 @@
 # Bootstrap snapshot for the `positions` table.
-# Manually edited when Hunter refreshes the portfolio PDF (quarterly-ish).
+# Manually edited when the operator refreshes the portfolio PDF (quarterly-ish).
 # Per-ticker weight_pct is the slice value in the pie chart; category total
 # below should approximately equal the sum of weights in that category.
 

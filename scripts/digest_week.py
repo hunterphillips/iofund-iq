@@ -26,7 +26,7 @@ Optional env:
     DIGEST_FORCE_OVERWRITE  — "1" overwrites today's digest file if present
     DIGEST_SKIP_EMAIL       — "1" runs the digest + (optional) PR but no email
     DIGEST_SKIP_PR          — "1" runs the digest + email but no staleness PR
-    DIGEST_RECIPIENT        — override default recipient (Hunter's email)
+    DIGEST_RECIPIENT        — override default recipient (the operator's email)
 """
 from __future__ import annotations
 

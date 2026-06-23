@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One-shot bootstrap of the `positions` table from a hand-edited YAML snapshot.
 
-Reads data/positions-bootstrap.yaml (manually refreshed when Hunter downloads
+Reads data/positions-bootstrap.yaml (manually refreshed when the operator downloads
 a new portfolio PDF from IOF), cross-references trades.first_entry_date per
 ticker, and UPSERTs into Postgres. Run manually:
 

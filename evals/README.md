@@ -12,7 +12,7 @@ examples beats 500 noisy ones.
 
 | File | Purpose |
 |---|---|
-| `golden.jsonl` | One JSON object per line: `{question, expected_intent?, must_cite?, must_not_cite?, rubric?}`. Hunter writes new cases as he uses the app. |
+| `golden.jsonl` | One JSON object per line: `{question, expected_intent?, must_cite?, must_not_cite?, rubric?}`. New cases are added as the app is used. |
 | `run_evals.py` | Iterates `golden.jsonl`, calls the chat endpoint for each, scores with deterministic checks + LLM-as-judge, prints a summary. |
 | `judge_prompt.md` | Rubric for the Sonnet-as-judge call (faithfulness to source, no verbatim IOF prose, citation correctness). |
 | `.github/workflows/evals.yml` | PR gate; runs `run_evals.py` against a preview deploy. Fails if regression count > N. |

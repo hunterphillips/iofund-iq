@@ -33,7 +33,7 @@ Personal AI assistant for getting more value out of an I/O Fund subscription. Lo
   - `io-fund-strategy.md` / `io-fund-thesis.md` — **human-facing** page docs rendered at `/fund/strategy` and `/fund/thesis` (plain editorial prose, no agent/decoder language).
   - `io-fund-strategy.agent.md` / `io-fund-thesis.agent.md` — **agent-only** decoder docs (detailed alert semantics, sizing rules, per-ticker conviction tables, heuristics). Read by the chat agent via `read_doc('strategy'|'thesis')`; NOT shown on the site. The thesis pair (agent + human) is kept in sync automatically by the weekly digest's drift check; the strategy pair is static (no auto-updater — IOF's process rarely changes).
   - Distilled IOF article bodies live **only in Postgres** (`articles.body`, FTS-indexed via `body_tsv`, rendered live by `/articles/[slug]` and the chat `read_article` tool). No git files — the former `data/articles/*.md` were removed 2026-06-19. Rendered Sources still come from the tool-call trace.
-  - `iofund-trades.csv` / `.json` — historical IOF trade log (seed-imported once; **source of truth going forward is `public.trades`**).
+  - `iofund-trades.csv` — historical IOF trade log, seed source for `chat/scripts/seed-trades.ts` (imported once; **source of truth going forward is `public.trades`**).
   - `io-fund-portfolio-pie.pdf` — categorized current holdings + weight%, snapshot 2026-05-19. Source artifact for `positions-bootstrap.yaml`.
   - `io-fund-portfolio-history.pdf` — per-tranche entry history for currently-held positions (cost basis + entry date per tranche).
   - `io-fund-portfolio.pdf` — older snapshot, reference only.

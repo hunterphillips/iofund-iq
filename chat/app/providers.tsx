@@ -15,6 +15,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       onSessionChange={() => router.refresh()}
       Link={Link}
       social={{ providers: ["google"] }}
+      // Override the library default email placeholder ("m@example.com"),
+      // which reads as unfamiliar, with the more conventional form.
+      localization={{ EMAIL_PLACEHOLDER: "you@example.com" }}
     >
       {children}
     </NeonAuthUIProvider>

@@ -2,7 +2,7 @@
 
 A personal AI assistant for getting more value out of an [I/O Fund](https://io-fund.com) subscription — natural-language chat over IOF's published research, automatic ingestion of new trades and articles, and grounded answers cited back to the source.
 
-> **Status:** Live and private at [iofund-iq.vercel.app](https://iofund-iq.vercel.app). Now being shared with the I/O Fund team as a member-facing product.
+> **Status:** Live, private, and invite-only at [iofund-iq.vercel.app](https://iofund-iq.vercel.app). Now being shared with the I/O Fund team as a member-facing product.
 
 ## What it does today
 
@@ -10,8 +10,9 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
 - **Auto-ingests trades.** A GitHub Actions cron polls IOF's `/premium/trades` page every 30 minutes on weekdays and upserts new trade alerts into Postgres. 1,250+ historical trades currently indexed. Each new trade also state-transitions a `positions` row (BUY → held, SELL+close → closed, trim → held), keeping a live snapshot of IOF's current book.
 - **Auto-distills articles.** A daily cron polls IOF's RSS feed, fetches each new article behind the paywall, and produces a structured distillation (thesis · key numbers · takeaways · risks) via Claude Sonnet 4.6. ~$0.05/article. Stored in Postgres (full distilled body, FTS-indexed) and rendered live — no redeploy needed to publish.
 - **Weekly auto-digest.** A Friday cron generates a 5-section summary of the past week's trades + articles via Sonnet 4.6, commits it to `data/digests/`, and runs a second LLM pass to detect whether the new activity supersedes anything in the running thesis doc — opening a PR against `thesis.md` when drift is found. Summary delivered via Resend.
+- **Portfolio review + gap analysis.** A `/portfolio` view renders IOF's current book (table / pie / themes), with per-ticker dossiers at `/positions/[ticker]` (trade-replay timeline, related articles, a caveated price-move figure). A daily cron refreshes the authoritative book from IOF's portfolio PDF. In chat, attaching a brokerage screenshot triggers a live gap analysis of your holdings against IOF's book (`analyze_portfolio_gap`), weights computed from Yahoo Finance prices server-side.
 - **Render-layer source attribution.** Every chat response shows a `Sources` block built deterministically from which articles the agent actually read — no hallucinated URLs possible.
-- **Regression evals + unit tests.** A small TypeScript harness runs natural-language queries against the chat code and asserts on tool-call traces, catching retrieval and citation regressions before they ship. Pure finance logic is unit-tested directly: the portfolio gap math (`pnpm test:gap`), the recent-moves formatter (`pnpm test:format-move`), the position price-move derivation (`pnpm test:price-move`), and the Python ingest pipeline — position state machine, portfolio-PDF parser, payload parsing (`cd scripts && python -m pytest`).
+- **Regression evals + unit tests.** A small TypeScript harness runs natural-language queries against the chat code and asserts on tool-call traces, catching retrieval and citation regressions before they ship. Pure finance logic is unit-tested directly: the portfolio gap math (`pnpm test:gap`), the recent-moves formatter (`pnpm test:format-move`), the position price-move derivation (`pnpm test:price-move`), the invite-gate signature verification + allowlist (`pnpm test:webhook`), and the Python ingest pipeline — position state machine, portfolio-PDF parser, payload parsing (`cd scripts && python -m pytest`).
 
 ## Architecture sketch
 
@@ -26,6 +27,7 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
        │   GitHub Actions crons (scripts/*.py)            │
        │   • poll-trades.yml       — */30 weekdays        │
        │   • discover-articles.yml — 0 14 * * *           │
+       │   • ingest-portfolio.yml  — 30 14 * * *          │
        │   • weekly-digest.yml     — 0 21 * * 5           │
        └────────┬─────────────────────────────┬───────────┘
                 │                             │
@@ -56,6 +58,8 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
 **Storage is hybrid.** Postgres holds everything you query or render at runtime — trade history, article metadata + the full distilled article body (FTS-indexed), ticker arrays, encrypted credentials. Git holds only the prose a human versions and reviews (the strategy doc, the thesis doc, weekly digests). The chat reads articles and trades from Postgres; the strategy/thesis docs come from markdown on disk.
 
 **Auth is two-layer.** Neon Auth handles the app identity (who's logged in). A separate `iof_credentials` table holds each user's AES-256-GCM-encrypted IOF email/password, keyed to their app user_id. The Phase 0 build is single-tenant (Hunter); Phase 2 layers Postgres RLS on top without changing the auth model.
+
+**Registration is invite-only.** A Neon Auth `user.before_create` webhook rejects any email not on the `NEON_AUTH_ALLOWED_EMAILS` allowlist — for both Google OAuth and email/password — so no one can self-register into the private preview. A defense-in-depth allowlist check in the authenticated layout backstops it. Changing the allowlist requires a redeploy.
 
 ## Quick start
 

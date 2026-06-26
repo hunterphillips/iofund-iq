@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-05-20
+last_updated: 2026-06-26
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -32,14 +32,14 @@ As of Q2 2026, adjusted for trades since the report:
 
 | Trend | Positions |
 |---|---|
-| Accelerators | AVGO (the top pick now that Nvidia is out), AMD, ARM, TSM |
+| Accelerators | AVGO (the top pick now that Nvidia is out), AMD, TSM |
 | Memory | MU, SNDK |
-| Networking | LITE, AAOI, COHR, ALAB, VRT |
-| Big Tech | META, GOOG |
-| Software | PLTR (about half trimmed in May near $133.51), NET |
+| Networking | LITE, AAOI, COHR, ALAB, VRT, GLW, MTSI |
+| Big Tech | META |
+| Software | NET |
 | Energy | BE (up roughly 1,300% from the April 2025 entries), GEV |
 
-A few names recently left the portfolio. Nvidia was closed. CoreWeave was dropped once its projected debt load got too heavy. Reddit was closed in May, after the "scarce data asset" thesis had run its course. Utilities like Talen and the Bitcoin miners come up as themes, but the actual positions sit in the gated Discovery tier rather than the held portfolio.
+Several names recently left the portfolio. Nvidia was closed. CoreWeave was dropped once its projected debt load got too heavy. Reddit was closed in May, after the "scarce data asset" thesis had run its course. ARM was closed in late June. GOOG was closed in late June. PLTR was fully closed in late June; the remaining half position after the May trim near $133.51 was sold at $107.44. Utilities like Talen and the Bitcoin miners come up as themes, but the actual positions sit in the gated Discovery tier rather than the held portfolio.
 
 ## How the thinking has moved
 

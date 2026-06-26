@@ -86,7 +86,16 @@ export function ChatThread({
   onThreadCreated?: (id: string) => void;
 }) {
   const [input, setInput] = useState("");
-  const textInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow the composer textarea to fit its content (and shrink back when the
+  // input is cleared after a send). CSS caps the height + scrolls past the cap.
+  useEffect(() => {
+    const el = textInputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input]);
 
   // Per-turn page context: build the `x-page-context` header from the current
   // route + whatever the page published via useSetPageContext(). The transport
@@ -244,7 +253,20 @@ export function ChatThread({
 
   // Paste an image straight from the clipboard (e.g. a screenshot). Falls
   // through to normal text paste when the clipboard holds no image.
-  function handlePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  // Enter sends; Shift+Enter inserts a newline. Ignore Enter mid-IME-composition
+  // so composing in CJK/etc. doesn't submit a half-typed word.
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  }
+
+  function handlePaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
     const imageItem = Array.from(event.clipboardData.items).find((i) =>
       i.type.startsWith("image/"),
     );
@@ -399,13 +421,14 @@ export function ChatThread({
         >
           <PaperclipGlyph />
         </button>
-        <input
+        <textarea
           ref={textInputRef}
           className="chat-input"
-          type="text"
+          rows={1}
           placeholder="Ask about I/O Fund..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           disabled={busy}
           autoFocus

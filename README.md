@@ -12,7 +12,7 @@ An AI layer over an [I/O Fund](https://io-fund.com) subscription: chat over the 
 - **Weekly digest.** A Friday cron summarizes the week's trades and articles, and opens a PR against the thesis doc when new activity contradicts it. Emailed via Resend.
 - **Portfolio gap analysis.** Connect a Robinhood account (official Agentic Trading MCP, per-user OAuth, read-only) or paste a brokerage screenshot, and see where your holdings sit against the fund's, by theme. Weights are computed from live Yahoo Finance prices.
 
-![Assistant chat](assets/chat.png)
+![Assistant chat](assets/chat-dark.png)
 
 ## Architecture
 

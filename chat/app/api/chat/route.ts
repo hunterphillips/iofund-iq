@@ -1,4 +1,10 @@
-import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  generateId,
+  stepCountIs,
+  streamText,
+  type UIMessage,
+} from "ai";
 import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { hasRobinhoodConnection } from "@/lib/robinhood/connection";
@@ -110,6 +116,11 @@ export async function POST(request: Request) {
   // client, so we log and swallow rather than rethrow (which would reject the
   // stream tail in some runtimes).
   return result.toUIMessageStreamResponse({
+    // Without this, the response message's id is "" (AI SDK only assigns one when
+    // generateMessageId or originalMessages is provided). That empty id gets
+    // persisted and streamed to the client, so a thread with two assistant turns
+    // renders two <Message key=""> — React's duplicate-key warning.
+    generateMessageId: generateId,
     onFinish: async ({ responseMessage }) => {
       try {
         await appendMessage(threadId, "assistant", responseMessage);

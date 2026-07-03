@@ -20,13 +20,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { IofPosition, CategoryWeight } from "@/lib/portfolio/iof-book";
 import { categoryColorVar, categoryLabel } from "@/lib/portfolio/categories";
 import { PositionsTable } from "./PositionsTable";
+import { CompareView } from "./CompareView";
 
-type View = "table" | "pie" | "trends";
+type View = "table" | "pie" | "trends" | "compare";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "table", label: "Table" },
   { id: "pie", label: "Pie" },
   { id: "trends", label: "Trends" },
+  { id: "compare", label: "Compare" },
 ];
 
 const DIMMED = 0.22;
@@ -129,13 +131,14 @@ export function PortfolioBook({
             onToggle={toggle}
           />
         )}
+        {view === "compare" && <CompareView />}
 
         {/*
           Filtered holdings beneath the chart. When a category is selected in the
           Pie or Trends view, show the matching holdings here so the user doesn't
           have to switch back to the Table view to see what's in the slice.
         */}
-        {view !== "table" && selected && (
+        {view !== "table" && view !== "compare" && selected && (
           <div className="mt-2 border-t border-border pt-3 px-2 md:px-4">
             <div className="flex items-center gap-2 mb-3 text-[12px] uppercase tracking-[0.14em] text-muted-deep font-mono">
               <span

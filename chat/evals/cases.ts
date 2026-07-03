@@ -78,6 +78,9 @@ export function responseExcludes(regex: RegExp): Assertion {
 export type EvalCase = {
   id: string;
   question: string;
+  /** Appended to SYSTEM_PROMPT for this case — mirrors the per-turn notes the
+   * chat route injects (e.g. the broker-connection flag). */
+  systemSuffix?: string;
   assertions: Assertion[];
 };
 
@@ -144,6 +147,29 @@ export const CASES: EvalCase[] = [
         "read_article",
         /bitcoin-price-prediction-2026-dollar-liquidity-volume-downside/i,
       ),
+    ],
+  },
+  {
+    id: "connected_gap_needs_no_screenshot",
+    question: "how does my portfolio compare to the fund's right now?",
+    // Same note /api/chat appends when a Robinhood connection exists.
+    systemSuffix:
+      "\n\nBroker connection: the user HAS connected Robinhood. For portfolio questions, call analyze_portfolio_gap with no holdings (their synced positions are used automatically); do not ask for a screenshot.",
+    assertions: [
+      toolCalled("analyze_portfolio_gap"),
+      {
+        label: "analyze_portfolio_gap called WITHOUT explicit holdings",
+        check: (t) =>
+          t.toolCalls.some(
+            (c) =>
+              c.toolName === "analyze_portfolio_gap" &&
+              (c.args.holdings === undefined || c.args.holdings === null),
+          ),
+      },
+      // NOTE: no assertion on the final prose. The eval runner has no auth
+      // session, so the tool itself returns the screenshot-fallback message
+      // and the model correctly relays it — in production the route always
+      // has a session. The behavior under test is the no-holdings call above.
     ],
   },
 ];

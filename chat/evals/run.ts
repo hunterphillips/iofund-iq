@@ -32,7 +32,7 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
   const t0 = Date.now();
   const result = await generateText({
     model: MODEL,
-    system: SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT + (c.systemSuffix ?? ""),
     messages: [{ role: "user", content: c.question }],
     tools: chatTools,
     stopWhen: stepCountIs(5),

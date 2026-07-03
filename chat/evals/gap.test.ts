@@ -63,6 +63,19 @@ console.log("\n[a] partition + weights");
     r.overlap.map((o) => o.ticker).sort().join(",") === "MU,NVDA",
     "overlap = tickers held by both",
   );
+  assert(
+    r.yours_only.map((y) => y.ticker).join(",") === "AAPL",
+    "yours_only = user tickers outside the book",
+  );
+  // AAPL = 1000/11000 = 9.1%
+  assert(
+    r.yours_only[0].your_weight_pct === 9.1,
+    "yours_only carries the user's live weight",
+  );
+  assert(
+    nvda.category === "AI Accelerators" && nvda.company === "NVIDIA Corp",
+    "overlap rows carry book company + category",
+  );
 }
 
 // ── (b) missing prices excluded ─────────────────────────────────────────────

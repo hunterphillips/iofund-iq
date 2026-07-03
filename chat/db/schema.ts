@@ -6,6 +6,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -142,4 +143,45 @@ export const chatMessages = pgTable(
       .defaultNow(),
   },
   (t) => [index("chat_messages_thread_created_idx").on(t.threadId, t.createdAt)],
+);
+
+// Per-user Robinhood Agentic Trading connection (OAuth tokens, not passwords).
+// Tokens are AES-256-GCM under ROBINHOOD_TOKEN_ENCRYPTION_KEY — a *rotatable*
+// key, unlike the IOF one, because a lost token is repaired by reconnecting.
+// account_number = default brokerage account (equity tools);
+// rhs_account_number = the same account's RHS id (realized-P&L tool).
+export const robinhoodConnections = pgTable("robinhood_connections", {
+  userId: text("user_id").primaryKey(),
+  encryptedAccessToken: bytea("encrypted_access_token").notNull(),
+  encryptedRefreshToken: bytea("encrypted_refresh_token").notNull(),
+  accountNumber: text("account_number").notNull(),
+  rhsAccountNumber: text("rhs_account_number"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", {
+    withTimezone: true,
+  }),
+  // 'active' | 'expired' — expired means refresh failed; user must reconnect.
+  status: text("status").notNull().default("active"),
+  connectedAt: timestamp("connected_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Latest broker holdings snapshot per user — a lazy cache of the broker's
+// source of truth, replaced wholesale (delete + insert) on refresh, never
+// diffed. No history: fetched_at is the same for every row in a snapshot.
+export const brokerHoldings = pgTable(
+  "broker_holdings",
+  {
+    userId: text("user_id").notNull(),
+    ticker: text("ticker").notNull(),
+    shares: numeric("shares", { precision: 18, scale: 6 }).notNull(),
+    source: text("source").notNull().default("robinhood"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.ticker] })],
 );

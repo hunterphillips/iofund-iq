@@ -1,6 +1,7 @@
 import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
+import { hasRobinhoodConnection } from "@/lib/robinhood/connection";
 import { chatTools } from "@/lib/chat/tools";
 import { SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
 import { buildSystemPrompt } from "@/lib/chat/page-context-prompt";
@@ -89,9 +90,15 @@ export async function POST(request: Request) {
   // block to the system prompt. The client never mutates the prompt itself.
   const pageContext = parsePageContext(request.headers.get("x-page-context"));
 
+  // Per-turn broker flag so the model knows whether portfolio questions need
+  // a screenshot or can ride the Robinhood sync.
+  const robinhoodNote = (await hasRobinhoodConnection(session.user.id))
+    ? "\n\nBroker connection: the user HAS connected Robinhood. For portfolio questions, call analyze_portfolio_gap with no holdings (their synced positions are used automatically); do not ask for a screenshot."
+    : "\n\nBroker connection: the user has NOT connected a brokerage. Portfolio questions need a portfolio screenshot attached in chat (or they can connect Robinhood from the account menu).";
+
   const result = streamText({
     model: "anthropic/claude-sonnet-4-6",
-    system: buildSystemPrompt(SYSTEM_PROMPT, pageContext),
+    system: buildSystemPrompt(SYSTEM_PROMPT, pageContext) + robinhoodNote,
     messages: await convertToModelMessages(messages),
     tools: chatTools,
     stopWhen: stepCountIs(5),

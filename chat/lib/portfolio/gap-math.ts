@@ -27,9 +27,16 @@ export interface GapResult {
   /** Held by both — user weight vs IOF weight, with delta. */
   overlap: {
     ticker: string;
+    company: string | null;
+    category: string | null;
     iof_weight_pct: number;
     your_weight_pct: number;
     delta_pct: number;
+  }[];
+  /** User holds, IOF doesn't — outside the fund's coverage. Weight-desc. */
+  yours_only: {
+    ticker: string;
+    your_weight_pct: number;
   }[];
 }
 
@@ -94,16 +101,28 @@ export function diffHoldingsAgainstBook(
       const yours = userBook.get(r.ticker.toUpperCase())!;
       return {
         ticker: r.ticker,
+        company: r.company,
+        category: r.category,
         iof_weight_pct: r.iofWeight,
         your_weight_pct: Math.round(yours.weight * 10) / 10,
         delta_pct: Math.round((yours.weight - r.iofWeight) * 10) / 10,
       };
     });
 
+  const bookTickers = new Set(iofBook.map((r) => r.ticker.toUpperCase()));
+  const yours_only = [...userBook.entries()]
+    .filter(([ticker]) => !bookTickers.has(ticker))
+    .map(([ticker, v]) => ({
+      ticker,
+      your_weight_pct: Math.round(v.weight * 10) / 10,
+    }))
+    .sort((a, b) => b.your_weight_pct - a.your_weight_pct);
+
   return {
     total_value_usd: Math.round(totalValue),
     missing_prices,
     iof_only,
     overlap,
+    yours_only,
   };
 }

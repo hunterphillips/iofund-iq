@@ -5,6 +5,8 @@ import { db, tables } from "@/db";
 import { auth } from "@/lib/auth/server";
 import type { Holding } from "@/lib/portfolio/gap-math";
 import { computePortfolioGap } from "@/lib/portfolio/compare";
+import { getBrokerHoldings } from "@/lib/robinhood/holdings";
+import { getRealizedPnl } from "@/lib/robinhood/pnl";
 import { readDoc, type DocName } from "./docs";
 
 export const chatTools = {
@@ -212,7 +214,7 @@ export const chatTools = {
 
   analyze_portfolio_gap: tool({
     description:
-      "Compare the user's portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. The user supplies holdings by attaching a portfolio/brokerage screenshot in chat — read each holding's ticker + share count from it and pass them as `holdings`. After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } when no holdings are provided — then ask the user to attach a brokerage screenshot here in chat.",
+      "Compare the user's portfolio holdings against IOF's current portfolio using live market prices. Returns two lists: tickers IOF holds that the user doesn't (buy-list signal), and the overlap with weight deltas (where the user is over/under-weighted relative to IOF's sizing). Use when the user asks about THEIR portfolio, gaps, what they're missing, how their portfolio compares to IOF's, or which positions are over/under-weighted. Holdings come from one of two places: (1) if the user has connected Robinhood, call with NO holdings and their synced positions are used automatically; (2) otherwise the user attaches a portfolio/brokerage screenshot in chat — read each holding's ticker + share count from it and pass them as `holdings` (explicit holdings always win over the sync). After calling, enrich the response with thesis context per ticker via read_doc('thesis') or search_articles when relevant. Returns { connected: false } when neither source is available — then ask the user to attach a brokerage screenshot here in chat, or connect Robinhood from the account menu.",
     inputSchema: z.object({
       holdings: z
         .array(
@@ -223,7 +225,7 @@ export const chatTools = {
         )
         .optional()
         .describe(
-          "Holdings read from a portfolio image the user attached this turn (ticker uppercased + share count).",
+          "Holdings read from a portfolio image the user attached this turn (ticker uppercased + share count). Omit entirely when the user has a Robinhood connection and attached no image.",
         ),
     }),
     execute: async ({ holdings }: { holdings?: Holding[] }) => {
@@ -235,19 +237,91 @@ export const chatTools = {
         };
       }
 
+      let source: "screenshot" | "robinhood" = "screenshot";
+      let fetchedAt: string | undefined;
       if (!holdings?.length) {
-        return {
-          connected: false as const,
-          message:
-            "No holdings provided. Ask the user to attach a brokerage screenshot here in chat.",
-        };
+        const synced = await getBrokerHoldings(session.user.id);
+        if (!synced.connected) {
+          return {
+            connected: false as const,
+            message:
+              "No holdings provided and no Robinhood connection. Ask the user to attach a brokerage screenshot here in chat, or connect Robinhood from the account menu.",
+          };
+        }
+        holdings = synced.holdings;
+        source = "robinhood";
+        fetchedAt = synced.fetchedAt.toISOString();
       }
 
       const gap = await computePortfolioGap(
         holdings.map((h) => ({ ...h, ticker: h.ticker.toUpperCase() })),
       );
 
-      return { connected: true as const, ...gap };
+      return { connected: true as const, source, fetchedAt, ...gap };
+    },
+  }),
+
+  get_my_portfolio: tool({
+    description:
+      "Read the user's current Robinhood holdings (ticker + share count) from their connected account. Synced from the broker, at most 30 minutes old. Use for 'what do I hold?', 'how many shares of X do I have?', and as raw material for custom analysis. For a full comparison against I/O Fund's portfolio, prefer analyze_portfolio_gap. Returns { connected: false } when the user hasn't connected Robinhood.",
+    inputSchema: z.object({}),
+    execute: async () => {
+      const { data: session } = await auth.getSession();
+      if (!session?.user) {
+        return { connected: false as const, message: "User is not signed in." };
+      }
+      const result = await getBrokerHoldings(session.user.id);
+      if (!result.connected) {
+        return {
+          connected: false as const,
+          message:
+            "No Robinhood connection. The user can connect from the account menu, or attach a portfolio screenshot instead.",
+        };
+      }
+      return {
+        connected: true as const,
+        as_of: result.fetchedAt.toISOString(),
+        stale: result.stale,
+        holdings: result.holdings,
+      };
+    },
+  }),
+
+  get_my_realized_pnl: tool({
+    description:
+      "The user's realized profit & loss from their connected Robinhood account: per-bucket realized gain ($ and %), closing-trade counts, and window totals, computed by the broker from actual closed lots. This is a TRUE realized return for the user's own trading (unlike fund-side price moves, which are not return estimates). Use for 'how did my trades do this month/quarter/year?'. Pick either a preset span or explicit start/end dates, not both.",
+    inputSchema: z.object({
+      span: z
+        .enum(["day", "week", "month", "3month", "year", "all"])
+        .optional()
+        .describe("Preset window. Defaults to 3month (last 90 days)."),
+      start_date: z
+        .string()
+        .optional()
+        .describe("Custom window start, YYYY-MM-DD. Use with end_date instead of span."),
+      end_date: z
+        .string()
+        .optional()
+        .describe("Custom window end, YYYY-MM-DD, inclusive."),
+    }),
+    execute: async ({
+      span,
+      start_date,
+      end_date,
+    }: {
+      span?: "day" | "week" | "month" | "3month" | "year" | "all";
+      start_date?: string;
+      end_date?: string;
+    }) => {
+      const { data: session } = await auth.getSession();
+      if (!session?.user) {
+        return { connected: false as const, message: "User is not signed in." };
+      }
+      return getRealizedPnl(session.user.id, {
+        span,
+        startDate: start_date,
+        endDate: end_date,
+      });
     },
   }),
 };

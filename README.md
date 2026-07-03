@@ -2,7 +2,7 @@
 
 A personal AI assistant for getting more value out of an [I/O Fund](https://io-fund.com) subscription — natural-language chat over IOF's published research, automatic ingestion of new trades and articles, and grounded answers cited back to the source.
 
-> **Status:** Live, private, and invite-only at [iofund-iq.vercel.app](https://iofund-iq.vercel.app). Now being shared with the I/O Fund team as a member-facing product.
+> **Status:** Live, private, and invite-only at [iofund-iq.vercel.app](https://iofund-iq.vercel.app).
 
 ## What it does today
 
@@ -10,9 +10,9 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
 - **Auto-ingests trades.** A GitHub Actions cron polls IOF's `/premium/trades` page every 30 minutes on weekdays and upserts new trade alerts into Postgres. 1,250+ historical trades currently indexed. Each new trade also state-transitions a `positions` row (BUY → held, SELL+close → closed, trim → held), keeping a live snapshot of IOF's current book.
 - **Auto-distills articles.** A daily cron polls IOF's RSS feed, fetches each new article behind the paywall, and produces a structured distillation (thesis · key numbers · takeaways · risks) via Claude Sonnet 4.6. ~$0.05/article. Stored in Postgres (full distilled body, FTS-indexed) and rendered live — no redeploy needed to publish.
 - **Weekly auto-digest.** A Friday cron generates a 5-section summary of the past week's trades + articles via Sonnet 4.6, commits it to `data/digests/`, and runs a second LLM pass to detect whether the new activity supersedes anything in the running thesis doc — opening a PR against `thesis.md` when drift is found. Summary delivered via Resend.
-- **Portfolio review + gap analysis.** A `/portfolio` view renders IOF's current book (table / pie / themes), with per-ticker dossiers at `/positions/[ticker]` (trade-replay timeline, related articles, a caveated price-move figure). A daily cron refreshes the authoritative book from IOF's portfolio PDF. In chat, attaching a brokerage screenshot triggers a live gap analysis of your holdings against IOF's book (`analyze_portfolio_gap`), weights computed from Yahoo Finance prices server-side.
+- **Portfolio review + gap analysis.** A `/portfolio` view renders IOF's current book (table / pie / trends / compare), with per-ticker dossiers at `/positions/[ticker]` (trade-replay timeline, related articles, a caveated price-move figure). A daily cron refreshes the authoritative book from IOF's portfolio PDF. Connect a Robinhood account (official Agentic Trading MCP, per-user OAuth, read-only by construction) and your synced holdings power the Compare view plus no-screenshot gap analysis and realized-P&L questions in chat; without a connection, attaching a brokerage screenshot still triggers the same `analyze_portfolio_gap` — weights computed from Yahoo Finance prices server-side either way.
 - **Render-layer source attribution.** Every chat response shows a `Sources` block built deterministically from which articles the agent actually read — no hallucinated URLs possible.
-- **Regression evals + unit tests.** A small TypeScript harness runs natural-language queries against the chat code and asserts on tool-call traces, catching retrieval and citation regressions before they ship. Pure finance logic is unit-tested directly: the portfolio gap math (`pnpm test:gap`), the recent-moves formatter (`pnpm test:format-move`), the position price-move derivation (`pnpm test:price-move`), the invite-gate signature verification + allowlist (`pnpm test:webhook`), and the Python ingest pipeline — position state machine, portfolio-PDF parser, payload parsing (`cd scripts && python -m pytest`).
+- **Regression evals + unit tests.** A small TypeScript harness runs natural-language queries against the chat code and asserts on tool-call traces, catching retrieval and citation regressions before they ship. Pure finance logic is unit-tested directly: the portfolio gap math (`pnpm test:gap`), the recent-moves formatter (`pnpm test:format-move`), the position price-move derivation (`pnpm test:price-move`), the invite-gate signature verification + allowlist (`pnpm test:webhook`), the Robinhood payload parsing + read-only allowlist + token paths (`pnpm test:robinhood`), and the Python ingest pipeline — position state machine, portfolio-PDF parser, payload parsing (`cd scripts && python -m pytest`).
 
 ## Architecture sketch
 
@@ -47,7 +47,9 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
        │   • Neon Auth (Google + email/password)          │
        │   • AI SDK v6 streamText + 5-step tool loop      │
        │   • Tools: read_doc · query_trades ·             │
-       │            search_articles · read_article        │
+       │     search_articles · read_article ·             │
+       │     analyze_portfolio_gap · get_my_portfolio ·   │
+       │     get_my_realized_pnl                          │
        │   • Sources block from tool-call trace           │
        └──────────────────────────────────────────────────┘
                             ▲
@@ -80,11 +82,11 @@ For the cron workflows to run, the GitHub repo needs `IO_FUND_USERNAME`, `IO_FUN
 
 | Phase | Status | Scope |
 |---|---|---|
-| **0 — read-only intelligence + chat** | complete | Trade poll ✓ · Article ingest ✓ · Chat ✓ · Weekly digest ✓ · Positions table ✓ · Portfolio gap analysis ✓ (screenshot upload + in-chat image attach) |
-| **1 — RAG + broker read + email→webhook** | planned | pgvector hybrid with FTS · Alpaca paper read-only portfolio pull · IOF alert email → forwarder → webhook (replaces polling) |
-| **2 — multi-tenant + pitch** | planned | Postgres RLS · public sign-up · billing · formal pitch to IOF team |
+| **0 — read-only intelligence + chat** | complete | Trade poll ✓ · Article ingest ✓ · Chat ✓ · Weekly digest ✓ · Positions table ✓ · Portfolio gap analysis ✓ (in-chat image attach) · Robinhood broker read + Compare view ✓ |
+| **1 — RAG + email→webhook** | planned | pgvector hybrid with FTS · IOF alert email → forwarder → webhook (replaces polling) |
+| **2 — multi-tenant** | open call | Postgres RLS · public sign-up · billing — architecture is ready for it; whether to go multi-user is undecided |
 
-**Explicitly out of scope.** Write-side broker integration (auto-trade, semi-auto execution, approve-and-submit). Different liability/compliance posture; not IOF-pitchable. If pursued at all, it would be a separate app.
+**Explicitly out of scope.** Write-side broker integration (auto-trade, semi-auto execution, approve-and-submit). Different liability/compliance posture. If pursued at all, it would be a separate app. Broker *read* shipped via Robinhood's official agent platform; the app's MCP client allowlists read-only tools, so order placement is unreachable.
 
 ## Conventions
 

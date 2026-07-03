@@ -1,6 +1,13 @@
-import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  generateId,
+  stepCountIs,
+  streamText,
+  type UIMessage,
+} from "ai";
 import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
+import { hasRobinhoodConnection } from "@/lib/robinhood/connection";
 import { chatTools } from "@/lib/chat/tools";
 import { SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
 import { buildSystemPrompt } from "@/lib/chat/page-context-prompt";
@@ -89,9 +96,15 @@ export async function POST(request: Request) {
   // block to the system prompt. The client never mutates the prompt itself.
   const pageContext = parsePageContext(request.headers.get("x-page-context"));
 
+  // Per-turn broker flag so the model knows whether portfolio questions need
+  // a screenshot or can ride the Robinhood sync.
+  const robinhoodNote = (await hasRobinhoodConnection(session.user.id))
+    ? "\n\nBroker connection: the user HAS connected Robinhood. For portfolio questions, call analyze_portfolio_gap with no holdings (their synced positions are used automatically); do not ask for a screenshot."
+    : "\n\nBroker connection: the user has NOT connected a brokerage. Portfolio questions need a portfolio screenshot attached in chat (or they can connect Robinhood from the account menu).";
+
   const result = streamText({
     model: "anthropic/claude-sonnet-4-6",
-    system: buildSystemPrompt(SYSTEM_PROMPT, pageContext),
+    system: buildSystemPrompt(SYSTEM_PROMPT, pageContext) + robinhoodNote,
     messages: await convertToModelMessages(messages),
     tools: chatTools,
     stopWhen: stepCountIs(5),
@@ -103,6 +116,11 @@ export async function POST(request: Request) {
   // client, so we log and swallow rather than rethrow (which would reject the
   // stream tail in some runtimes).
   return result.toUIMessageStreamResponse({
+    // Without this, the response message's id is "" (AI SDK only assigns one when
+    // generateMessageId or originalMessages is provided). That empty id gets
+    // persisted and streamed to the client, so a thread with two assistant turns
+    // renders two <Message key=""> — React's duplicate-key warning.
+    generateMessageId: generateId,
     onFinish: async ({ responseMessage }) => {
       try {
         await appendMessage(threadId, "assistant", responseMessage);

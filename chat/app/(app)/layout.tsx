@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
 import { isEmailAllowed } from "@/lib/auth/allowlist";
 import { hasIofCredentials } from "@/lib/iof/credentials";
+import { getRobinhoodConnection } from "@/lib/robinhood/connection";
 import { AppChrome } from "@/components/app-chrome";
 import { PageContextRoot } from "@/lib/page-context/context";
 import { ActiveThreadProvider } from "@/lib/chat/active-thread";
@@ -30,6 +31,15 @@ export default async function AppLayout({
   // menu can show connection status instead of a bare "Connect" action.
   const iofConnected = await hasIofCredentials(session.user.id);
 
+  // Optional brokerage link status for the account menu (none/active/expired).
+  const robinhood = await getRobinhoodConnection(session.user.id);
+  const robinhoodStatus =
+    robinhood === null
+      ? ("none" as const)
+      : robinhood.status === "active"
+        ? ("active" as const)
+        : ("expired" as const);
+
   return (
     <PageContextRoot>
       <ActiveThreadProvider>
@@ -37,6 +47,7 @@ export default async function AppLayout({
           email={session.user.email ?? null}
           name={session.user.name ?? null}
           iofConnected={iofConnected}
+          robinhoodStatus={robinhoodStatus}
         >
           {children}
         </AppChrome>

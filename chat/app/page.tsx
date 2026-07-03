@@ -44,18 +44,17 @@ export default async function Landing() {
       <section className="mx-auto max-w-6xl px-6 pt-10 pb-16 sm:pt-16">
         <div className="grid items-start gap-12 lg:grid-cols-[1.05fr_1fr]">
           <div className="relative">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-muted">
+            {/* <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-muted">
               <SparkleGlyph className="h-3.5 w-3.5 text-orange" />
               Coming soon · Private preview
-            </span>
+            </span> */}
             <h1 className="mt-5 font-serif text-[2.6rem] font-semibold leading-[1.05] tracking-tight text-cream sm:text-6xl">
               Ask your I/O&nbsp;Fund subscription anything.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">
-              An independent AI assistant that reads every I/O Fund trade,
-              article, and portfolio move, then answers in plain language with
-              sources. Built for subscribers who want the signal without
-              re-reading every alert.
+              An AI intelligence layer over your I/O Fund subscription. Monitors
+              every trade, article, and portfolio move, and provides answers in
+              plain language with sources.
             </p>
 
             {signedIn ? (
@@ -93,7 +92,7 @@ export default async function Landing() {
       {/* Value props */}
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="max-w-2xl font-serif text-3xl font-semibold tracking-tight text-cream sm:text-4xl">
-          Everything you pay for, finally answerable.
+          Highlights
         </h2>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {[
@@ -107,7 +106,7 @@ export default async function Landing() {
             },
             {
               title: "See your gaps",
-              body: "Paste a brokerage screenshot and get a live read of where your holdings sit against the current book — over- and under-weights, by theme.",
+              body: "Paste a brokerage screenshot and get a live read of where your holdings sit against the fund's current holdings: over- and under-weights, by theme.",
             },
           ].map((f) => (
             <div
@@ -131,12 +130,11 @@ export default async function Landing() {
               Already a member
             </p>
             <h3 className="mt-3 font-serif text-2xl text-cream">
-              Get more from a subscription you already pay for.
+              Get more from your subscription.
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              Connect your account and the assistant works against your own
-              authenticated content. Nothing is redistributed; it just makes
-              what you already have easier to act on.
+              Connect your account and ask anything across your own trades,
+              articles, and portfolio history.
             </p>
           </div>
           <div className="rounded-2xl border border-border bg-surface/60 p-7">
@@ -147,8 +145,9 @@ export default async function Landing() {
               See what a subscription unlocks.
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              The assistant is only as good as the research behind it. Join the
-              list and we’ll point you to I/O Fund when access opens.
+              It runs on I/O Fund’s research, so you’ll need a subscription
+              behind it. Join the list and we’ll point you there when access
+              opens.
             </p>
           </div>
         </div>
@@ -172,11 +171,11 @@ export default async function Landing() {
             ) : null}
           </div>
           <p className="mt-6 max-w-2xl text-xs leading-relaxed text-muted-deep">
-            Independent project. Not affiliated with, endorsed by, or operated by
-            I/O Fund. All research, trade ideas, and framework material referenced
-            belong to I/O Fund and are accessible only through a subscriber’s own
-            authenticated account. For informational purposes only. Not
-            investment advice.
+            Independent project. Not affiliated with, endorsed by, or operated
+            by I/O Fund. All research, trade ideas, and framework material
+            referenced belong to I/O Fund and are accessible only through a
+            subscriber’s own authenticated account. For informational purposes
+            only. Not investment advice.
           </p>
         </div>
       </footer>

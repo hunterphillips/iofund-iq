@@ -62,7 +62,7 @@ export function ProductVignette({ className = "" }: { className?: string }) {
                   power-buildout theme.
                 </p>
                 <p>
-                  Against the current book you're light on{" "}
+                  Against the current portfolio you're light on{" "}
                   <span className="text-cream">Energy</span> (18% there, ~4% for
                   you) and have no <span className="text-cream">Networking</span>{" "}
                   exposure.
@@ -82,7 +82,7 @@ export function ProductVignette({ className = "" }: { className?: string }) {
           {/* Portfolio column */}
           <div className="border-t border-border p-5 md:border-l md:border-t-0">
             <p className="text-[0.7rem] font-medium uppercase tracking-[0.12em] text-muted-deep">
-              Current book
+              Current holdings
             </p>
             <div className="mt-4 flex items-center gap-4">
               <div
@@ -113,7 +113,7 @@ export function ProductVignette({ className = "" }: { className?: string }) {
       </div>
 
       <p className="mt-3 text-center font-mono text-[0.65rem] text-muted-deep">
-        Illustrative interface. Sample data, fictional tickers — not live I/O
+        Illustrative interface. Sample data and fictional tickers, not live I/O
         Fund content.
       </p>
     </div>

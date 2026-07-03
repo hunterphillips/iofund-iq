@@ -47,7 +47,9 @@ A personal AI assistant for getting more value out of an [I/O Fund](https://io-f
        │   • Neon Auth (Google + email/password)          │
        │   • AI SDK v6 streamText + 5-step tool loop      │
        │   • Tools: read_doc · query_trades ·             │
-       │            search_articles · read_article        │
+       │     search_articles · read_article ·             │
+       │     analyze_portfolio_gap · get_my_portfolio ·   │
+       │     get_my_realized_pnl                          │
        │   • Sources block from tool-call trace           │
        └──────────────────────────────────────────────────┘
                             ▲

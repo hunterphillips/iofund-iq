@@ -24,7 +24,8 @@
     "test:format-move": "tsx evals/format-move.test.ts",
     "test:price-move": "tsx evals/price-move.test.ts",
     "test:webhook": "tsx evals/neon-webhook.test.ts",
-    "test:robinhood": "tsx evals/robinhood.test.ts"
+    "test:robinhood": "tsx evals/robinhood.test.ts",
+    "test:waitlist": "tsx evals/waitlist.test.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.186",

@@ -185,3 +185,28 @@ export const brokerHoldings = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.ticker] })],
 );
+
+// Public landing-page waitlist. Decoupled from auth/allowlist on purpose: a
+// signup here captures *demand* (the leverage asset for re-approaching the
+// fund), not access. `member_status` is the load-bearing field — its
+// distribution is the chart we show: 'member' | 'prospect' | 'considering'.
+// Plain text (validated in app code via lib/waitlist/schema.ts), matching the
+// codebase's enum-as-text convention. Dedupes on email (upsert).
+export const waitlist = pgTable(
+  "waitlist",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull().unique(),
+    memberStatus: text("member_status").notNull(),
+    interest: text("interest"),
+    source: text("source"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("waitlist_member_status_idx").on(t.memberStatus)],
+);

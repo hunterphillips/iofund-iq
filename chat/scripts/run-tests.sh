@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 
 scripts/copy-data.sh >/dev/null 2>&1
 
-suites=(webhook gap format-move price-move robinhood page-context articles threads)
+suites=(webhook gap format-move price-move robinhood waitlist page-context articles threads)
 verbose="${TEST_VERBOSE:-}"
 [[ "${1:-}" == "--verbose" || "${1:-}" == "-v" ]] && verbose=1
 

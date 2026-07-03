@@ -92,7 +92,12 @@ export function CompareView() {
       if (!res.ok) throw new Error(String(res.status));
       const json = (await res.json()) as
         | { connected: false }
-        | { connected: true; gap: GapPayload; fetchedAt: string; stale: boolean };
+        | {
+            connected: true;
+            gap: GapPayload;
+            fetchedAt: string;
+            stale: boolean;
+          };
       if (!json.connected) {
         setState({ kind: "unconnected" });
         return;
@@ -128,10 +133,10 @@ export function CompareView() {
           Compare your portfolio
         </h3>
         <p className="text-sm text-muted mt-2 leading-relaxed">
-          Connect your Robinhood account to compare your actual weights with
-          the fund&apos;s, spot names you&apos;re missing, and ask the
-          assistant about your own positions. Read-only: this app never places
-          trades. Robinhood&apos;s connection flow requires a desktop browser.
+          Connect your Robinhood account to compare your actual weights with the
+          fund&apos;s, spot names you&apos;re missing, and ask the assistant
+          about your own positions. Read-only: this app never places trades.
+          Robinhood&apos;s connection flow requires a desktop browser.
         </p>
         <a
           href="/api/robinhood/connect"
@@ -165,9 +170,7 @@ export function CompareView() {
       {/* Sync status */}
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
         <div className="text-[12px] text-muted-deep font-mono">
-          Your Robinhood account · $
-          {gap.total_value_usd.toLocaleString("en-US")} · as of{" "}
-          {formatTime(fetchedAt)}
+          Robinhood account as of {formatTime(fetchedAt)}
           {stale && <span className="text-orange"> · may be out of date</span>}
         </div>
         <button
@@ -186,10 +189,33 @@ export function CompareView() {
           <SectionLabel>Overlap</SectionLabel>
           <div className="mt-3">
             <div className="grid grid-cols-[1fr_64px_64px_64px] gap-3 px-2 pb-2 text-[11px] uppercase tracking-[0.14em] text-muted-deep font-mono border-b border-border">
-              <SortHeader label="Ticker" k="ticker" sort={sort} onSort={toggleSort} />
-              <SortHeader label="Fund" k="fund" sort={sort} onSort={toggleSort} right />
-              <SortHeader label="You" k="you" sort={sort} onSort={toggleSort} right />
-              <SortHeader label="Δ" k="delta" sort={sort} onSort={toggleSort} right />
+              <SortHeader
+                label="Ticker"
+                k="ticker"
+                sort={sort}
+                onSort={toggleSort}
+              />
+              <SortHeader
+                label="Fund"
+                k="fund"
+                sort={sort}
+                onSort={toggleSort}
+                right
+              />
+              <SortHeader
+                label="You"
+                k="you"
+                sort={sort}
+                onSort={toggleSort}
+                right
+              />
+              <SortHeader
+                label="Δ"
+                k="delta"
+                sort={sort}
+                onSort={toggleSort}
+                right
+              />
             </div>
             {sortedOverlap.map((o) => (
               <div
@@ -330,7 +356,9 @@ function SortHeader({
     <button
       type="button"
       onClick={() => onSort(k)}
-      aria-sort={active ? (sort.dir === 1 ? "ascending" : "descending") : undefined}
+      aria-sort={
+        active ? (sort.dir === 1 ? "ascending" : "descending") : undefined
+      }
       className={
         "font-mono uppercase tracking-[0.14em] text-[11px] transition-colors hover:text-cream " +
         (right ? "text-right " : "text-left ") +
@@ -338,7 +366,9 @@ function SortHeader({
       }
     >
       {label}
-      <span aria-hidden="true">{active ? (sort.dir === 1 ? " ↑" : " ↓") : ""}</span>
+      <span aria-hidden="true">
+        {active ? (sort.dir === 1 ? " ↑" : " ↓") : ""}
+      </span>
     </button>
   );
 }

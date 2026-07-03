@@ -7,8 +7,8 @@ An AI layer over an [I/O Fund](https://io-fund.com) subscription: chat over the 
 ## What it does
 
 - **Chat that knows the fund.** Ask "what's the view on optical networking?" or "why did they close NVDA?" The agent searches distilled article summaries and the live trade log, then answers with sources.
-- **Ingests trades.** A cron polls the fund's trade alerts every 30 minutes and upserts them into Postgres (1,290+ indexed). Each trade updates a live positions snapshot.
-- **Distills articles.** A daily cron fetches each new paywalled article and summarizes it with Claude Sonnet 4.6 for about $0.05, stored full-text-searchable in Postgres and rendered without a redeploy.
+- **Ingests trades.** A cron polls the fund's trade alerts and upserts them into Postgres (1,290+ indexed). Each trade updates a live positions snapshot.
+- **Distills articles.** A daily cron fetches each new paywalled article and summarizes it with Sonnet 4.6.
 - **Weekly digest.** A Friday cron summarizes the week's trades and articles, and opens a PR against the thesis doc when new activity contradicts it. Emailed via Resend.
 - **Portfolio gap analysis.** Connect a Robinhood account (official Agentic Trading MCP, per-user OAuth, read-only) or paste a brokerage screenshot, and see where your holdings sit against the fund's, by theme. Weights are computed from live Yahoo Finance prices.
 

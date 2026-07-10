@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-05-20
+last_updated: 2026-07-10
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -46,6 +46,8 @@ A few names recently left the portfolio. Nvidia was closed. CoreWeave was droppe
 Across the last three quarters, the themes have held and grown while the individual picks rotated. The team rarely drops a theme outright. It is more likely to broaden one it already holds, adding adjacent names and new sub-angles. Networking led in Q4, then energy grew into a near-dominant slice by Q2. Memory started as a footnote inside the accelerator story and became its own section. Cooling went from a passing mention to a real thesis once Rubin made air cooling impossible. CPUs showed up as a brand-new angle with the ARM "AGI CPU" idea.
 
 The picks move around underneath that. Nvidia went from the #1 accelerator to closed. Broadcom got promoted into the top accelerator slot as Nvidia exited. Micron was promoted every quarter as the memory re-rating played out. CoreWeave and Nvidia are the instructive exits: in both, the thesis weakened visibly across several quarters before the position was finally cut.
+
+AAOI is a useful example of the networking thesis in practice. The position is up roughly 800% since the November 2025 entry, a return that reflects both the early timing and how far the optics story has run.
 
 ## How they decide
 

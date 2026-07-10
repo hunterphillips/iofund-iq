@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-20
+last_distilled: 2026-07-10
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -45,7 +45,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | Memory | **MU** | "Doors blown off." FQ3 guide: rev $33.5B (+260%), GM 81%, OM 76% | Cyclical-vs-secular debate |
 | Memory | **SNDK** | NAND tightening. Q3 guide ~200% above consensus | New name in list; less coverage |
 | Networking | **LITE** | Capacity-constrained on EMLs. Pricing power. CW-laser + SiPho alt-route winner | InP supply |
-| Networking | **AAOI** | IOF early call; +~300% YTD / +650% from low entry | High momentum, less fundamentals visibility |
+| Networking | **AAOI** | IOF early call; +~800% since November 2025 entry | High momentum, less fundamentals visibility |
 | Networking | **COHR** | InP capacity doubling → CY26 inflection | Debt leverage |
 | Networking | **ALAB** | Scorpio momentum continues. Bouncing off lows | Tough comps |
 | Networking | **VRT** | Facility-level cooling for Rubin's warm-water design. New entrant | Newer position, limited trade history |
@@ -86,7 +86,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | **CRDO** | ✓ tied #1 networking | ✗ **dropped** | — | Dropped on copper-to-optics shift (Rubin pushes optical) |
 | **LITE** | ✓ #4 networking | ↑ EMLs power 400G/800G | ↑ capacity-constrained | Strongly promoted across quarters |
 | **COHR** | — | + Added (InP capacity doubling) | ✓ slow and steady | New Q1; held |
-| **AAOI** | — | — | + **Added** | New Q2 entrant after ~300% YTD move |
+| **AAOI** | — | — | + **Added** | New Q2 entrant after ~800%+ since November 2025 entry |
 | **VRT** | — | — | + **Added** | New Q2 entrant on cooling thesis |
 | **RDDT** | ✓ #1 software/data | ✓ contextual high-intent data | ✓ scarce asset → ✗ **closed 2026-05-18** | Fully closed @ $158.85; post-Q2 exit |
 | **CRWV** | ✓ #2 software (thematic 11/10) | ✓ legacy IaaS wasn't built for AI | ✗ **removed from list** | Debt trajectory (D/C ratio ~12× projected for 2026) finally too much |

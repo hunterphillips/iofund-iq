@@ -20,6 +20,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       // pages load the auth-ui css anyway, so there's no leak.)
       navigate={(href) => window.location.assign(href)}
       replace={(href) => window.location.replace(href)}
+      // Post-auth destination. The library default is "/", which used to be a
+      // pure redirector into the app but is now the public marketing landing —
+      // signing in should land in the app, not on the pitch page.
+      redirectTo="/fund"
       onSessionChange={() => router.refresh()}
       Link={Link}
       // TEMP (2026-06-23): "Sign in with Google" disabled. A rejected OAuth

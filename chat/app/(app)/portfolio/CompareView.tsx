@@ -46,7 +46,13 @@ type State =
       refreshing: boolean;
     };
 
-export function CompareView() {
+export function CompareView({
+  gapEndpoint = "/api/robinhood/gap",
+  positionsBasePath = "/positions",
+}: {
+  gapEndpoint?: string;
+  positionsBasePath?: string;
+}) {
   const [state, setState] = useState<State>({ kind: "loading" });
   // Overlap-table sort: fund weight desc by default; clicking a header
   // sorts by it, clicking again flips direction.
@@ -88,7 +94,7 @@ export function CompareView() {
       );
     }
     try {
-      const res = await fetch(`/api/robinhood/gap${force ? "?force=1" : ""}`);
+      const res = await fetch(`${gapEndpoint}${force ? "?force=1" : ""}`);
       if (!res.ok) throw new Error(String(res.status));
       const json = (await res.json()) as
         | { connected: false }
@@ -114,7 +120,7 @@ export function CompareView() {
         s.kind === "ready" ? { ...s, refreshing: false } : { kind: "error" },
       );
     }
-  }, []);
+  }, [gapEndpoint]);
 
   useEffect(() => {
     void load(false);
@@ -231,7 +237,7 @@ export function CompareView() {
                     />
                   )}
                   <Link
-                    href={`/positions/${o.ticker}`}
+                    href={`${positionsBasePath}/${o.ticker}`}
                     className="font-bold text-[14px] tracking-wide hover:text-orange transition-colors"
                   >
                     {o.ticker}
@@ -283,7 +289,7 @@ export function CompareView() {
                       />
                     )}
                     <Link
-                      href={`/positions/${p.ticker}`}
+                      href={`${positionsBasePath}/${p.ticker}`}
                       className="font-bold text-[14px] tracking-wide hover:text-orange transition-colors"
                     >
                       {p.ticker}

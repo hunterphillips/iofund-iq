@@ -38,11 +38,15 @@ export function PortfolioBook({
   breakdown,
   selected,
   onSelect,
+  gapEndpoint = "/api/robinhood/gap",
+  positionsBasePath = "/positions",
 }: {
   rows: IofPosition[];
   breakdown: CategoryWeight[];
   selected: string | null;
   onSelect: (category: string | null) => void;
+  gapEndpoint?: string;
+  positionsBasePath?: string;
 }) {
   const [view, setView] = useState<View>("table");
   const hasCharts = breakdown.length > 0;
@@ -115,7 +119,7 @@ export function PortfolioBook({
       </div>
 
       <div className="border border-border rounded-2xl bg-surface/30 backdrop-blur-lg px-4 py-3">
-        {view === "table" && <PositionsTable rows={tableRows} />}
+        {view === "table" && <PositionsTable rows={tableRows} positionsBasePath={positionsBasePath} />}
         {view === "pie" && (
           <PieView
             breakdown={breakdown}
@@ -131,7 +135,9 @@ export function PortfolioBook({
             onToggle={toggle}
           />
         )}
-        {view === "compare" && <CompareView />}
+        {view === "compare" && (
+          <CompareView gapEndpoint={gapEndpoint} positionsBasePath={positionsBasePath} />
+        )}
 
         {/*
           Filtered holdings beneath the chart. When a category is selected in the
@@ -147,7 +153,7 @@ export function PortfolioBook({
               />
               {categoryLabel(selected)} holdings
             </div>
-            <PositionsTable rows={tableRows} />
+            <PositionsTable rows={tableRows} positionsBasePath={positionsBasePath} />
           </div>
         )}
       </div>

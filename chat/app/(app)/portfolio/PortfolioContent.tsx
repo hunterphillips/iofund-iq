@@ -49,11 +49,15 @@ export function PortfolioContent({
   breakdown,
   trades,
   asOf,
+  gapEndpoint = "/api/robinhood/gap",
+  positionsBasePath = "/positions",
 }: {
   positions: IofPosition[];
   breakdown: CategoryWeight[];
   trades: IofTrade[];
   asOf: string;
+  gapEndpoint?: string;
+  positionsBasePath?: string;
 }) {
   // The selected canonical category (e.g. "AI Networking"), or null for "all".
   const [selected, setSelected] = useState<string | null>(null);
@@ -84,6 +88,8 @@ export function PortfolioContent({
           breakdown={breakdown}
           selected={selected}
           onSelect={setSelected}
+          gapEndpoint={gapEndpoint}
+          positionsBasePath={positionsBasePath}
         />
       </section>
 
@@ -149,7 +155,7 @@ export function PortfolioContent({
                     {formatTradeDate(t.tradeDate)}
                   </span>
                   <Link
-                    href={`/positions/${t.ticker}`}
+                    href={`${positionsBasePath}/${t.ticker}`}
                     className="font-bold text-[15px] tracking-wide hover:text-orange transition-colors"
                   >
                     {t.ticker}

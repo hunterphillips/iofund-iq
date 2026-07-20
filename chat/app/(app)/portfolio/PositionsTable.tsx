@@ -84,9 +84,10 @@ function ChevronIcon({
 
 interface Props {
   rows: IofPosition[];
+  positionsBasePath?: string;
 }
 
-export function PositionsTable({ rows }: Props) {
+export function PositionsTable({ rows, positionsBasePath = "/positions" }: Props) {
   const [sortCol, setSortCol] = useState<SortCol>("weight");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -170,7 +171,7 @@ export function PositionsTable({ rows }: Props) {
               <tr key={row.ticker}>
                 <td>
                   <Link
-                    href={`/positions/${row.ticker}`}
+                    href={`${positionsBasePath}/${row.ticker}`}
                     className="ticker-mono"
                   >
                     {row.ticker}

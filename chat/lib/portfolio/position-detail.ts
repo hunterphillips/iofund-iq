@@ -27,6 +27,30 @@ export interface PositionDetail {
   relatedArticles: RelatedArticle[];
 }
 
+export async function relatedArticlesFor(
+  symbol: string,
+): Promise<RelatedArticle[]> {
+  const articles = await db
+    .select({
+      id: tables.articles.id,
+      slug: tables.articles.slug,
+      title: tables.articles.title,
+      pubDate: tables.articles.pubDate,
+      category: tables.articles.category,
+    })
+    .from(tables.articles)
+    .where(
+      and(
+        eq(tables.articles.premium, true),
+        sql`${symbol.toUpperCase()} = ANY(${tables.articles.tickers})`,
+      ),
+    )
+    .orderBy(desc(tables.articles.pubDate))
+    .limit(8);
+
+  return articles as RelatedArticle[];
+}
+
 /**
  * @returns the dossier for `ticker`, or null when no position row exists for it
  *   (trades-only tickers — closed before the positions table was bootstrapped —
@@ -68,25 +92,7 @@ export async function getPositionDetail(
       .where(eq(tables.trades.ticker, symbol))
       .orderBy(asc(tables.trades.tradeDate)),
 
-    // Distilled articles tagged with this ticker, newest-first. Same array
-    // membership pattern as lib/articles/search.ts; tickers stored uppercase.
-    db
-      .select({
-        id: tables.articles.id,
-        slug: tables.articles.slug,
-        title: tables.articles.title,
-        pubDate: tables.articles.pubDate,
-        category: tables.articles.category,
-      })
-      .from(tables.articles)
-      .where(
-        and(
-          eq(tables.articles.premium, true),
-          sql`${symbol} = ANY(${tables.articles.tickers})`,
-        ),
-      )
-      .orderBy(desc(tables.articles.pubDate))
-      .limit(8),
+    relatedArticlesFor(symbol),
   ]);
 
   const position = positionRow[0];

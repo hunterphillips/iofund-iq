@@ -23,6 +23,7 @@
     "test:gap": "tsx evals/gap.test.ts",
     "test:format-move": "tsx evals/format-move.test.ts",
     "test:price-move": "tsx evals/price-move.test.ts",
+    "test:demo-book": "tsx evals/demo-book.test.ts",
     "test:webhook": "tsx evals/neon-webhook.test.ts",
     "test:robinhood": "tsx evals/robinhood.test.ts",
     "test:waitlist": "tsx evals/waitlist.test.ts"

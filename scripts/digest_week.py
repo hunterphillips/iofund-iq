@@ -45,7 +45,7 @@ import psycopg
 
 AI_GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions"
 RESEND_URL = "https://api.resend.com/emails"
-MODEL = "anthropic/claude-sonnet-4-6"
+MODEL = "anthropic/claude-opus-4-8"
 DEFAULT_RECIPIENT = "hkphillips42@gmail.com"
 RESEND_FROM = "IOFund Digest <onboarding@resend.dev>"
 REPO_OWNER = "hunterphillips"

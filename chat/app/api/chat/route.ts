@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth/server";
 import { hasIofCredentials } from "@/lib/iof/credentials";
 import { hasRobinhoodConnection } from "@/lib/robinhood/connection";
 import { chatTools } from "@/lib/chat/tools";
+import { resolveChatModel } from "@/lib/chat/models";
 import { SYSTEM_PROMPT } from "@/lib/chat/system-prompt";
 import { buildSystemPrompt } from "@/lib/chat/page-context-prompt";
 import type { PageContext } from "@/lib/page-context/context";
@@ -54,9 +55,10 @@ export async function POST(request: Request) {
     return new Response("I/O Fund account not connected.", { status: 403 });
   }
 
-  const { messages, threadId } = (await request.json()) as {
+  const { messages, threadId, model } = (await request.json()) as {
     messages: UIMessage[];
     threadId?: string;
+    model?: string;
   };
 
   // threadId is always present: the client resolves or lazily creates the
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
     : "\n\nBroker connection: the user has NOT connected a brokerage. Portfolio questions need a portfolio screenshot attached in chat (or they can connect Robinhood from the account menu).";
 
   const result = streamText({
-    model: "anthropic/claude-sonnet-4-6",
+    model: resolveChatModel(model),
     system: buildSystemPrompt(SYSTEM_PROMPT, pageContext) + robinhoodNote,
     messages: await convertToModelMessages(messages),
     tools: chatTools,

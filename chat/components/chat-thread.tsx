@@ -5,6 +5,12 @@ import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { usePageContext, type PageContext } from "@/lib/page-context/context";
+import {
+  CHAT_MODELS,
+  DEFAULT_CHAT_MODEL,
+  resolveChatModel,
+  type ChatModelId,
+} from "@/lib/chat/models";
 import { MarkdownBody } from "./markdown-body";
 import { Engraving } from "./engraving";
 
@@ -20,6 +26,8 @@ const ARTICLE_SUGGESTIONS = [
 // Each maps to a real chat capability. Templates that need the user to supply
 // something — a ticker, or an attached holdings screenshot — `prefill` the input
 // and focus it instead of sending immediately; the rest send on click.
+const MODEL_STORAGE_KEY = "iofund.chat-model";
+
 const COMMAND_TEMPLATES: {
   label: string;
   hint: string;
@@ -87,6 +95,32 @@ export function ChatThread({
 }) {
   const [input, setInput] = useState("");
   const textInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Model choice, persisted per browser. Initialized to the default and synced
+  // from localStorage after mount (not in the initializer) so the server and
+  // first client render agree — reading storage during render would trip
+  // React's hydration mismatch warning on the <select> value.
+  const [model, setModel] = useState<ChatModelId>(DEFAULT_CHAT_MODEL);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+      if (stored) setModel(resolveChatModel(stored));
+    } catch {
+      // Storage unavailable (private mode) — keep the default.
+    }
+  }, []);
+  const modelRef = useRef(model);
+  modelRef.current = model;
+
+  function changeModel(value: string) {
+    const resolved = resolveChatModel(value);
+    setModel(resolved);
+    try {
+      localStorage.setItem(MODEL_STORAGE_KEY, resolved);
+    } catch {
+      // Best-effort persistence only.
+    }
+  }
 
   // Auto-grow the composer textarea to fit its content (and shrink back when the
   // input is cleared after a send). CSS caps the height + scrolls past the cap.
@@ -170,13 +204,43 @@ export function ChatThread({
       }) => {
         const threadId = await ensureThreadId();
         return {
-          body: { ...body, id, messages: msgs, trigger, messageId, threadId },
+          body: {
+            ...body,
+            id,
+            messages: msgs,
+            trigger,
+            messageId,
+            threadId,
+            model: modelRef.current,
+          },
         };
       },
     }),
   });
 
   const busy = status === "streaming" || status === "submitted";
+
+  // Stick-to-bottom: follow the stream unless the user scrolls up to read.
+  // `pinned` flips off when they scroll away from the bottom and back on when
+  // they return within the threshold — our own programmatic scrolls land at
+  // distance 0, so following never un-pins itself.
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef(true);
+
+  function handleMessagesScroll() {
+    const el = messagesRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    pinnedRef.current = distanceFromBottom < 48;
+  }
+
+  // Runs on every streamed chunk (useChat replaces `messages` per update) and
+  // on mount, so an existing thread opens scrolled to its latest message.
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el || !pinnedRef.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   // When the assistant was opened from an article, surface that scope to the
   // user (a chip + starter questions) so the "Ask about this article" action
@@ -299,7 +363,11 @@ export function ChatThread({
 
   return (
     <div className="chat">
-      <div className="chat-messages">
+      <div
+        className="chat-messages"
+        ref={messagesRef}
+        onScroll={handleMessagesScroll}
+      >
         {messages.length === 0 ? (
           <div className="my-auto flex flex-col items-center text-center gap-4 px-6">
             <Engraving name="owl" className="w-24 sm:w-28 h-auto opacity-90" />
@@ -411,6 +479,19 @@ export function ChatThread({
           className="hidden"
           onChange={handleFilePick}
         />
+        <select
+          className="chat-model-select"
+          value={model}
+          onChange={(e) => changeModel(e.target.value)}
+          aria-label="Model"
+          title="Model for the next message"
+        >
+          {CHAT_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           className="chat-attach-btn"

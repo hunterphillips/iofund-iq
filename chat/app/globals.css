@@ -791,6 +791,26 @@ body::after {
   background: var(--surface-2, var(--surface));
 }
 
+/* Model selector in the composer */
+.chat-model-select {
+  flex-shrink: 0;
+  align-self: stretch;
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 12px;
+  padding: 0 0.6rem;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.chat-model-select:hover {
+  color: var(--cream);
+  border-color: var(--muted-deep);
+}
+
 /* Paperclip attach button in the composer */
 .chat-attach-btn {
   flex-shrink: 0;

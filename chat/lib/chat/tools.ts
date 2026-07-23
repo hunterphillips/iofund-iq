@@ -5,6 +5,7 @@ import { db, tables } from "@/db";
 import { auth } from "@/lib/auth/server";
 import type { Holding } from "@/lib/portfolio/gap-math";
 import { computePortfolioGap } from "@/lib/portfolio/compare";
+import { fetchQuotes } from "@/lib/portfolio/prices";
 import { getBrokerHoldings } from "@/lib/robinhood/holdings";
 import { getRealizedPnl } from "@/lib/robinhood/pnl";
 import { readDoc, type DocName } from "./docs";
@@ -93,6 +94,32 @@ export const chatTools = {
             }`,
         )
         .join("\n");
+    },
+  }),
+
+  get_quotes: tool({
+    description:
+      "Look up current market prices for one or more tickers — any listed symbol, not just fund holdings. Crypto uses BTCUSD / ETHUSD style symbols. Quotes are from Yahoo Finance, ~15-minute delayed during market hours. Use whenever the user asks about a current price or a price is needed for context.",
+    inputSchema: z.object({
+      tickers: z
+        .array(z.string())
+        .min(1)
+        .max(30)
+        .describe("Tickers to quote, e.g. ['NVDA', 'TSM', 'BTCUSD']."),
+    }),
+    execute: async ({ tickers }: { tickers: string[] }) => {
+      const { prices, missing } = await fetchQuotes(tickers);
+      if (prices.size === 0) {
+        return `No quotes found for: ${missing.join(", ")}.`;
+      }
+      const lines = Array.from(prices.entries()).map(
+        ([ticker, price]) =>
+          `${ticker}: $${price >= 1 ? price.toFixed(2) : price.toPrecision(4)}`,
+      );
+      if (missing.length > 0) {
+        lines.push(`Not found: ${missing.join(", ")}`);
+      }
+      return lines.join("\n");
     },
   }),
 

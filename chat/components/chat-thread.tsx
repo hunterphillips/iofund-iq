@@ -705,6 +705,14 @@ function describeToolCall(
     case "read_article": {
       return "Reading article…";
     }
+    case "get_quotes": {
+      const tickers = Array.isArray(input?.tickers)
+        ? (input.tickers as unknown[]).filter((t) => typeof t === "string")
+        : [];
+      return tickers.length
+        ? `Looking up ${tickers.map((t) => String(t).toUpperCase()).join(", ")}…`
+        : "Looking up prices…";
+    }
     case "analyze_portfolio_gap": {
       return "Comparing your portfolio to I/O Fund…";
     }

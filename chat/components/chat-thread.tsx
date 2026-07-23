@@ -479,19 +479,6 @@ export function ChatThread({
           className="hidden"
           onChange={handleFilePick}
         />
-        <select
-          className="chat-model-select"
-          value={model}
-          onChange={(e) => changeModel(e.target.value)}
-          aria-label="Model"
-          title="Model for the next message"
-        >
-          {CHAT_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
-        </select>
         <button
           type="button"
           className="chat-attach-btn"
@@ -522,6 +509,23 @@ export function ChatThread({
           {busy ? "…" : "Send"}
         </button>
       </form>
+      <label className="chat-model-picker" title="Model for the next message">
+        <select
+          className="chat-model-select"
+          value={model}
+          onChange={(e) => changeModel(e.target.value)}
+          aria-label="Model"
+        >
+          {CHAT_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+        <span aria-hidden="true" className="chat-model-caret">
+          ▾
+        </span>
+      </label>
     </div>
   );
 }

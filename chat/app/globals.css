@@ -712,11 +712,29 @@ body::after {
   padding-top: 0.75rem;
 }
 
-.chat-input {
+/* The bordered "bar": holds the textarea + the inline model picker, and owns
+   the chrome the bare textarea used to (border, background, focus ring). */
+.chat-input-shell {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.chat-input-shell:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
   color: var(--fg);
   padding: 0.7rem 0.85rem;
   font-size: 0.95rem;
@@ -725,13 +743,10 @@ body::after {
   resize: none;
   max-height: 9rem;
   overflow-y: auto;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .chat-input:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .chat-error {
@@ -791,13 +806,13 @@ body::after {
   background: var(--surface-2, var(--surface));
 }
 
-/* Quiet model picker tucked under the composer */
+/* Quiet model picker inline at the right end of the input bar */
 .chat-model-picker {
-  align-self: flex-start;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  margin-top: 0.4rem;
+  padding: 0 0.85rem 0.85rem 0.25rem;
   color: var(--muted-deep);
   font-size: 11.5px;
   cursor: pointer;

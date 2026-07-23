@@ -489,18 +489,37 @@ export function ChatThread({
         >
           <PaperclipGlyph />
         </button>
-        <textarea
-          ref={textInputRef}
-          className="chat-input"
-          rows={1}
-          placeholder="Ask about I/O Fund..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          disabled={busy}
-          autoFocus
-        />
+        <div className="chat-input-shell">
+          <textarea
+            ref={textInputRef}
+            className="chat-input"
+            rows={1}
+            placeholder="Ask about I/O Fund..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            disabled={busy}
+            autoFocus
+          />
+          <label className="chat-model-picker" title="Model">
+            <select
+              className="chat-model-select"
+              value={model}
+              onChange={(e) => changeModel(e.target.value)}
+              aria-label="Model"
+            >
+              {CHAT_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden="true" className="chat-model-caret">
+              ▾
+            </span>
+          </label>
+        </div>
         <button
           className="cta"
           type="submit"
@@ -509,23 +528,6 @@ export function ChatThread({
           {busy ? "…" : "Send"}
         </button>
       </form>
-      <label className="chat-model-picker" title="Model for the next message">
-        <select
-          className="chat-model-select"
-          value={model}
-          onChange={(e) => changeModel(e.target.value)}
-          aria-label="Model"
-        >
-          {CHAT_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-        <span aria-hidden="true" className="chat-model-caret">
-          ▾
-        </span>
-      </label>
     </div>
   );
 }

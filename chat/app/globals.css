@@ -85,10 +85,10 @@
 /* Warm-light "printed paper" — overrides @theme tokens + legacy vars together. */
 [data-theme="light"] {
   --engraving-filter: sepia(0.22) brightness(0.92) contrast(1.03);
-  --color-bg: #f1eadb;
-  --color-surface: #fbf7ee;
-  --color-surface-2: #f6efe1;
-  --color-border: #ded2be;
+  --color-bg: #faf7f0;
+  --color-surface: #fffefa;
+  --color-surface-2: #f4f0e7;
+  --color-border: #e4dccb;
   --color-cream: #241d14;
   --color-muted: #6e6557;
   --color-muted-deep: #8a8072;
@@ -103,9 +103,9 @@
   --color-cat-semis: #3f767c;
   --color-cat-other: #8a8072;
 
-  --bg: #f1eadb;
-  --surface: #fbf7ee;
-  --surface-2: #f6efe1;
+  --bg: #faf7f0;
+  --surface: #fffefa;
+  --surface-2: #f4f0e7;
   --fg: #241d14;
   --cream: #241d14;
   --muted: #6e6557;
@@ -113,7 +113,7 @@
   --accent: #9c7a14;
   --orange: #d2401a;
   --gold: #9c7a14;
-  --border: #ded2be;
+  --border: #e4dccb;
   --shadow: 0 24px 60px -24px rgba(80, 60, 30, 0.3);
   --grain-op: 0.04;
 }
@@ -289,22 +289,22 @@ body::after {
   /* auth-ui compiles its utilities with `@theme inline`, so they read the
      --neon-* source tokens directly; we override those (the --color-* aliases
      too, for any utility that uses them). */
-  --neon-background: #fbf7ee;
+  --neon-background: #fffefa;
   --neon-foreground: #241d14;
-  --neon-card: #fbf7ee;
+  --neon-card: #fffefa;
   --neon-card-foreground: #241d14;
-  --neon-popover: #fbf7ee;
+  --neon-popover: #fffefa;
   --neon-popover-foreground: #241d14;
   --neon-primary: #d2401a;
   --neon-primary-foreground: #fdf8ee;
-  --neon-secondary: #f1eadb;
+  --neon-secondary: #faf7f0;
   --neon-secondary-foreground: #241d14;
-  --neon-muted: #f1eadb;
+  --neon-muted: #faf7f0;
   --neon-muted-foreground: #6e6557;
-  --neon-accent: #f1eadb;
+  --neon-accent: #faf7f0;
   --neon-accent-foreground: #241d14;
-  --neon-border: #ded2be;
-  --neon-input: #ded2be;
+  --neon-border: #e4dccb;
+  --neon-input: #e4dccb;
   --neon-ring: #d2401a;
   --neon-destructive: #b42318;
 

@@ -105,6 +105,10 @@ export async function POST(request: Request) {
     : "\n\nBroker connection: the user has NOT connected a brokerage. Portfolio questions need a portfolio screenshot attached in chat (or they can connect Robinhood from the account menu).";
 
   const result = streamText({
+    // Forward the client's abort (the Stop button) so generation actually
+    // halts server-side; on abort, onFinish is skipped, so nothing partial
+    // is persisted.
+    abortSignal: request.signal,
     model: resolveChatModel(model),
     system: buildSystemPrompt(SYSTEM_PROMPT, pageContext) + robinhoodNote,
     messages: await convertToModelMessages(messages),

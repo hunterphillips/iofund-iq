@@ -179,7 +179,7 @@ export function ChatThread({
     return creatingRef.current;
   }
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, setMessages, status, error, stop } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -219,6 +219,34 @@ export function ChatThread({
   });
 
   const busy = status === "streaming" || status === "submitted";
+
+  // Stop/interrupt (ChatGPT-style): abort the stream, drop the in-flight turn
+  // from the visible thread AND from persistence, and hand the just-sent text
+  // back to the composer so the user can edit and resend.
+  function handleStop() {
+    void stop();
+    const lastUser = [...messages]
+      .reverse()
+      .find((m) => m.role === "user");
+    if (!lastUser) return;
+    const text = lastUser.parts
+      .filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+    const idx = messages.findIndex((m) => m.id === lastUser.id);
+    setMessages(messages.slice(0, idx));
+    setInput(text);
+    requestAnimationFrame(() => textInputRef.current?.focus());
+    // Best-effort server rollback of the persisted user message (and any
+    // assistant partial that raced in) — the turn never happened.
+    const threadId = threadIdRef.current;
+    if (threadId) {
+      void fetch(
+        `/api/chat/threads/${threadId}/messages?from=${encodeURIComponent(lastUser.id)}`,
+        { method: "DELETE" },
+      );
+    }
+  }
 
   // Stick-to-bottom: follow the stream unless the user scrolls up to read.
   // `pinned` flips off when they scroll away from the bottom and back on when
@@ -520,13 +548,24 @@ export function ChatThread({
                 ▾
               </span>
             </label>
-            <button
-              className="chat-send"
-              type="submit"
-              disabled={busy || (!input.trim() && !file)}
-            >
-              {busy ? "…" : "Send"}
-            </button>
+            {busy ? (
+              <button
+                type="button"
+                className="chat-send"
+                onClick={handleStop}
+                aria-label="Stop generating"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                className="chat-send"
+                type="submit"
+                disabled={!input.trim() && !file}
+              >
+                Send
+              </button>
+            )}
           </div>
         </div>
       </form>

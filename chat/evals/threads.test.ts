@@ -14,6 +14,7 @@ import type { UIMessage } from "ai";
 import {
   appendMessage,
   createThread,
+  deleteMessagesFrom,
   deleteThread,
   deriveTitle,
   getMessages,
@@ -210,6 +211,30 @@ async function main() {
       ),
       "user text preserved alongside image",
     );
+
+    // ── Stop/interrupt rollback ─────────────────────────────────────────────
+    console.log("\n[g2] deleteMessagesFrom rolls back a turn");
+    const preRollback = await getMessages(threadId);
+    const rollbackUser: UIMessage = {
+      id: "ui-rollback-user",
+      role: "user",
+      parts: [{ type: "text", text: "stopped mid-turn" }],
+    };
+    await appendMessage(threadId, "user", rollbackUser);
+    await appendMessage(threadId, "assistant", {
+      id: "ui-rollback-partial",
+      role: "assistant",
+      parts: [{ type: "text", text: "partial answer that raced in" }],
+    });
+    const deletedCount = await deleteMessagesFrom(threadId, "ui-rollback-user");
+    assert(deletedCount === 2, "deletes the anchor message and everything after");
+    const postRollback = await getMessages(threadId);
+    assert(
+      postRollback.length === preRollback.length,
+      "earlier history untouched by rollback",
+    );
+    const missingAnchor = await deleteMessagesFrom(threadId, "no-such-ui-id");
+    assert(missingAnchor === 0, "unknown anchor deletes nothing");
 
     // ── DELETE cascade ───────────────────────────────────────────────────────
     console.log("\n[h] delete cascades to messages");

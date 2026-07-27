@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import type { UIMessage } from "ai";
 import { db, tables } from "@/db";
 
@@ -41,6 +41,40 @@ export async function listThreads(userId: string): Promise<ChatThread[]> {
     .from(tables.chatThreads)
     .where(eq(tables.chatThreads.userId, userId))
     .orderBy(desc(tables.chatThreads.lastMessageAt));
+}
+
+/**
+ * Delete a message and everything after it in the thread — the stop/interrupt
+ * rollback. The anchor is the UIMessage id inside the stored JSON (the client
+ * never sees row ids); deleting by createdAt >= anchor also sweeps any
+ * assistant partial that got persisted before the abort landed.
+ */
+export async function deleteMessagesFrom(
+  threadId: string,
+  uiMessageId: string,
+): Promise<number> {
+  const [anchor] = await db
+    .select({ createdAt: tables.chatMessages.createdAt })
+    .from(tables.chatMessages)
+    .where(
+      and(
+        eq(tables.chatMessages.threadId, threadId),
+        sql`${tables.chatMessages.content}->>'id' = ${uiMessageId}`,
+      ),
+    )
+    .limit(1);
+  if (!anchor) return 0;
+
+  const deleted = await db
+    .delete(tables.chatMessages)
+    .where(
+      and(
+        eq(tables.chatMessages.threadId, threadId),
+        gte(tables.chatMessages.createdAt, anchor.createdAt),
+      ),
+    )
+    .returning({ id: tables.chatMessages.id });
+  return deleted.length;
 }
 
 export interface ThreadSearchHit {

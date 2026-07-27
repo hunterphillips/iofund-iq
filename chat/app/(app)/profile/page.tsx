@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth/server";
-import { isAdminEmail } from "@/lib/auth/admin";
+import { isAdminUser } from "@/lib/auth/admin";
 import { SyncTradesButton } from "@/components/sync-trades-button";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,7 @@ export default async function ProfilePage() {
       </div>
 
       {/* Operator actions — the API route re-checks admin; this is cosmetics. */}
-      {isAdminEmail(user?.email) ? (
+      {(await isAdminUser(user?.id)) ? (
         <div className="mt-10 max-w-sm">
           <div className="text-xs uppercase tracking-[0.12em] text-muted mb-3">
             Admin

@@ -190,6 +190,16 @@ export const brokerHoldings = pgTable(
 // signup here captures *demand* (the leverage asset for re-approaching the
 // fund), not access. `member_status` is the load-bearing field — its
 // distribution is the chart we show: 'member' | 'prospect' | 'considering'.
+// Admin allowlist — data-driven (rows managed via SQL, no redeploy), keyed by
+// neon_auth.user id like every per-user table. Admin only unlocks operator
+// actions (manual cron triggers); all data access is already per-user.
+export const adminUsers = pgTable("admin_users", {
+  userId: text("user_id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Plain text (validated in app code via lib/waitlist/schema.ts), matching the
 // codebase's enum-as-text convention. Dedupes on email (upsert).
 export const waitlist = pgTable(

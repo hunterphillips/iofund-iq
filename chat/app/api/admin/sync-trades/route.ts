@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
-import { isAdminEmail } from "@/lib/auth/admin";
+import { isAdminUser } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function POST() {
   if (!session?.user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
-  if (!isAdminEmail(session.user.email)) {
+  if (!(await isAdminUser(session.user.id))) {
     return NextResponse.json({ error: "Admins only." }, { status: 403 });
   }
 

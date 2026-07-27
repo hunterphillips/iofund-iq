@@ -24,7 +24,7 @@
  * shared activeThreadId + the list.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UIMessage } from "ai";
 import { ChatThread } from "./chat-thread";
 import { SparkleGlyph } from "./sparkle-glyph";
@@ -40,6 +40,12 @@ type Selection =
   | { kind: "new" }
   | null; // not yet resolved
 
+// Search-result row from GET /api/chat/threads?q= — a thread summary plus a
+// clipped snippet of the matching message text (null when only the title hit).
+interface SearchHit extends ChatThreadSummary {
+  snippet: string | null;
+}
+
 export function AssistantModal({ onClose }: { onClose: () => void }) {
   const { activeThreadId, setActiveThreadId } = useActiveThread();
   const { threads, loading, error, reload, createThread, deleteThread } =
@@ -50,6 +56,35 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
   const [msgError, setMsgError] = useState<string | null>(null);
   // Mobile-only: whether the sidebar overlay is showing.
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Conversation search. A non-empty query switches the sidebar list to search
+  // results (title + message-text matches, with a snippet). Debounced fetch;
+  // out-of-order responses are dropped via the sequence counter.
+  const [search, setSearch] = useState("");
+  const [searchHits, setSearchHits] = useState<SearchHit[] | null>(null);
+  const searchSeq = useRef(0);
+  const searchQuery = search.trim();
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchHits(null);
+      return;
+    }
+    const seq = ++searchSeq.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/chat/threads?q=${encodeURIComponent(searchQuery)}`,
+        );
+        if (!res.ok) throw new Error();
+        const { threads: hits } = (await res.json()) as { threads: SearchHit[] };
+        if (searchSeq.current === seq) setSearchHits(hits);
+      } catch {
+        if (searchSeq.current === seq) setSearchHits([]);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Close on Escape.
   useEffect(() => {
@@ -209,9 +244,39 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
 
+          <div className="px-3 pb-2">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search conversations"
+              aria-label="Search conversations"
+              className="w-full h-8 rounded-lg border border-border bg-transparent px-2.5 text-sm text-cream placeholder:text-muted-deep focus:outline-none focus:border-muted-deep"
+            />
+          </div>
+
           <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-3">
             {loading ? (
               <p className="px-3 py-2 text-sm text-muted">Loading…</p>
+            ) : searchQuery ? (
+              searchHits === null ? (
+                <p className="px-3 py-2 text-sm text-muted">Searching…</p>
+              ) : searchHits.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-muted">No matches.</p>
+              ) : (
+                <ul className="flex flex-col gap-0.5">
+                  {searchHits.map((t) => (
+                    <ThreadRow
+                      key={t.id}
+                      thread={t}
+                      snippet={t.snippet}
+                      active={t.id === currentThreadId}
+                      onSelect={() => handleSelectThread(t.id)}
+                      onDelete={() => handleDeleteThread(t.id)}
+                    />
+                  ))}
+                </ul>
+              )
             ) : threads.length === 0 ? (
               <p className="px-3 py-2 text-sm text-muted">
                 No conversations yet.
@@ -285,14 +350,17 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** One conversation row in the sidebar; reveals a delete affordance on hover. */
+/** One conversation row in the sidebar; reveals a delete affordance on hover.
+ *  With `snippet` (search results), the matching text replaces the timestamp. */
 function ThreadRow({
   thread,
+  snippet,
   active,
   onSelect,
   onDelete,
 }: {
   thread: ChatThreadSummary;
+  snippet?: string | null;
   active: boolean;
   onSelect: () => void;
   onDelete: () => void;
@@ -311,9 +379,15 @@ function ThreadRow({
         >
           {thread.title?.trim() || "Untitled conversation"}
         </span>
-        <span className="text-xs text-muted-deep tabular-nums">
-          {relTime(thread.lastMessageAt)}
-        </span>
+        {snippet ? (
+          <span className="w-full truncate text-xs text-muted-deep">
+            {snippet}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-deep tabular-nums">
+            {relTime(thread.lastMessageAt)}
+          </span>
+        )}
       </button>
       <button
         type="button"

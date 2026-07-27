@@ -43,6 +43,74 @@ export async function listThreads(userId: string): Promise<ChatThread[]> {
     .orderBy(desc(tables.chatThreads.lastMessageAt));
 }
 
+export interface ThreadSearchHit {
+  id: string;
+  title: string | null;
+  lastMessageAt: Date;
+  createdAt: Date;
+  /** Matching message text (clipped around the first match), or null when only the title matched. */
+  snippet: string | null;
+}
+
+/**
+ * Search the user's threads by title and message text. Message bodies are the
+ * stored UIMessage JSON, so text lives in content->'parts' elements with
+ * type "text" — plain ILIKE over those; at personal-app scale no index needed.
+ */
+export async function searchThreads(
+  userId: string,
+  query: string,
+): Promise<ThreadSearchHit[]> {
+  const pattern = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+  const matchingText = sql`
+    SELECT part->>'text'
+    FROM ${tables.chatMessages} m,
+      jsonb_array_elements(m.content->'parts') AS part
+    WHERE m.thread_id = ${tables.chatThreads.id}
+      AND part->>'type' = 'text'
+      AND part->>'text' ILIKE ${pattern}
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  `;
+
+  const rows = await db
+    .select({
+      id: tables.chatThreads.id,
+      title: tables.chatThreads.title,
+      lastMessageAt: tables.chatThreads.lastMessageAt,
+      createdAt: tables.chatThreads.createdAt,
+      snippet: sql<string | null>`(${matchingText})`,
+    })
+    .from(tables.chatThreads)
+    .where(
+      and(
+        eq(tables.chatThreads.userId, userId),
+        sql`(${tables.chatThreads.title} ILIKE ${pattern} OR EXISTS (${matchingText}))`,
+      ),
+    )
+    .orderBy(desc(tables.chatThreads.lastMessageAt))
+    .limit(30);
+
+  return rows.map((r) => ({
+    ...r,
+    snippet: r.snippet ? clipAroundMatch(r.snippet, query) : null,
+  }));
+}
+
+/** Clip a matched message to a readable window centered on the first hit. */
+function clipAroundMatch(text: string, query: string): string {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx < 0) return text.length > 120 ? `${text.slice(0, 120)}…` : text;
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(text.length, idx + query.length + 80);
+  return (
+    (start > 0 ? "…" : "") +
+    text.slice(start, end).trim() +
+    (end < text.length ? "…" : "")
+  );
+}
+
 export async function getThread(id: string): Promise<ChatThread | null> {
   const [row] = await db
     .select()

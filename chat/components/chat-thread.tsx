@@ -479,16 +479,6 @@ export function ChatThread({
           className="hidden"
           onChange={handleFilePick}
         />
-        <button
-          type="button"
-          className="chat-attach-btn"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-          aria-label="Attach a portfolio screenshot"
-          title="Attach a portfolio screenshot"
-        >
-          <PaperclipGlyph />
-        </button>
         <div className="chat-input-shell">
           <textarea
             ref={textInputRef}
@@ -502,31 +492,43 @@ export function ChatThread({
             disabled={busy}
             autoFocus
           />
-          <label className="chat-model-picker" title="Model">
-            <select
-              className="chat-model-select"
-              value={model}
-              onChange={(e) => changeModel(e.target.value)}
-              aria-label="Model"
+          <div className="chat-input-controls">
+            <button
+              type="button"
+              className="chat-attach-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              aria-label="Attach a portfolio screenshot"
+              title="Attach a portfolio screenshot"
             >
-              {CHAT_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-            <span aria-hidden="true" className="chat-model-caret">
-              ▾
-            </span>
-          </label>
+              <PaperclipGlyph />
+            </button>
+            <label className="chat-model-picker" title="Model">
+              <select
+                className="chat-model-select"
+                value={model}
+                onChange={(e) => changeModel(e.target.value)}
+                aria-label="Model"
+              >
+                {CHAT_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden="true" className="chat-model-caret">
+                ▾
+              </span>
+            </label>
+            <button
+              className="chat-send"
+              type="submit"
+              disabled={busy || (!input.trim() && !file)}
+            >
+              {busy ? "…" : "Send"}
+            </button>
+          </div>
         </div>
-        <button
-          className="cta"
-          type="submit"
-          disabled={busy || (!input.trim() && !file)}
-        >
-          {busy ? "…" : "Send"}
-        </button>
       </form>
     </div>
   );

@@ -705,35 +705,31 @@ body::after {
 }
 
 .chat-input-row {
-  /* Height of the single-line input bar (textarea line + padding + border).
-     Attach, Send, and the model picker all pin to it so the composer's
-     elements share one vertical rhythm; when the textarea grows, buttons
-     stay anchored to the bottom edge. */
-  --composer-h: calc(0.95rem * 1.4 + 1.4rem + 2px);
   display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
   border-top: 1px solid var(--border);
   padding-top: 0.75rem;
 }
 
-.chat-input-row .cta {
-  align-self: flex-end;
-  height: var(--composer-h);
-  padding-block: 0;
-}
-
-/* The bordered "bar": holds the textarea + the inline model picker, and owns
-   the chrome the bare textarea used to (border, background, focus ring). */
+/* The bordered "bar" (ChatGPT-style): textarea on top, a controls row
+   (attach · model picker · Send) beneath it, all inside one bordered shell
+   that owns the chrome the bare textarea used to (border, background,
+   focus ring). The textarea gets the full bar width on every screen size. */
 .chat-input-shell {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.chat-input-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.45rem 0.45rem;
 }
 
 .chat-input-shell:focus-within {
@@ -742,12 +738,11 @@ body::after {
 }
 
 .chat-input {
-  flex: 1;
   min-width: 0;
   background: transparent;
   border: none;
   color: var(--fg);
-  padding: 0.7rem 0.85rem;
+  padding: 0.7rem 0.85rem 0.25rem;
   font-size: 0.95rem;
   font-family: inherit;
   line-height: 1.4;
@@ -817,16 +812,15 @@ body::after {
   background: var(--surface-2, var(--surface));
 }
 
-/* Quiet model picker inline at the right end of the input bar */
+/* Quiet model picker in the controls row, pushed to the right */
 .chat-model-picker {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
   line-height: 1;
-  /* Bottom padding centers the 11.5px label within the single-line bar
-     (bar height minus its 2px border, minus the label). */
-  padding: 0 0.85rem calc((var(--composer-h) - 2px - 11.5px) / 2) 0.25rem;
+  margin-left: auto;
+  padding: 0.3rem 0.5rem;
   color: var(--muted-deep);
   font-size: 11.5px;
   cursor: pointer;
@@ -857,18 +851,34 @@ body::after {
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  height: var(--composer-h);
-  width: 2.4rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 8px;
   color: var(--muted);
-  background: var(--surface);
-  transition: color 120ms ease, border-color 120ms ease;
+  background: transparent;
+  transition: color 120ms ease, background 120ms ease;
 }
 
 .chat-attach-btn:hover:not(:disabled) {
   color: var(--fg);
-  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+/* Compact gold send button in the controls row */
+.chat-send {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #1a1100;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.42rem 1rem;
+  border-radius: 8px;
+  transition: opacity 120ms ease;
+}
+
+.chat-send:disabled {
+  opacity: 0.5;
 }
 
 .chat-attach-btn:disabled {

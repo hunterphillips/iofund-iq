@@ -6,3 +6,5 @@ GOOGL Alphabet Inc Class ALong-Term4839.9 B5% $401.07$280.0343.2% 3/26/26 AI Sof
 MU Micron Technology IncLong-Term875.1 B14% $776.01$265.98191.8% 12/19/25 AI Memory$364.03113.2%3/9/26
 NVDANVIDIA CorpLong-Term5709.7 B6% $235.74$3.15 7383.8% 12/4/18Semis/AI Accelerator,EV ,Data Cenetrs/Gaming/Crypto$184.7127.6%10/18/25
 LINKUSD Chainlink Momentum 1% $10.48$1.50 598.7% 1/6/21 Off Chain Smart Contracts$22.19-52.8%12/19/24
+STX Seagate Technology Holdings PLCLong-Term184.8 B $816.99799.982.1% 7/27/26 AI Memory
+META Meta Platforms IncLong-Term1507.5 B $593.87$597.84 7/27/26 AI Software

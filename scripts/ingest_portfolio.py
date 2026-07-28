@@ -190,7 +190,13 @@ def parse_portfolio(text: str, known: set[str]) -> list[dict]:
             continue
         ticker = max(cands, key=len)
 
-        pct = PCT_RE.search(line)
+        # Allocation: the first percentage BEFORE the first price. Newly added
+        # positions ship with a blank Allocation cell, and pypdf can glue an
+        # entry-gain percent onto the prices ("$816.99799.982.1%") — a naive
+        # first-%-anywhere read turns that into a bogus three-digit weight.
+        dollar = line.find("$")
+        scope = line if dollar == -1 else line[:dollar]
+        pct = PCT_RE.search(scope)
         weight = float(pct.group(1)) if pct else None
 
         # Company: between the ticker and the Type column (Long-Term/Momentum).
@@ -213,14 +219,26 @@ def parse_portfolio(text: str, known: set[str]) -> list[dict]:
 
 
 def validate(rows: list[dict]) -> None:
-    """Guard against a garbled parse before we write financial data."""
+    """Guard against a garbled parse before we write financial data.
+
+    Blank weights are legitimate: brand-new positions appear in the PDF with an
+    empty Allocation cell until the fund sizes them (they upsert with NULL
+    baseline_weight_pct, same as trade-replay-born rows). A parse that loses
+    MOST weights is garbled, though — so the allocated rows must still be a
+    healthy book on their own.
+    """
     if len(rows) < 10:
         sys.exit(f"ERROR: only parsed {len(rows)} rows — refusing to write")
-    total = sum(r["weight"] or 0 for r in rows)
+    weighted = [r for r in rows if r["weight"] is not None]
+    if len(weighted) < 10:
+        sys.exit(
+            f"ERROR: only {len(weighted)}/{len(rows)} rows have weights — refusing"
+        )
+    total = sum(r["weight"] for r in weighted)
     if not (90 <= total <= 110):
         sys.exit(f"ERROR: allocations sum to {total:.1f}% (expected ~100) — refusing")
-    for r in rows:
-        if r["weight"] is None or not (0 <= r["weight"] <= 100):
+    for r in weighted:
+        if not (0 <= r["weight"] <= 100):
             sys.exit(f"ERROR: bad weight for {r['ticker']!r}: {r['weight']!r}")
 
 
@@ -277,11 +295,16 @@ def main() -> int:
 
         rows = parse_portfolio(text, known)
         validate(rows)
-        total = sum(r["weight"] for r in rows)
-        log(f"parse: {len(rows)} positions · allocations sum {total:.1f}%")
+        total = sum(r["weight"] for r in rows if r["weight"] is not None)
+        unsized = sum(1 for r in rows if r["weight"] is None)
+        log(
+            f"parse: {len(rows)} positions · allocations sum {total:.1f}%"
+            + (f" · {unsized} unsized (blank allocation)" if unsized else "")
+        )
         for r in rows:
+            weight = f"{r['weight']}%" if r["weight"] is not None else "—"
             log(
-                f"  {r['ticker']:<6} {str(r['weight'])+'%':<7} "
+                f"  {r['ticker']:<6} {weight:<7} "
                 f"{r['category'] or '—':<16} {r['company'] or '—'}"
             )
 

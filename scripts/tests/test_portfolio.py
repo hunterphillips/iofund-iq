@@ -14,7 +14,7 @@ from ingest_portfolio import normalize_theme, parse_portfolio, validate
 
 FIXTURE = (Path(__file__).parent / "fixtures" / "portfolio_table.txt").read_text()
 # Includes GOOG alongside GOOGL to prove longest-prefix-wins anchoring.
-KNOWN = {"ALAB", "AMD", "BTCUSD", "GOOG", "GOOGL", "MU", "NVDA", "LINKUSD"}
+KNOWN = {"ALAB", "AMD", "BTCUSD", "GOOG", "GOOGL", "MU", "NVDA", "LINKUSD", "STX", "META"}
 
 
 # ── Theme taxonomy (normalize_theme) ────────────────────────────────────────
@@ -62,6 +62,8 @@ def test_header_row_is_skipped_and_all_holdings_parsed():
         "MU",
         "NVDA",
         "LINKUSD",
+        "STX",
+        "META",
     }
 
 
@@ -81,6 +83,17 @@ def test_allocation_is_first_percentage():
     assert by["MU"]["weight"] == 14.0
     assert by["ALAB"]["weight"] == 7.0
     assert by["LINKUSD"]["weight"] == 1.0
+
+
+def test_blank_allocation_is_none_not_a_gain():
+    # New positions ship a blank Allocation cell. STX's line glues an entry
+    # gain onto the prices ("$816.99799.982.1%") — the % after the first $
+    # must NOT be read as a weight. META's line has no % at all.
+    by = _by_ticker()
+    assert by["STX"]["weight"] is None
+    assert by["META"]["weight"] is None
+    assert by["STX"]["category"] == "AI Memory"
+    assert by["META"]["category"] == "AI Software"
 
 
 def test_theme_normalized_per_row():
@@ -112,8 +125,19 @@ def test_validate_rejects_allocation_sum_out_of_range():
         validate(_rows(10, 5.0))  # sums to 50%
 
 
-def test_validate_rejects_missing_weight():
-    rows = _rows(10, 10.0)
-    rows[0]["weight"] = None  # sum still 90 (in range), per-row guard must catch
+def test_validate_allows_blank_weights_for_new_positions():
+    # 10 allocated rows summing to 100 plus 2 unsized newcomers — no raise.
+    rows = _rows(10, 10.0) + [
+        {"ticker": "NEW1", "weight": None},
+        {"ticker": "NEW2", "weight": None},
+    ]
+    validate(rows)
+
+
+def test_validate_rejects_mostly_blank_parse():
+    # A parse that loses most weights is garbled, not a book of newcomers.
+    rows = _rows(12, 10.0)
+    for r in rows[:6]:
+        r["weight"] = None
     with pytest.raises(SystemExit):
         validate(rows)

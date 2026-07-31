@@ -200,6 +200,22 @@ export const adminUsers = pgTable("admin_users", {
     .defaultNow(),
 });
 
+// Per-consumer API keys for the MCP service (/api/mcp). SQL/script-managed like
+// admin_users — no UI. Only the SHA-256 hash of the secret is stored; the mint
+// script prints the secret once. Revocation = set revoked_at (effective on next
+// request). Fail-closed: no row, or revoked_at set → 401.
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  keyHash: text("key_hash").notNull().unique(),
+  label: text("label"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
 // Plain text (validated in app code via lib/waitlist/schema.ts), matching the
 // codebase's enum-as-text convention. Dedupes on email (upsert).
 export const waitlist = pgTable(

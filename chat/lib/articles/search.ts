@@ -10,7 +10,7 @@
  *   - Limit 50 by default
  */
 
-import { and, desc, gte, ilike, sql as drizzleSql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, sql as drizzleSql } from "drizzle-orm";
 import { db, tables } from "@/db";
 
 export interface ArticleRow {
@@ -30,6 +30,7 @@ export interface SearchArticlesResult {
 
 export interface SearchArticlesParams {
   q?: string;
+  query?: string;
   ticker?: string;
   category?: string;
   since?: string; // ISO date YYYY-MM-DD
@@ -71,7 +72,8 @@ function extractPreview(body: string | null): string | null {
 export async function searchArticles(
   params: SearchArticlesParams,
 ): Promise<SearchArticlesResult> {
-  const { q, ticker, category, since, limit = 50 } = params;
+  const { q: routeQuery, query, ticker, category, since, limit = 50 } = params;
+  const q = query ?? routeQuery;
 
   const tsq = q
     ? drizzleSql`websearch_to_tsquery('english', ${q})`
@@ -164,4 +166,39 @@ export async function recentArticles(since: string): Promise<RecentArticle[]> {
     .from(tables.articles)
     .where(gte(tables.articles.pubDate, since))
     .orderBy(desc(tables.articles.pubDate));
+}
+
+export type ArticleReadResult =
+  | {
+      found: true;
+      title: string;
+      pub_date: string | null;
+      body: string;
+    }
+  | { found: false; message: string };
+
+/** Read one stored distilled article by its canonical URL. */
+export async function readArticleByUrl(
+  url: string,
+): Promise<ArticleReadResult> {
+  const [row] = await db
+    .select({
+      title: tables.articles.title,
+      pubDate: tables.articles.pubDate,
+      body: tables.articles.body,
+    })
+    .from(tables.articles)
+    .where(eq(tables.articles.url, url))
+    .limit(1);
+
+  if (!row?.body) {
+    return { found: false, message: `No distilled article for ${url}.` };
+  }
+
+  return {
+    found: true,
+    title: row.title,
+    pub_date: row.pubDate,
+    body: row.body,
+  };
 }

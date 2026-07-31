@@ -1,11 +1,14 @@
 import { tool } from "ai";
-import { and, desc, eq, gte, sql as drizzleSql } from "drizzle-orm";
 import { z } from "zod";
-import { db, tables } from "@/db";
 import { auth } from "@/lib/auth/server";
+import {
+  readArticleByUrl,
+  searchArticles,
+} from "@/lib/articles/search";
 import type { Holding } from "@/lib/portfolio/gap-math";
-import { computePortfolioGap } from "@/lib/portfolio/compare";
+import { analyzeGapForUser } from "@/lib/portfolio/gap-service";
 import { fetchQuotes } from "@/lib/portfolio/prices";
+import { queryTrades } from "@/lib/portfolio/trades-query";
 import { getBrokerHoldings } from "@/lib/robinhood/holdings";
 import { getRealizedPnl } from "@/lib/robinhood/pnl";
 import { readDoc, type DocName } from "./docs";
@@ -57,28 +60,7 @@ export const chatTools = {
       since?: string;
       limit: number;
     }) => {
-      const conditions = [];
-      if (ticker) {
-        conditions.push(
-          drizzleSql`upper(${tables.trades.ticker}) = ${ticker.toUpperCase()}`,
-        );
-      }
-      if (since) {
-        conditions.push(gte(tables.trades.tradeDate, since));
-      }
-      const rows = await db
-        .select({
-          date: tables.trades.tradeDate,
-          ticker: tables.trades.ticker,
-          action: tables.trades.action,
-          price: tables.trades.price,
-          note: tables.trades.note,
-          analyst: tables.trades.analyst,
-        })
-        .from(tables.trades)
-        .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(desc(tables.trades.tradeDate))
-        .limit(limit);
+      const rows = await queryTrades({ ticker, since, limit });
 
       if (rows.length === 0) {
         return "No matching trades.";
@@ -156,44 +138,7 @@ export const chatTools = {
       ticker?: string;
       limit: number;
     }) => {
-      // Postgres FTS on title + body via the body_tsv generated column.
-      // ts_rank ordering surfaces the most relevant article first; ties
-      // break on recency. When no query is given, fall back to recency.
-      const tsq = query
-        ? drizzleSql`websearch_to_tsquery('english', ${query})`
-        : null;
-
-      const conditions = [];
-      if (ticker) {
-        conditions.push(
-          drizzleSql`${ticker.toUpperCase()} = ANY(${tables.articles.tickers})`,
-        );
-      }
-      if (tsq) {
-        conditions.push(drizzleSql`body_tsv @@ ${tsq}`);
-      }
-
-      const rankExpr = tsq
-        ? drizzleSql<number>`ts_rank(body_tsv, ${tsq})`
-        : drizzleSql<number>`0`;
-
-      const orderExprs = tsq
-        ? [drizzleSql`ts_rank(body_tsv, ${tsq}) DESC`, desc(tables.articles.pubDate)]
-        : [desc(tables.articles.pubDate)];
-
-      const rows = await db
-        .select({
-          url: tables.articles.url,
-          title: tables.articles.title,
-          pubDate: tables.articles.pubDate,
-          tickers: tables.articles.tickers,
-          category: tables.articles.category,
-          rank: rankExpr,
-        })
-        .from(tables.articles)
-        .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(...orderExprs)
-        .limit(limit);
+      const { rows } = await searchArticles({ query, ticker, limit });
 
       if (rows.length === 0) return "No matching articles.";
 
@@ -215,27 +160,7 @@ export const chatTools = {
       url: z.string().url().describe("Article URL returned by search_articles."),
     }),
     execute: async ({ url }: { url: string }) => {
-      const [row] = await db
-        .select({
-          title: tables.articles.title,
-          pubDate: tables.articles.pubDate,
-          body: tables.articles.body,
-        })
-        .from(tables.articles)
-        .where(eq(tables.articles.url, url))
-        .limit(1);
-      if (!row?.body) {
-        return {
-          found: false as const,
-          message: `No distilled article for ${url}.`,
-        };
-      }
-      return {
-        found: true as const,
-        title: row.title,
-        pub_date: row.pubDate,
-        body: row.body,
-      };
+      return readArticleByUrl(url);
     },
   }),
 
@@ -263,28 +188,7 @@ export const chatTools = {
           message: "User is not signed in.",
         };
       }
-
-      let source: "screenshot" | "robinhood" = "screenshot";
-      let fetchedAt: string | undefined;
-      if (!holdings?.length) {
-        const synced = await getBrokerHoldings(session.user.id);
-        if (!synced.connected) {
-          return {
-            connected: false as const,
-            message:
-              "No holdings provided and no Robinhood connection. Ask the user to attach a brokerage screenshot here in chat, or connect Robinhood from the account menu.",
-          };
-        }
-        holdings = synced.holdings;
-        source = "robinhood";
-        fetchedAt = synced.fetchedAt.toISOString();
-      }
-
-      const gap = await computePortfolioGap(
-        holdings.map((h) => ({ ...h, ticker: h.ticker.toUpperCase() })),
-      );
-
-      return { connected: true as const, source, fetchedAt, ...gap };
+      return analyzeGapForUser(session.user.id, holdings);
     },
   }),
 

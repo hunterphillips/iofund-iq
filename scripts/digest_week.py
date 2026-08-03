@@ -66,6 +66,7 @@ Structure the digest in this exact order, with `## ` h2 headings:
 
 ## The week
 The week's story in 2-4 short paragraphs, 150-300 words, for a reader who will open nothing else. What the fund did and why; the essential findings from the week's research, with their key numbers; and how the trades connect to that research (an article that explains a buy belongs in the same breath as the buy). Prioritize the few things that mattered most and leave the rest to the lists below. Plain prose, no bullets, no links.
+Write it as one continuous piece, not a series of mini-essays. Do NOT open each paragraph with a short framing sentence ("Token demand is the spine of the week", "Power is the third leg", "Meta was the exit") — that parallel-opener drumbeat is structure narrating itself. Start paragraphs mid-story with the fact itself, vary sentence rhythm, and let the content carry the transitions.
 
 ## New trades
 For each trade: date · TICKER · ACTION (price if known) · paraphrased note.

@@ -75,6 +75,9 @@ non-expert. Says the most in the fewest words; every word earns its place:
 - **Significance inflation:** something "represents a shift" or "plays a vital role" instead of saying
   what it does.
 - **Generic upbeat endings** that gesture at a bright future instead of stating the finding.
+- **Parallel punchy openers:** every paragraph starting with a short framing sentence ("Token
+  demand is the spine", "Power is the third leg", "Meta was the exit"). The drumbeat reads as
+  structure narrating itself. Start paragraphs mid-story and let facts carry the transitions.
 
 ## General patterns behind the rules
 

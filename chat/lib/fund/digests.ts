@@ -11,7 +11,7 @@ export interface DigestMeta {
   slug: string; // same as date, used for the URL
 }
 
-/** A bolded-lead bullet pulled from the "Themes & patterns" section. */
+/** A bolded-lead bullet pulled from the "Trends & patterns" section. */
 export interface DigestHighlight {
   lead: string; // the bolded lead phrase, period stripped
   rest: string; // the remaining sentence(s)
@@ -19,7 +19,7 @@ export interface DigestHighlight {
 
 export interface DigestFull extends DigestMeta {
   body: string; // raw markdown, frontmatter stripped
-  highlights: DigestHighlight[]; // up to 3, from "Themes & patterns"
+  highlights: DigestHighlight[]; // up to 3, from "Trends & patterns"
   newTradesCount: number; // items under "## New trades"
   newArticlesCount: number; // items under "## New articles"
 }
@@ -83,9 +83,10 @@ function extractTickers(body: string): string[] {
 }
 
 /**
- * Pull up to `limit` bolded-lead bullets from the "## Themes & patterns"
+ * Pull up to `limit` bolded-lead bullets from the "## Trends & patterns"
  * section, e.g. `- **Optical leads.** The week clustered around …` →
  * { lead: "Optical leads", rest: "The week clustered around …" }.
+ * ("Themes & patterns" is accepted too; the generator briefly used it.)
  */
 function extractHighlights(body: string, limit = 3): DigestHighlight[] {
   const lines = body.split("\n");
@@ -93,7 +94,10 @@ function extractHighlights(body: string, limit = 3): DigestHighlight[] {
   let inSection = false;
 
   for (const line of lines) {
-    if (line.startsWith("## Themes & patterns")) {
+    if (
+      line.startsWith("## Trends & patterns") ||
+      line.startsWith("## Themes & patterns")
+    ) {
       inSection = true;
       continue;
     }

@@ -64,6 +64,9 @@ Structure the digest in this exact order, with `## ` h2 headings:
 ## Week at a glance
 2-3 sentence framing. What was the dominant theme? Was the fund active or quiet?
 
+## The week
+The week's story in 2-4 short paragraphs, 150-300 words, for a reader who will open nothing else. What the fund did and why; the essential findings from the week's research, with their key numbers; and how the trades connect to that research (an article that explains a buy belongs in the same breath as the buy). Prioritize the few things that mattered most and leave the rest to the lists below. Plain prose, no bullets, no links.
+
 ## New trades
 For each trade: date · TICKER · ACTION (price if known) · paraphrased note.
 If 0 trades: a single line "No new trades this week."
@@ -73,12 +76,12 @@ For each article: title (linked to URL), pub date, 1-sentence paraphrased thesis
 If 0 articles: a single line "No new articles this week."
 
 ## Trends & patterns
-2-4 bullets identifying recurring themes ACROSS the week's activity (e.g., "all three trades were trims," "two articles re-emphasized optical bottleneck"). Skip this section if there's not enough material.
+2-4 bullets identifying recurring themes ACROSS the week's activity (e.g., "all three trades were trims," "two articles re-emphasized optical bottleneck"). Start each bullet with a bolded lead of a few words, then the substance: `- **Storage rotation.** Three of the week's buys...`. Skip this section if there's not enough material.
 
 ## What to watch
 1-2 forward-looking bullets — what should the subscriber pay attention to next week, based on what the fund did this week? Keep grounded in the week's evidence; don't speculate beyond it.
 
-Be terse. 300-600 words total. Use markdown links for article URLs. Keep tickers UPPERCASE."""
+Be terse everywhere except "The week". 500-900 words total. Use markdown links for article URLs. Keep tickers UPPERCASE."""
 
 
 def log(msg: str) -> None:
@@ -230,7 +233,9 @@ def generate_digest(
         api_key,
         system=DIGEST_SYSTEM_PROMPT,
         user=user_msg,
-        max_tokens=1500,
+        # Sized for heavy weeks: the 2026-07-31 window (17 trades, 8 articles)
+        # truncated at 1500 and again at 2500 once "The week" was added.
+        max_tokens=4000,
     )
 
 

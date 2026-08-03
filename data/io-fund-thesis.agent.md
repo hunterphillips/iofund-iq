@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-20
+last_distilled: 2026-08-03
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -30,6 +30,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 4. **Networking optical shift.** Copper → SiPho → CPO. CPO cuts power 65% (AVGO) / 3.5× (NVDA).
 5. **AI Monetization supercycle taking off.** OpenAI $25B+ ARR, Anthropic >$30B ARR (+$21B since end-2025). MCP adoption (97M downloads) = agentic AI inflection.
 6. **Energy = supreme bottleneck.** McKinsey: 25–33% of new generation from BTM by 2030. Behind-the-meter, fuel cells, gas turbines, miners, SMRs.
+7. **Token demand shattering forecasts = inference infra supercycle.** Token processing (clearest inference proxy) exceeding even heavily revised forecasts by 10–100×. Google tokens +330× over two years (May 2024→May 2026); Dell's 2028 estimate revised up 57× yet already exceeded; reasoning/agentic workloads (up to 15× more tokens/user, coding agents 1,000× more than code chats) are the driver. Spending accelerates across compute, networking, and power layers. Tokens-per-watt is the defining upgrade metric (MS data-center net margins: ~58% Blackwell, ~78% Rubin, ~90% Feynman).
 
 ### Headline move
 - **Closed Nvidia.** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack).
@@ -49,7 +50,6 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | Networking | **COHR** | InP capacity doubling → CY26 inflection | Debt leverage |
 | Networking | **ALAB** | Scorpio momentum continues. Bouncing off lows | Tough comps |
 | Networking | **VRT** | Facility-level cooling for Rubin's warm-water design. New entrant | Newer position, limited trade history |
-| Big Tech | **META** | Tied for best Mag 7. AI rec models tailwinding ad ROI | Capex spend |
 | Big Tech | **GOOG** | Tied for first Mag 7. TPU/Ironwood. Gemini diffusion +300% partner-AI rev YoY | Antitrust |
 | Software | **PLTR** | Commercial surges (Q4 GAAP EPS +700%). Cash $7.18B, zero debt. **~50% position trimmed 2026-05-18 @ $133.51; half position remains.** | "Software stocks will be tested" — IOF cautious on category |
 | Software | **NET** | Edge inference positioning unique. Timing the open question | Not GAAP profitable after 16 yrs |
@@ -63,6 +63,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 
 ### Closed after Q2 2026 (post-report trade activity)
 - **RDDT** — fully closed 2026-05-18 @ $158.85. Was listed as ✓ held ("scarce asset" / human-data farm thesis). Closure logged in trade log; thesis doc updated accordingly.
+- **META** — fully closed 2026-07-29 @ $543.36. Was held as tied-best Mag 7 (AI rec models tailwinding ad ROI). Exit follows Q2 2026 print: revenue growth decelerating (28% YoY, down from 33%), GAAP operating margin 30.9% (–12 pts YoY), FCF down 91% YoY (capex consumed 97.5% of operating cash flow), and the incoherent Meta Compute venture (selling compute while leasing third-party capacity). IOF explicitly "does not want to own the stock" and is avoiding Big Tech broadly — preferring names that benefit from rising capex rather than bearing its cost. Closure logged in trade log; thesis doc updated accordingly.
 
 ### Thematic but not held (utilities + miners)
 - **Talen / Constellation / Vistra** — discussed thematically given PJM auction surge (clearing prices +11× over 2 yrs); Talen = purest PJM play.
@@ -94,7 +95,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | **APP** | ✓ #4 software | ✓ sentiment doesn't match fundamentals | ✗ **dropped/de-emphasized** | Held Q4-Q1, exit by Q2 |
 | **NET** | ✓ #5 software | ✓ early but unique | ✓ timing main question | Consistent placeholder/speculation hold |
 | **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges → ↓ **~50% trimmed 2026-05-18** | Half position remains after trim @ $133.51 |
-| **META** | — (honorable mention) | (honorable mention) | ✓ **added** (Mag 7) | Promoted from honorable mention to held |
+| **META** | — (honorable mention) | (honorable mention) | ✓ added (Mag 7) → ✗ **closed 2026-07-29** | Promoted from honorable mention to held; fully closed @ $543.36 on decelerating growth + capex/FCF collapse |
 | **GOOG** | — | — | + **Added** (Mag 7) | New Q2 entrant |
 | **ARM** | — | — | + **Added** (AGI CPU) | New Q2 entrant |
 | **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1,300% from entry | Consistent hold; capacity ramping into 2026-2027 |
@@ -137,6 +138,7 @@ Patterns observed across the three reports — useful for predicting what they'l
 - **Valuation extreme + softer fundamentals.** APP de-emphasized after sentiment vs fundamentals gap closed.
 - **Cash/debt collapse risk.** CRWV removed when 2026 D/C projected to 12×.
 - **Macro re-rating done.** ORCL after RPO surge played out.
+- **Capex/FCF collapse + incoherent capital story.** META closed when capex consumed 97.5% of OCF, FCF down 91% YoY, and the Meta Compute (sell-compute-while-leasing) contradiction became a credibility issue. Note the parallel to the CRWV/Alphabet "circular capital structure" flag.
 
 ### Sizing tells (cross-reference with trade log notes)
 - New entry typically <2% of portfolio.

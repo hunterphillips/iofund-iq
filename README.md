@@ -11,6 +11,7 @@ An AI layer over an [I/O Investment Fund](https://io-fund.com) subscription: cha
 - **Distills articles.** A daily cron fetches each new paywalled article and summarizes it with Sonnet 4.6.
 - **Portfolio gap analysis.** Connect a Robinhood account (official Agentic Trading MCP, per-user OAuth, read-only) or paste a brokerage screenshot, and see where your holdings sit against the fund's, by theme. Weights are computed from live Yahoo Finance prices.
 - **Weekly digest.** A Friday cron summarizes the week's trades and articles with Opus 4.8, and opens a PR against the thesis doc when new activity contradicts it. Emailed via Resend.
+- **MCP service.** Outside agents and apps can plug into the same capabilities through a key-authenticated MCP endpoint at `/api/mcp`: the fund book, trade log, digests, article search, gap analysis, live quotes. Read-only by construction, and fund content is gated on the key holder's own subscription. Setup and tool list in `chat/README.md`.
 
 ![Assistant chat](assets/chat-dark.png)
 
@@ -52,10 +53,13 @@ An AI layer over an [I/O Investment Fund](https://io-fund.com) subscription: cha
        │     analyze_portfolio_gap · get_my_portfolio ·   │
        │     get_my_realized_pnl                          │
        │   • Sources block from tool-call trace           │
+       │   • MCP service at /api/mcp                      │
+       │     (API keys · 11 read-only tools)              │
        └──────────────────────────────────────────────────┘
-                            ▲
-                            │
-                          User
+                     ▲                  ▲
+                     │                  │
+                   User          external agents
+                                 (MCP clients)
 ```
 
 ## Quick start

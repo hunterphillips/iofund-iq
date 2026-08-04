@@ -39,6 +39,8 @@ from pathlib import Path
 
 import psycopg
 
+import llm
+
 POSITION_CLOSE_RE = re.compile(r"close|stop hit", re.IGNORECASE)
 POSITION_TRIM_RE = re.compile(r"trim|half", re.IGNORECASE)
 
@@ -63,7 +65,6 @@ UA = (
 # overwrites company/category/weight + source and clears the provisional mark.
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
 YAHOO_TICKER_REMAP = {"BTCUSD": "BTC-USD", "ETHUSD": "ETH-USD", "LINKUSD": "LINK-USD"}
-AI_GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions"
 CLASSIFY_MODEL = "anthropic/claude-sonnet-4-6"
 # Mirrors the themes in data/positions-bootstrap.yaml; "Other" is the fallback.
 POSITION_THEMES = [
@@ -369,26 +370,14 @@ def classify_themes(
         "'Other' only if none apply. Respond with ONLY a JSON object mapping "
         "each ticker to its theme, no prose."
     )
-    payload = {
-        "model": CLASSIFY_MODEL,
-        "temperature": 0,
-        "max_tokens": 400,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": listing},
-        ],
-    }
-    req = urllib.request.Request(
-        AI_GATEWAY_URL,
-        data=json.dumps(payload).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {ai_key}",
-        },
-        method="POST",
+    content = llm.call_llm(
+        ai_key,
+        system=system,
+        user=listing,
+        model=CLASSIFY_MODEL,
+        max_tokens=400,
+        temperature=0,
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        content = json.loads(resp.read())["choices"][0]["message"]["content"]
     # Models sometimes wrap JSON in ```json fences — strip to the outer braces.
     start, end = content.find("{"), content.rfind("}")
     if start == -1 or end == -1:
@@ -440,13 +429,13 @@ def enrich_positions(conn: psycopg.Connection, ai_key: str | None) -> int:
     themes: dict[str, str] = {}
     needs_theme = [(t, names.get(t) or None) for t, _c, cat in pending if not cat]
     if needs_theme:
-        if ai_key:
+        if llm.llm_available():
             try:
-                themes = classify_themes(needs_theme, ai_key)
+                themes = classify_themes(needs_theme, ai_key or "")
             except Exception as exc:  # noqa: BLE001 — never fatal to the poll
                 log(f"enrich: theme classification failed: {exc!r}")
         else:
-            log("enrich: AI_GATEWAY_API_KEY unset — skipping theme classification")
+            log("enrich: no LLM provider configured — skipping theme classification")
 
     updated = 0
     with conn.cursor() as cur:

@@ -43,9 +43,18 @@ jobs:
       - name: Install deps
         run: pip install -r scripts/requirements.txt
 
+      # Headless Claude Code: generation runs on the operator's Claude
+      # subscription (CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`)
+      # instead of prepaid gateway credits. scripts/llm.py falls back to the
+      # gateway if the CLI fails and a key is present.
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Run weekly digest
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LLM_PROVIDER: claude-cli
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

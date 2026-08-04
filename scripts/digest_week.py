@@ -16,12 +16,16 @@ decision (2026-05-19).
 
 Required env:
     DATABASE_URL          — Neon Postgres
-    AI_GATEWAY_API_KEY    — Vercel AI Gateway
+    AI_GATEWAY_API_KEY    — Vercel AI Gateway (required when LLM_PROVIDER=gateway;
+                            optional fallback when LLM_PROVIDER=claude-cli — see scripts/llm.py)
     RESEND_API_KEY        — Resend transactional email (skip with DIGEST_SKIP_EMAIL=1)
     GITHUB_TOKEN          — gh CLI auth (auto-injected on GHA; locally:
                             export GITHUB_TOKEN=$(gh auth token))
 
 Optional env:
+    LLM_PROVIDER            — "gateway" (default) or "claude-cli" (headless Claude
+                              Code on the operator's subscription; CI auths via
+                              CLAUDE_CODE_OAUTH_TOKEN)
     DIGEST_DRY_RUN          — "1" skips DB writes, LLM calls, PR, email
     DIGEST_FORCE_OVERWRITE  — "1" overwrites today's digest file if present
     DIGEST_SKIP_EMAIL       — "1" runs the digest + (optional) PR but no email
@@ -43,7 +47,8 @@ from pathlib import Path
 import markdown as md_lib
 import psycopg
 
-AI_GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions"
+import llm
+
 RESEND_URL = "https://api.resend.com/emails"
 MODEL = "anthropic/claude-opus-4-8"
 DEFAULT_RECIPIENT = "hkphillips42@gmail.com"
@@ -194,31 +199,14 @@ def _call_ai_gateway(
     max_tokens: int,
     temperature: float = 0.3,
 ) -> str:
-    payload = {
-        "model": MODEL,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-    }
-    req = urllib.request.Request(
-        AI_GATEWAY_URL,
-        data=json.dumps(payload).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
+    return llm.call_llm(
+        api_key,
+        system=system,
+        user=user,
+        model=MODEL,
+        max_tokens=max_tokens,
+        temperature=temperature,
     )
-    try:
-        with urllib.request.urlopen(req, timeout=180) as resp:
-            body = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")
-        raise RuntimeError(f"AI Gateway {e.code}: {detail}") from e
-    return body["choices"][0]["message"]["content"]
 
 
 def generate_digest(
@@ -614,7 +602,7 @@ def main() -> int:
 
     db_url = require_env("DATABASE_URL")
     if not dry_run:
-        ai_key = require_env("AI_GATEWAY_API_KEY")
+        ai_key = llm.require_llm_key()
     else:
         ai_key = ""
 

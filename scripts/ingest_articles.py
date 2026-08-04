@@ -21,9 +21,11 @@ Run locally:
 Required env (loaded from .env when present, falls back to process env):
     IO_FUND_USERNAME, IO_FUND_PASSWORD  — IOF subscription creds
     DATABASE_URL                         — Neon Postgres
-    AI_GATEWAY_API_KEY                   — Vercel AI Gateway
+    AI_GATEWAY_API_KEY                   — Vercel AI Gateway (required when
+                                           LLM_PROVIDER=gateway; optional fallback otherwise)
 
 Optional env:
+    LLM_PROVIDER           — "gateway" (default) or "claude-cli" (see scripts/llm.py)
     INGEST_MAX_PER_RUN     — int cap on new distillations per run (default unlimited)
     INGEST_DRY_RUN         — "1" skips DB writes and LLM calls; prints what would distill
 """
@@ -44,12 +46,13 @@ from xml.etree import ElementTree as ET
 import psycopg
 import yaml
 
+import llm
+
 FIREBASE_API_KEY = os.environ.get(
     "IOF_FIREBASE_API_KEY", "AIzaSyBbWVb0wkR8tHpNezOqdU49hpgjjzzU6k0"
 )
 SIGNIN_URL = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
 RSS_URL = "https://io-fund.com/rss.xml"
-AI_GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions"
 DISTILL_MODEL = "anthropic/claude-sonnet-4-6"
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -271,32 +274,15 @@ def _build_user_msg(text: str, item: dict) -> str:
 
 
 def distill_article(text: str, item: dict, api_key: str) -> str:
-    """POST to AI Gateway, return the model's raw output (frontmatter + markdown)."""
-    payload = {
-        "model": DISTILL_MODEL,
-        "temperature": 0.2,
-        "max_tokens": 1500,
-        "messages": [
-            {"role": "system", "content": DISTILL_SYSTEM_PROMPT},
-            {"role": "user", "content": _build_user_msg(text, item)},
-        ],
-    }
-    req = urllib.request.Request(
-        AI_GATEWAY_URL,
-        data=json.dumps(payload).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
+    """Distill via the configured LLM provider; returns frontmatter + markdown."""
+    return llm.call_llm(
+        api_key,
+        system=DISTILL_SYSTEM_PROMPT,
+        user=_build_user_msg(text, item),
+        model=DISTILL_MODEL,
+        max_tokens=1500,
+        temperature=0.2,
     )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            body = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")
-        raise RuntimeError(f"AI Gateway {e.code}: {detail}") from e
-    return body["choices"][0]["message"]["content"]
 
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
@@ -398,7 +384,7 @@ def main() -> int:
     user = require_env("IO_FUND_USERNAME")
     password = require_env("IO_FUND_PASSWORD")
     if not dry_run:
-        ai_key = require_env("AI_GATEWAY_API_KEY")
+        ai_key = llm.require_llm_key()
     else:
         ai_key = ""
 

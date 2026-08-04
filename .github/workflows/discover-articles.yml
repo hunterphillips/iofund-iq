@@ -34,11 +34,18 @@ jobs:
       - name: Install deps
         run: pip install -r scripts/requirements.txt
 
+      # Headless Claude Code: distillation runs on the operator's Claude
+      # subscription instead of prepaid gateway credits (see scripts/llm.py).
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Ingest articles
         env:
           IO_FUND_USERNAME: ${{ secrets.IO_FUND_USERNAME }}
           IO_FUND_PASSWORD: ${{ secrets.IO_FUND_PASSWORD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LLM_PROVIDER: claude-cli
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           INGEST_MAX_PER_RUN: ${{ inputs.max_per_run }}
         run: python3 scripts/ingest_articles.py

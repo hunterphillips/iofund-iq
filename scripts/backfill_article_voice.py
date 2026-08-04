@@ -35,8 +35,8 @@ from pathlib import Path
 
 import psycopg
 
+import llm
 from ingest_articles import (
-    AI_GATEWAY_URL,
     DISTILL_MODEL,
     load_dotenv_if_present,
     log,
@@ -64,28 +64,14 @@ Output only the rewritten markdown body. No frontmatter, no code fences, no prea
 
 
 def rewrite_body(body: str, api_key: str) -> str:
-    payload = {
-        "model": DISTILL_MODEL,
-        "temperature": 0.2,
-        "max_tokens": 1500,
-        "messages": [
-            {"role": "system", "content": VOICE_REWRITE_SYSTEM_PROMPT},
-            {"role": "user", "content": body},
-        ],
-    }
-    req = urllib.request.Request(
-        AI_GATEWAY_URL,
-        data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")
-        raise RuntimeError(f"AI Gateway {e.code}: {detail}") from e
-    out = data["choices"][0]["message"]["content"].strip()
+    out = llm.call_llm(
+        api_key,
+        system=VOICE_REWRITE_SYSTEM_PROMPT,
+        user=body,
+        model=DISTILL_MODEL,
+        max_tokens=1500,
+        temperature=0.2,
+    ).strip()
     # Models sometimes wrap output in ```markdown fences — strip.
     if out.startswith("```"):
         first_nl = out.find("\n")
@@ -167,7 +153,7 @@ def main() -> int:
 
     load_dotenv_if_present()
     db_url = require_env("DATABASE_URL")
-    api_key = "" if args.dry_run else require_env("AI_GATEWAY_API_KEY")
+    api_key = "" if args.dry_run else llm.require_llm_key()
 
     with psycopg.connect(db_url) as conn:
         rows = fetch_rows(conn, args.slug, args.limit)
@@ -178,7 +164,7 @@ def main() -> int:
         if not args.dry_run:
             path = backup(rows)
             log(f"backup: wrote {path}")
-            api_key = require_env("AI_GATEWAY_API_KEY")
+            api_key = llm.require_llm_key()
 
         ok = skipped = 0
         for idx, row in enumerate(rows, 1):
@@ -187,7 +173,7 @@ def main() -> int:
             try:
                 if args.dry_run:
                     # Dry-run still needs a rewrite to show a diff.
-                    new = rewrite_body(old, require_env("AI_GATEWAY_API_KEY"))
+                    new = rewrite_body(old, llm.require_llm_key())
                 else:
                     new = rewrite_body(old, api_key)
             except Exception as e:

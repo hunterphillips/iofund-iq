@@ -1,15 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Hanken_Grotesk, Spline_Sans_Mono } from "next/font/google";
+import {
+  Hanken_Grotesk,
+  Literata,
+  Spline_Sans_Mono,
+} from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// Editorial type system (see app/globals.css @theme): Fraunces for display,
+// Editorial type system (see app/globals.css @theme): Literata for display,
 // Hanken Grotesk for body, Spline Sans Mono for tabular numerals. next/font
 // self-hosts each and exposes a CSS variable the @theme font tokens point at.
-const fraunces = Fraunces({
+const literata = Literata({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-fraunces",
+  variable: "--font-literata",
   weight: ["400", "500", "600", "700"],
 });
 
@@ -55,7 +59,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fraunces.variable} ${hanken.variable} ${splineMono.variable}`}
+      className={`${literata.variable} ${hanken.variable} ${splineMono.variable}`}
     >
       <head>
         {/* Pre-paint theme bootstrap. suppressHydrationWarning because some

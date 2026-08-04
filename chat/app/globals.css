@@ -38,9 +38,9 @@
   --color-cat-semis: #5e9aa0;
   --color-cat-other: #7a6f66;
 
-  /* Type — Fraunces (display serif), Hanken Grotesk (body), Spline Sans Mono
+  /* Type — Literata (display serif), Hanken Grotesk (body), Spline Sans Mono
      (tabular numerals). CSS vars are supplied by next/font in app/layout.tsx. */
-  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-serif: var(--font-literata), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-spline-mono), ui-monospace, "SF Mono", Menlo, Consolas,
@@ -138,6 +138,34 @@ body {
 
 body {
   transition: background 0.35s ease, color 0.35s ease;
+}
+
+/*
+ * Optical size match for the display serif. Literata's cap height matches the
+ * Fraunces it replaced almost exactly (0.701 vs 0.700 em), but its x-height runs
+ * ~7% larger (0.510 vs 0.473) — which is why every serif surface read slightly
+ * bigger at unchanged font-size values. font-size-adjust normalizes on x-height,
+ * so one number rescales the whole system without touching the size classes.
+ *
+ * 0.49 closes about half the x-height gap, which is the part that read as "too
+ * big," at a ~3.5% cost in overall footprint. Going all the way to Fraunces's
+ * 0.4734 matches x-heights exactly but shrinks headlines ~7% below where they
+ * sat before, because Literata's line widths already matched. Dial this one
+ * number: `none` disables the correction, 0.51 is Literata untouched, each
+ * 0.01 is roughly 2%.
+ *
+ * Scoped to the serif surfaces, not html — font-size-adjust inherits, and the
+ * sans body text is already sized the way we want it. Sets only a property no
+ * Tailwind utility touches, so this unlayered rule can't shadow one.
+ */
+:root {
+  --serif-x-height: 0.49;
+}
+
+.font-serif,
+.weight-num,
+.reading-prose .markdown :is(h1, h2, h3, h4) {
+  font-size-adjust: var(--serif-x-height);
 }
 
 /* Editorial atmosphere — soft radial warmth + faint grain behind all content.

@@ -1,0 +1,41 @@
+name: llm-smoke
+
+# Manual smoke test for the scripts/llm.py claude-cli provider: proves the
+# CLAUDE_CODE_OAUTH_TOKEN secret authenticates headless Claude Code in CI and
+# a real completion comes back on the operator's Claude subscription. No DB,
+# no email, no commits.
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Call the LLM via claude-cli
+        env:
+          LLM_PROVIDER: claude-cli
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        working-directory: scripts
+        run: |
+          python3 - <<'EOF'
+          import llm
+          out = llm.call_llm(
+              "",
+              system="You answer with exactly one word.",
+              user="What is the ticker symbol for Nvidia?",
+              model="anthropic/claude-sonnet-4-6",
+              max_tokens=50,
+          )
+          print(f"claude-cli responded: {out!r}")
+          assert "NVDA" in out.upper(), f"unexpected response: {out!r}"
+          EOF

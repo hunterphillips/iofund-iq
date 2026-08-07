@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-20
+last_distilled: 2026-08-07
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -30,6 +30,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 4. **Networking optical shift.** Copper → SiPho → CPO. CPO cuts power 65% (AVGO) / 3.5× (NVDA).
 5. **AI Monetization supercycle taking off.** OpenAI $25B+ ARR, Anthropic >$30B ARR (+$21B since end-2025). MCP adoption (97M downloads) = agentic AI inflection.
 6. **Energy = supreme bottleneck.** McKinsey: 25–33% of new generation from BTM by 2030. Behind-the-meter, fuel cells, gas turbines, miners, SMRs.
+7. **Capex accelerates toward $1 trillion; suppliers capture the flow-through.** 2026 hyperscaler capex guidance now $732.5B (+79% YoY), on track for ~$1T in 2027 (Goldman models $1.01T). Semiconductor EPS growth (97% projected 2026) runs ~6× hyperscaler EPS growth, and memory + networking grow faster than capex itself. IOF's position: own the suppliers receiving capex, not the hyperscalers spending it.
 
 ### Headline move
 - **Closed Nvidia.** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack).
@@ -148,7 +149,7 @@ Patterns observed across the three reports — useful for predicting what they'l
 Several names tracked across multiple quarters without entering. Pattern usually = valuation extremity + valid thesis. E.g. Palantir (held Q1+Q2 finally) was "watched without action" for some time. CRWV was the inverse — thematic 11/10 but cash/debt prevented full conviction.
 
 ### Macro reading
-- **Capex revisions are the single most-cited signal.** Big Tech capex 2025: estimates $250B → $365B → $435B → re-rated upward each quarter. 2026: $583B → $600B in 3 months. IOF uses capex revisions as the upstream signal for hardware demand.
+- **Capex revisions are the single most-cited signal.** Big Tech capex 2025: estimates $250B → $365B → $435B → re-rated upward each quarter. 2026: $583B → $600B → $732.5B guided (Aug 2026, +79% YoY), on track for ~$1T in 2027. IOF uses capex revisions as the upstream signal for hardware demand.
 - **Cluster of buys = market-low call.** 22 buys Feb–April 2025 (9 on April 4 low). Watch for similar clustering in trade log for the "bottom call" signal.
 
 ---

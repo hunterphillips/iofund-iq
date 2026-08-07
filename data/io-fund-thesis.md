@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-05-20
+last_updated: 2026-08-07
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -15,7 +15,7 @@ This is the reasoning behind the trades: what I/O Fund believes about AI right n
 
 AI has moved past the "buy anything with a GPU" phase. The questions now are about efficiency, power, and who actually makes money.
 
-Six themes shape the thesis right now:
+Seven themes shape the thesis right now:
 
 - **Accelerators are judged on unit economics now, not raw compute.** Tokens per watt and dollars per token are the numbers that matter. Each generation is a big step: GB300 is about 50× the performance per watt of H200, and Rubin is roughly 10× the inference performance per watt of Blackwell.
 - **Cooling is a real constraint again.** Rubin racks draw 180–230 kW and can't be air-cooled. Nvidia is moving to warm-water cooling to push another 10% or so of GPU density.
@@ -23,6 +23,7 @@ Six themes shape the thesis right now:
 - **Networking is shifting to optics.** Copper gives way to silicon photonics and then co-packaged optics, which cut interconnect power sharply.
 - **AI is finally monetizing at scale.** OpenAI is past $25B in ARR and Anthropic past $30B, and agentic tooling is inflecting.
 - **Energy is the hard bottleneck.** A large share of new power for data centers will come from behind-the-meter sources: fuel cells, gas turbines, miners, and eventually small reactors.
+- **Capex is heading toward $1 trillion, and suppliers capture more of it than the spenders.** 2026 hyperscaler capex is guided to $732.5B, up 79% year over year, with 2027 estimates around $1T. Semiconductor earnings are set to grow far faster than the hyperscalers doing the spending: about 97% against 17% in 2026. Memory and networking grow faster than capex itself.
 
 The biggest move of the quarter was closing Nvidia, a bold call given how central the stock is. The reasoning was a confirmed Rubin delay tied to HBM4 validation, custom silicon taking inference share, and the CUDA moat mattering less for inference than it does for training.
 
@@ -55,7 +56,7 @@ They add when a new product cycle is inflecting (Astera on Scorpio, Vertiv on Ru
 
 They exit on a structural shift that breaks the specific thesis (Credo was dropped once Rubin pushed toward optics), on a valuation that ran ahead while fundamentals softened (AppLovin), or on balance-sheet risk (CoreWeave's debt). And they'll track a name for a long time without buying it when the thesis is valid but the valuation is extreme. Palantir sat on that list before they finally took a position.
 
-The most-cited macro signal is Big Tech capex. The 2025 estimates climbed from $250B to $365B to $435B over the year, and 2026 went from $583B to $600B in three months. Rising capex revisions are treated as the upstream tell for hardware demand.
+The most-cited macro signal is Big Tech capex. The 2025 estimates climbed from $250B to $365B to $435B over the year, and 2026 climbed from $583B to a guided $732.5B, with 2027 estimates around $1 trillion. Rising capex revisions are treated as the upstream tell for hardware demand.
 
 ## The watch list
 

@@ -52,17 +52,40 @@ UA = (
     "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
 
-# The three embedded PDFs end in PieChart.pdf / History.pdf / Portfolio.pdf —
-# we want the table ("...-Portfolio.pdf"). The version segment (v3, v4, …) is
-# matched loosely so a future IOF version bump doesn't break discovery.
-TABLE_PDF_RE = re.compile(
-    r'https://[^"\']*?Portfolio_v\d+-Portfolio\.pdf', re.IGNORECASE
-)
+# The page embeds three PDFs (portfolio table / pie chart / history); we want
+# the table. IOF renames these — 2026-08-07 the table went from
+# "Portfolio_v3-Portfolio.pdf" to "AdvancedPortfolio.pdf" — so discovery tries
+# an ordered list of filename patterns, first match wins. When the name changes
+# again, add the new pattern to the front of this list.
+TABLE_PDF_PATTERNS = [
+    re.compile(r'https://[^"\']*?AdvancedPortfolio\.pdf', re.IGNORECASE),
+    re.compile(r'https://[^"\']*?Portfolio_v\d+-Portfolio\.pdf', re.IGNORECASE),
+]
 DATE_RE = re.compile(r"\d{1,2}/\d{1,2}/\d{2}")
 PCT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 # Leading alphabetic run (theme), e.g. "AI Networking" or "Semis/AI Accelerator".
 THEME_LEAD_RE = re.compile(r"[A-Za-z][A-Za-z /,&.\-]*")
 TYPE_SPLIT_RE = re.compile(r"Long-Term|Momentum")
+# Dollar-denominated market cap ("$796.9B", "$5.3T") — present only in the
+# Advanced table layout (2026-08), where it marks the column order switch.
+MKTCAP_RE = re.compile(r"\$[\d,.]+\s*[BT]\b")
+# What a ticker symbol may look like. The known set comes from the trades
+# table, whose early rows carry junk ("*", "test", "AMD, AVGO") that must
+# never anchor a portfolio row.
+TICKER_TOKEN_RE = re.compile(r"[A-Z0-9.\-]+")
+
+# Theme → canonical category, checked in order against the lowercased raw
+# theme (first keyword hit wins — "accelerat" must beat "semis" for NVDA).
+THEME_KEYWORDS = [
+    ("accelerat", "AI Accelerators"),
+    ("networking", "AI Networking"),
+    ("energy", "AI Energy"),
+    ("memory", "AI Memory"),
+    ("software", "AI Software"),
+    ("semis", "AI Semis"),
+    ("semiconductor", "AI Semis"),
+    ("crypto", "Cryptocurrency"),
+]
 
 
 def log(msg: str) -> None:
@@ -130,11 +153,20 @@ def find_table_pdf_url(id_token: str) -> str:
         except Exception as e:
             last_err = f"fetch error: {e!r}"
             continue
-        match = TABLE_PDF_RE.search(html)
-        if match:
-            return match.group(0)
+        url = match_table_pdf_url(html)
+        if url:
+            return url
         last_err = "Portfolio table PDF URL not found on /premium/portfolio"
     sys.exit(f"ERROR: {last_err}")
+
+
+def match_table_pdf_url(html: str) -> str | None:
+    """First TABLE_PDF_PATTERNS hit in the page HTML, or None."""
+    for pattern in TABLE_PDF_PATTERNS:
+        match = pattern.search(html)
+        if match:
+            return match.group(0)
+    return None
 
 
 def download_pdf_text(url: str) -> str:
@@ -144,7 +176,12 @@ def download_pdf_text(url: str) -> str:
     tmp = Path("/tmp/iof_portfolio.pdf")
     tmp.write_bytes(data)
     reader = pypdf.PdfReader(str(tmp))
-    return "\n".join(pg.extract_text() or "" for pg in reader.pages)
+    # Layout mode preserves table-row alignment. The default extraction order
+    # scrambles the Advanced layout's columns badly enough to misattribute
+    # themes across tickers.
+    return "\n".join(
+        pg.extract_text(extraction_mode="layout") or "" for pg in reader.pages
+    )
 
 
 def normalize_theme(raw: str) -> str | None:
@@ -155,20 +192,9 @@ def normalize_theme(raw: str) -> str | None:
     by. Keyword order matters (NVDA is "Semis/AI Accelerator…" → Accelerators).
     """
     low = raw.lower()
-    if "accelerat" in low:
-        return "AI Accelerators"
-    if "networking" in low:
-        return "AI Networking"
-    if "energy" in low:
-        return "AI Energy"
-    if "memory" in low:
-        return "AI Memory"
-    if "software" in low:
-        return "AI Software"
-    if "semis" in low or "semiconductor" in low:
-        return "AI Semis"
-    if "crypto" in low:
-        return "Cryptocurrency"
+    for keyword, category in THEME_KEYWORDS:
+        if keyword in low:
+            return category
     seg = re.split(r"[/,]", raw)[0].strip()
     return seg or None
 
@@ -177,31 +203,74 @@ def parse_portfolio(text: str, known: set[str]) -> list[dict]:
     """Parse the table PDF text into [{ticker, company, weight, category}].
 
     Ticker is anchored to the known-ticker set (it can be glued to the company,
-    e.g. "GOOGLAlphabet"). Allocation is the first percentage on the line.
+    e.g. "GOOGLAlphabet"). Two column layouts are recognized per line:
+
+    - Advanced (2026-08): Ticker Company MrkCap Beta Allocation Type Price …
+      Detected by a dollar-denominated market cap ("$796.9B"). Allocation is
+      the first % between the market cap and the Type column.
+    - Legacy: Ticker Company Type MrkCap Allocation Price … Market cap has no
+      "$" ("39.2 B"), so allocation is the first % before the first "$".
+
+    A wrapped company name leaves a short fragment on the immediately
+    following line ("Holding Ltd."); it is appended when that line isn't a
+    ticker row of its own. A blank line ends the table (the hedge/footnote
+    block below never touches the last row).
     """
     rows: list[dict] = []
-    for raw in text.split("\n"):
-        line = raw.strip()
-        if not line or line.startswith("w Company"):
+    lines = [raw.strip() for raw in text.split("\n")]
+    for i, line in enumerate(lines):
+        # Header rows: "Ticker Company …" (layout mode) / "w Company …" (glued).
+        if not line or line.startswith(("Ticker ", "w Company")):
             continue
-        head = line.split(" ", 1)[0].upper()
-        cands = [t for t in known if head.startswith(t)]
+        raw_head = line.split(" ", 1)[0]
+        head = raw_head.upper()
+        # Anchor: the head token IS a known ticker, or a ticker glued to a
+        # capitalized company name ("NVDANVIDIA Corp"). The case check keeps
+        # prose from anchoring short tickers ("Stocks…" must not match "S").
+        cands = [
+            t
+            for t in known
+            if TICKER_TOKEN_RE.fullmatch(t)
+            and head.startswith(t)
+            and (len(raw_head) == len(t) or raw_head[len(t)].isupper())
+        ]
         if not cands:
             continue
         ticker = max(cands, key=len)
 
-        # Allocation: the first percentage BEFORE the first price. Newly added
-        # positions ship with a blank Allocation cell, and pypdf can glue an
-        # entry-gain percent onto the prices ("$816.99799.982.1%") — a naive
-        # first-%-anywhere read turns that into a bogus three-digit weight.
-        dollar = line.find("$")
-        scope = line if dollar == -1 else line[:dollar]
+        mkt = MKTCAP_RE.search(line)
+        if mkt:
+            # Advanced layout. Allocation sits between market cap and Type;
+            # a blank Allocation cell (brand-new position) leaves no % there.
+            after_cap = line[mkt.end():]
+            type_m = TYPE_SPLIT_RE.search(after_cap)
+            if type_m:
+                scope = after_cap[: type_m.start()]
+            else:
+                nxt = after_cap.find("$")
+                scope = after_cap if nxt == -1 else after_cap[:nxt]
+            company = line[len(ticker): mkt.start()].strip(" ,") or None
+        else:
+            # Legacy layout. The first "$" is the Price column, so the
+            # allocation is the first % before it. (pypdf can glue an
+            # entry-gain percent onto the prices — "$816.99799.982.1%" — so
+            # a first-%-anywhere read would fabricate a weight.)
+            dollar = line.find("$")
+            scope = line if dollar == -1 else line[:dollar]
+            after = line[len(ticker):].lstrip()
+            company = TYPE_SPLIT_RE.split(after, 1)[0].strip(" ,") or None
         pct = PCT_RE.search(scope)
         weight = float(pct.group(1)) if pct else None
 
-        # Company: between the ticker and the Type column (Long-Term/Momentum).
-        after = line[len(ticker):].lstrip()
-        company = TYPE_SPLIT_RE.split(after, 1)[0].strip(" ,") or None
+        # Wrapped company: the next line starts with the leftover fragment
+        # (never a ticker row, a Type word, or column data).
+        if company and i + 1 < len(lines):
+            nxt_line = lines[i + 1]
+            nxt_head = nxt_line.split(" ", 1)[0].upper()
+            if nxt_line and not any(nxt_head.startswith(t) for t in known):
+                frag = THEME_LEAD_RE.match(nxt_line)
+                if frag and not TYPE_SPLIT_RE.fullmatch(frag.group(0).strip()):
+                    company = f"{company} {frag.group(0).strip(' ,')}"
 
         # Theme: leading alpha run after the first M/D/YY date.
         category = None

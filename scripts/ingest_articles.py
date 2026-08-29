@@ -303,7 +303,14 @@ def parse_frontmatter(md: str) -> tuple[dict, str]:
     fm = yaml.safe_load(match.group(1)) or {}
     if not isinstance(fm, dict):
         raise ValueError(f"frontmatter is not a mapping: {type(fm).__name__}")
-    return fm, match.group(2).strip()
+    body = match.group(2).strip()
+    # Models sometimes fence only the frontmatter, leaving its closing ```
+    # as the body's first line — an unclosed fence that makes the whole
+    # article render as a code block downstream.
+    first_line, _, rest = body.partition("\n")
+    if first_line and first_line.strip("`") == "":
+        body = rest.lstrip("\n")
+    return fm, body
 
 
 def validate_distillation(fm: dict, body: str, item: dict) -> tuple[bool, str]:

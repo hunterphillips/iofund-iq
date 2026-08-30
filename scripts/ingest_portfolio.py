@@ -16,10 +16,16 @@ Flow:
     parse rows (ticker anchored to known tickers; allocation; theme) →
     validate (allocations sum ~100%) → UPSERT positions
     (company, category, baseline_weight_pct, status='held',
-     source='portfolio_pdf:<run-date>').
+     source='portfolio_pdf:<run-date>') → close PDF dropouts.
 
-Only fills/updates tickers present in the PDF; closes are still the trade-poll
-piggyback's job. Idempotent. Run:
+The PDF is the authoritative statement of the current book, in both directions:
+tickers present upsert as held, and a held position that an authoritative
+source (portfolio_pdf/bootstrap_yaml) previously claimed but the current PDF
+no longer lists is closed. (Without that, a close trade could get flipped back
+to held by the next day's still-stale PDF and then stick as held forever once
+the ticker dropped out — nothing else ever closed it.) Trade-replay-born rows
+are exempt: a brand-new buy can legitimately precede its PDF appearance.
+Alert-driven closes remain the trade-poll piggyback's job. Idempotent. Run:
 
     python3 scripts/ingest_portfolio.py
     python3 scripts/ingest_portfolio.py --dry-run
@@ -337,6 +343,41 @@ def upsert_positions(conn: psycopg.Connection, rows: list[dict]) -> int:
     return n
 
 
+def close_missing_positions(
+    conn: psycopg.Connection, pdf_tickers: list[str], *, dry_run: bool = False
+) -> list[str]:
+    """Close held positions the current PDF no longer lists.
+
+    Scoped to rows whose source is authoritative (portfolio_pdf/bootstrap_yaml)
+    — i.e. the book once claimed them — so trade-replay rows born from a fresh
+    buy the lagging PDF hasn't caught up to are never touched.
+    """
+    where = """
+        status = 'held'
+          AND (source LIKE 'portfolio_pdf:%%' OR source LIKE 'bootstrap_yaml:%%')
+          AND NOT (ticker = ANY(%s))
+    """
+    with conn.cursor() as cur:
+        if dry_run:
+            cur.execute(f"SELECT ticker FROM positions WHERE {where}", (pdf_tickers,))
+        else:
+            cur.execute(
+                f"""
+                UPDATE positions
+                SET status = 'closed',
+                    source = %s,
+                    updated_at = now()
+                WHERE {where}
+                RETURNING ticker
+                """,
+                (f"portfolio_pdf:{date.today().isoformat()}", pdf_tickers),
+            )
+        closed = sorted(row[0] for row in cur.fetchall())
+    if not dry_run:
+        conn.commit()
+    return closed
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -377,12 +418,20 @@ def main() -> int:
                 f"{r['category'] or '—':<16} {r['company'] or '—'}"
             )
 
+        pdf_tickers = [r["ticker"] for r in rows]
+
         if args.dry_run:
+            would_close = close_missing_positions(conn, pdf_tickers, dry_run=True)
+            if would_close:
+                log(f"dry-run: would close PDF dropouts: {', '.join(would_close)}")
             log("dry-run: no DB writes")
             return 0
 
         n = upsert_positions(conn, rows)
         log(f"upsert: {n} positions written (source=portfolio_pdf:{date.today()})")
+        closed = close_missing_positions(conn, pdf_tickers)
+        if closed:
+            log(f"close: {len(closed)} PDF dropouts closed: {', '.join(closed)}")
     return 0
 
 

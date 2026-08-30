@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-05-20
+last_distilled: 2026-08-30
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -30,39 +30,56 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 4. **Networking optical shift.** Copper → SiPho → CPO. CPO cuts power 65% (AVGO) / 3.5× (NVDA).
 5. **AI Monetization supercycle taking off.** OpenAI $25B+ ARR, Anthropic >$30B ARR (+$21B since end-2025). MCP adoption (97M downloads) = agentic AI inflection.
 6. **Energy = supreme bottleneck.** McKinsey: 25–33% of new generation from BTM by 2030. Behind-the-meter, fuel cells, gas turbines, miners, SMRs.
+7. **Token demand shattering forecasts = inference infra supercycle.** Token processing (clearest inference proxy) exceeding even heavily revised forecasts by 10–100×. Google tokens +330× over two years (May 2024→May 2026); Dell's 2028 estimate revised up 57× yet already exceeded; reasoning/agentic workloads (up to 15× more tokens/user, coding agents 1,000× more than code chats) are the driver. Tokens-per-watt is the defining upgrade metric (MS data-center net margins: ~58% Blackwell, ~78% Rubin, ~90% Feynman).
+8. **Capex accelerates toward $1T; suppliers capture the flow-through.** 2026 hyperscaler capex guidance now $732.5B (+79% YoY), tracking ~$1T in 2027 (Goldman models $1.01T). Semiconductor EPS growth (97% projected 2026) runs ~6× hyperscaler EPS growth; memory + networking grow faster than capex itself. IOF's position: own the suppliers receiving capex, not the hyperscalers spending it.
 
-### Headline move
-- **Closed Nvidia.** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack).
+### Headline moves
+- **Closed Nvidia (2026-04-27 @ $209.67).** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack). A ~0.2% starter re-entry shows in the 2026-08-30 portfolio table.
+- **Exited Big Tech entirely, then the top accelerator pick (June–July 2026).** GOOGL closed 6/25, META closed 7/29 (after a brief 7/27 re-buy), and AVGO — the post-Nvidia #1 pick — closed 7/27. META's exit reasoning: revenue growth decelerating (28% YoY, down from 33%), GAAP operating margin down 12 pts, FCF down 91% YoY (capex consumed 97.5% of operating cash flow), and the incoherent Meta Compute venture (selling compute while leasing third-party capacity). Consistent with theme 8: hold the suppliers receiving capex, not the spenders.
+- **Rotated into memory/storage/optics suppliers (late July 2026).** Single-day 7/27 spree: STX +3%, WDC +3%, SIMO/AAOI/LITE adds, CRDO add; SNDK add 7/28. Memory + storage now ~35% of the book.
 
-### Current picks (held as of Q2 2026, updated for post-Q2 trade activity)
+### Current picks (per the 2026-08-30 portfolio table; weights are baseline allocation %)
 
-| Category | Ticker | One-line thesis | Risk |
-|---|---|---|---|
-| Accelerators | **AVGO** | Top accelerator pick. AI rev "in excess of $100B in 2027" + $50B networking. ~30% QoQ sustainable 7–8 qtrs | Debt $66B; Google diversifying with MediaTek |
-| Accelerators | **ARM** | AGI CPU for agentic orchestration. New entrant. CPU cores 30M→120M per GW | Premium valuation (29 fwd PS); IP→merchant transition risk |
-| Accelerators | **AMD** | >60% DC annual growth 3–5 yrs (mgmt). MI400/Helios H2 2026 catalyst. ~50% more memory than Rubin | CoWoS allocation only ~7% of 2026 supply vs >50% NVDA |
-| Accelerators | **TSM** | CoWoS is the linchpin for all accelerators | Geopolitical |
-| Memory | **MU** | "Doors blown off." FQ3 guide: rev $33.5B (+260%), GM 81%, OM 76% | Cyclical-vs-secular debate |
-| Memory | **SNDK** | NAND tightening. Q3 guide ~200% above consensus | New name in list; less coverage |
-| Networking | **LITE** | Capacity-constrained on EMLs. Pricing power. CW-laser + SiPho alt-route winner | InP supply |
-| Networking | **AAOI** | IOF early call; +~300% YTD / +650% from low entry | High momentum, less fundamentals visibility |
-| Networking | **COHR** | InP capacity doubling → CY26 inflection | Debt leverage |
-| Networking | **ALAB** | Scorpio momentum continues. Bouncing off lows | Tough comps |
-| Networking | **VRT** | Facility-level cooling for Rubin's warm-water design. New entrant | Newer position, limited trade history |
-| Big Tech | **META** | Tied for best Mag 7. AI rec models tailwinding ad ROI | Capex spend |
-| Big Tech | **GOOG** | Tied for first Mag 7. TPU/Ironwood. Gemini diffusion +300% partner-AI rev YoY | Antitrust |
-| Software | **PLTR** | Commercial surges (Q4 GAAP EPS +700%). Cash $7.18B, zero debt. **~50% position trimmed 2026-05-18 @ $133.51; half position remains.** | "Software stocks will be tested" — IOF cautious on category |
-| Software | **NET** | Edge inference positioning unique. Timing the open question | Not GAAP profitable after 16 yrs |
-| Energy | **BE** | Time-to-power thesis. 2GW capacity by Dec 2026 → ~4× 2025 rev. **~1,300% from initial entries ($16.64–$17.04, April 2025).** | Premium valuation (13.8 fwd PS) |
-| Energy | **GEV** | Order book sold out through 2028. Gas-turbine supply locked through 2030 | Slower growth profile |
+| Category | Ticker | Wt | One-line thesis | Risk |
+|---|---|---|---|---|
+| Networking | **LITE** | 11.5 | Capacity-constrained on EMLs. Pricing power. CW-laser + SiPho alt-route winner. Added into July weakness | InP supply |
+| Networking | **AAOI** | 10.1 | IOF early call; +~800% since November 2025 entry. Repeatedly added on dips (May–Jul) | High momentum, less fundamentals visibility |
+| Networking | **SITM** | 9.5 | Precision-timing chips for AI clusters; built 3%→9.5% across May–Jul buys | Thesis thinly covered in distilled corpus |
+| Memory | **SNDK** | 8.9 | NAND tightening; inference to drive demand + visibility for years (FQ4 article) | Volatile; trimmed 5% in June, re-added July |
+| Memory | **SIMO** | 7.4 | NAND-controller side of the memory thesis; built across four buys May–Jul | Thesis thinly covered in distilled corpus |
+| Networking | **CRDO** | 5.2 | Re-entered 7/24 (4%) + 7/27 add — reversal of the Q1 drop; AEC/connectivity demand back in favor | Re-entry thesis not yet articulated in articles |
+| Software | **NET** | 5.2 | Edge inference positioning unique. 5% buy 7/27 rebuilt the position | Not GAAP profitable after 16 yrs |
+| Memory | **MTSI** | 4.5 | RF/optical semis (MACOM); diversified AI optics drove +40% QoQ data-center growth (FQ3 article). PDF categorizes under Memory | Trade-driven entry 6/25 |
+| Memory | **MU** | 4.5 | "Doors blown off." Secular re-rating thesis intact; trimmed three times into strength May–Jul | Cyclical-vs-secular debate |
+| Energy | **GEV** | 4.5 | Order book sold out through 2028. Gas-turbine supply locked through 2030. 7% trim 7/22 was risk management | Slower growth profile |
+| Networking | **MXL** | 4.4 | Built 2%→~4.4% across three buys May–Jul; optical/connectivity theme | Thesis thinly covered in distilled corpus |
+| Accelerators | **AMD** | 4.4 | >60% DC annual growth 3–5 yrs (mgmt). MI400/Helios H2 2026 catalyst | CoWoS allocation only ~7% of 2026 supply |
+| Networking | **COHR** | 4.3 | InP capacity doubling; $3B quarterly AI-optics revenue in sight (Q4 article) | Debt leverage |
+| Energy | **BE** | 4.3 | Time-to-power thesis. ~1,300% from initial entries (Apr 2025); trimmed twice into strength | Premium valuation |
+| Memory | **STX** | 4.0 | HDD/storage leg of the late-July memory rotation (3% buy 7/27) | Thesis not yet covered in distilled corpus |
+| Memory | **WDC** | 3.9 | HDD/storage leg of the late-July memory rotation (3% buy 7/27) | Thesis not yet covered in distilled corpus |
+| Networking | **ALAB** | 3.2 | Closed 7/24 @ $293.90, re-entered 8/6 @ $335.02 (4%) — quick round trip back in on Scorpio momentum | Tough comps; churny trade history |
+| Accelerators | **NVDA** | 0.2 | Starter re-entry per the 2026-08-30 portfolio table (no alert in trade log) | Position too small to signal conviction yet |
 
 ### Closed / removed in Q2 2026
-- **NVDA** — closed (see headline move)
+- **NVDA** — closed (see headline moves; tiny starter re-entry as of late Aug)
 - **APP** — removed/de-emphasized from list (was held Q4-Q1)
 - **CRWV** — not in Q2 list (held in Q4-Q1 with outsized-risk caveat)
 
 ### Closed after Q2 2026 (post-report trade activity)
-- **RDDT** — fully closed 2026-05-18 @ $158.85. Was listed as ✓ held ("scarce asset" / human-data farm thesis). Closure logged in trade log; thesis doc updated accordingly.
+- **RDDT** — fully closed 2026-05-18 @ $158.85. Was listed as ✓ held ("scarce asset" / human-data farm thesis).
+- **BTCUSD / LINKUSD** — crypto sleeve closed 2026-05-27.
+- **META** — closed 2026-05-29 @ $627.97; re-bought 2% 2026-07-27 @ $597.84; closed again 2026-07-29 @ $543.36 after the Q2 print (see headline moves).
+- **INOD** — 2% momentum buy 6/9 @ $90.58, closed 6/15 @ $105.01. Six-day round trip.
+- **ARM** — 4% momentum buy 6/9 @ $300.79 (note: "momo"), closed 6/25 @ $347.09. The Q2 AGI-CPU thesis (CPU:GPU ratio toward 1:1, 8×–10× core/GW, $15B FY31 target) was extended in a June article, but the position was traded, not held.
+- **GOOGL** — fully closed 2026-06-25 @ $341.22. Was Mag 7 / TPU-Ironwood / Gemini thesis.
+- **PLTR** — ~50% trimmed 2026-05-18 @ $133.51; remaining half closed 2026-06-25 @ $107.44.
+- **NEE** — closed 2026-07-07 @ $88.78 (energy sleeve consolidation into BE/GEV).
+- **GLW** — 3% add 6/25 @ $222.35, closed 7/24. Short-lived optics position.
+- **AVGO** — fully closed 2026-07-27 @ $380.66. Had been the post-Nvidia #1 accelerator pick; 3–4% trims in May/June preceded the exit.
+- **SMH hedge** — covered 2026-07-28 @ $526.52.
+- **DDOG** — 5% buy 7/24 @ $245.26, closed 8/6 @ $232.91. Two-week round trip.
+- **TSM / VRT** — listed as Q2 picks but absent from the tracked portfolio table; treat as exited (no closure alert in the trade log).
 
 ### Thematic but not held (utilities + miners)
 - **Talen / Constellation / Vistra** — discussed thematically given PJM auction surge (clearing prices +11× over 2 yrs); Talen = purest PJM play.
@@ -76,30 +93,32 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 
 | Ticker | Q4 2025 | Q1 2026 | Q2 2026 | Net trajectory |
 |---|---|---|---|---|
-| **NVDA** | ✓ #1 accelerator | ✓ "greater emphasis on memory" | ✗ **closed** | Closed at $209.67 (2026-04-27) on Rubin delay + custom silicon competition |
-| **AVGO** | ✓ #2 accelerator | ✓ Ethernet + custom silicon | ↑ **#1 accelerator** | Promoted as NVDA exited |
+| **NVDA** | ✓ #1 accelerator | ✓ "greater emphasis on memory" | ✗ **closed** | Closed at $209.67 (2026-04-27) on Rubin delay + custom silicon competition; ~0.2% starter re-entry by late Aug 2026 |
+| **AVGO** | ✓ #2 accelerator | ✓ Ethernet + custom silicon | ↑ **#1 accelerator** | Promoted as NVDA exited; trimmed May/June, ✗ **fully closed 2026-07-27 @ $380.66** |
 | **AMD** | ✓ #3 accelerator | ✓ "element of surprise" | ✓ "underestimated/misunderstood" | Consistent hold; thesis around H2 2026 MI400 |
-| **TSM** | ✓ #5 (5/10 fundamentals) | ✓ multi-year visibility | ✓ CoWoS linchpin | Consistent hold; framing shifted to capacity bottleneck |
-| **MU** | ✓ #4 accelerator | ↑ memory crown from compute | ↑ "doors blown off" | Promoted each quarter; secular re-rating ongoing |
-| **SNDK** | — | + Added (market leader 2026) | ✓ "thing in motion" | New entrant Q1; held |
-| **ALAB** | ✓ tied #1 networking | ✓ Scorpio-X | ✓ bouncing off lows | Consistent hold across all 3 |
-| **CRDO** | ✓ tied #1 networking | ✗ **dropped** | — | Dropped on copper-to-optics shift (Rubin pushes optical) |
-| **LITE** | ✓ #4 networking | ↑ EMLs power 400G/800G | ↑ capacity-constrained | Strongly promoted across quarters |
+| **TSM** | ✓ #5 (5/10 fundamentals) | ✓ multi-year visibility | ✓ CoWoS linchpin | Absent from portfolio table since summer 2026; treat as exited |
+| **MU** | ✓ #4 accelerator | ↑ memory crown from compute | ↑ "doors blown off" | Still held; trimmed 3× into strength May–Jul 2026 |
+| **SNDK** | — | + Added (market leader 2026) | ✓ "thing in motion" | Held; now the largest memory weight (8.9%) |
+| **ALAB** | ✓ tied #1 networking | ✓ Scorpio-X | ✓ bouncing off lows | Closed 2026-07-24, re-entered 2026-08-06 (4%) — churny but back in |
+| **CRDO** | ✓ tied #1 networking | ✗ **dropped** | — | Dropped on copper-to-optics shift; **re-entered 2026-07-24 (4% + 2% add)** — the drop reversed |
+| **LITE** | ✓ #4 networking | ↑ EMLs power 400G/800G | ↑ capacity-constrained | Strongly promoted; now the largest position (11.5%) after July adds |
 | **COHR** | — | + Added (InP capacity doubling) | ✓ slow and steady | New Q1; held |
-| **AAOI** | — | — | + **Added** | New Q2 entrant after ~300% YTD move |
-| **VRT** | — | — | + **Added** | New Q2 entrant on cooling thesis |
+| **AAOI** | — | — | + **Added** | +~800% since November 2025 entry; added on every dip May–Jul |
+| **VRT** | — | — | + **Added** | Absent from portfolio table since summer 2026; treat as exited |
 | **RDDT** | ✓ #1 software/data | ✓ contextual high-intent data | ✓ scarce asset → ✗ **closed 2026-05-18** | Fully closed @ $158.85; post-Q2 exit |
 | **CRWV** | ✓ #2 software (thematic 11/10) | ✓ legacy IaaS wasn't built for AI | ✗ **removed from list** | Debt trajectory (D/C ratio ~12× projected for 2026) finally too much |
 | **ORCL** | ✓ #3 software | ✗ **dropped** | — | Dropped Q1 |
 | **APP** | ✓ #4 software | ✓ sentiment doesn't match fundamentals | ✗ **dropped/de-emphasized** | Held Q4-Q1, exit by Q2 |
-| **NET** | ✓ #5 software | ✓ early but unique | ✓ timing main question | Consistent placeholder/speculation hold |
-| **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges → ↓ **~50% trimmed 2026-05-18** | Half position remains after trim @ $133.51 |
-| **META** | — (honorable mention) | (honorable mention) | ✓ **added** (Mag 7) | Promoted from honorable mention to held |
-| **GOOG** | — | — | + **Added** (Mag 7) | New Q2 entrant |
-| **ARM** | — | — | + **Added** (AGI CPU) | New Q2 entrant |
-| **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1,300% from entry | Consistent hold; capacity ramping into 2026-2027 |
-| **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold |
+| **NET** | ✓ #5 software | ✓ early but unique | ✓ timing main question | Held; rebuilt with a 5% buy 2026-07-27 |
+| **PLTR** | — | + Added (discipline vs conviction) | ✓ commercial surges → ↓ **~50% trimmed 2026-05-18** | Remaining half ✗ **closed 2026-06-25 @ $107.44** |
+| **META** | — (honorable mention) | (honorable mention) | ✓ **added** (Mag 7) | Closed 2026-05-29 @ $627.97; 2% re-buy 7/27, ✗ **closed again 7/29 @ $543.36** on the Q2 print |
+| **GOOG** | — | — | + **Added** (Mag 7) | ✗ **Fully closed 2026-06-25 @ $341.22** |
+| **ARM** | — | — | + **Added** (AGI CPU) | Round-tripped: momentum buy 6/9, ✗ **closed 6/25 @ $347.09** despite thesis extension mid-June |
+| **BE** | ✓ #1 energy | ✓ time-to-power | ✓ +1,300% from entry | Consistent hold; trimmed twice into strength |
+| **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold; 7% trim 2026-07-22 |
 | Bitcoin Miner | ✓ #3 energy (Discovery) | ✓ Discovery only | ✓ Discovery only | Gated to Discovery tier across all 3 |
+
+**Post-Q2 entrants (no Top-15 column yet):** SIMO, SITM, MXL (built via repeated small buys May–Jul); MTSI (6/25); STX + WDC (the 7/27 storage rotation); short-lived round trips INOD (Jun), GLW (Jun–Jul), DDOG (Jul–Aug).
 
 > Cross-reference any of these against the trade log (`query_trades`) for entry/exit prices and dates.
 
@@ -128,7 +147,8 @@ Patterns observed across the three reports — useful for predicting what they'l
 
 ### Entry / addition triggers
 - **New product cycle inflection.** ALAB on Scorpio launch, VRT on Rubin cooling, ARM on AGI CPU.
-- **Sector saturation about to break.** AVBO promoted as NVDA's CUDA moat erodes.
+- **Sector saturation about to break.** AVGO promoted as NVDA's CUDA moat erodes.
+- **Momentum entries, explicitly labeled.** June 2026 brought "momo"-tagged buys (ARM, INOD) held days-to-weeks and exited on strength — a trading register distinct from thesis positions.
 - **Counter-narrative pricing.** MU when memory still seen as cyclical. AAOI after the market wrote it off.
 - **Capex / capacity sellout.** GEV (gas turbines sold out to 2028). MU (NAND sold out 2026).
 
@@ -137,6 +157,7 @@ Patterns observed across the three reports — useful for predicting what they'l
 - **Valuation extreme + softer fundamentals.** APP de-emphasized after sentiment vs fundamentals gap closed.
 - **Cash/debt collapse risk.** CRWV removed when 2026 D/C projected to 12×.
 - **Macro re-rating done.** ORCL after RPO surge played out.
+- **Capex/FCF collapse + incoherent capital story.** META closed when capex consumed 97.5% of OCF, FCF fell 91% YoY, and the Meta Compute sell-compute-while-leasing contradiction became a credibility issue. Generalized into the theme-8 stance: avoid the spenders, own the suppliers.
 
 ### Sizing tells (cross-reference with trade log notes)
 - New entry typically <2% of portfolio.
@@ -148,7 +169,7 @@ Patterns observed across the three reports — useful for predicting what they'l
 Several names tracked across multiple quarters without entering. Pattern usually = valuation extremity + valid thesis. E.g. Palantir (held Q1+Q2 finally) was "watched without action" for some time. CRWV was the inverse — thematic 11/10 but cash/debt prevented full conviction.
 
 ### Macro reading
-- **Capex revisions are the single most-cited signal.** Big Tech capex 2025: estimates $250B → $365B → $435B → re-rated upward each quarter. 2026: $583B → $600B in 3 months. IOF uses capex revisions as the upstream signal for hardware demand.
+- **Capex revisions are the single most-cited signal.** Big Tech capex 2025: estimates $250B → $365B → $435B → re-rated upward each quarter. 2026: $583B → $600B → **$732.5B guided (Aug 2026, +79% YoY), tracking ~$1T for 2027**. IOF uses capex revisions as the upstream signal for hardware demand.
 - **Cluster of buys = market-low call.** 22 buys Feb–April 2025 (9 on April 4 low). Watch for similar clustering in trade log for the "bottom call" signal.
 
 ---
@@ -173,6 +194,6 @@ Worth probing whether a Discovery upgrade is justified — these picks tend to b
 
 - **The trade log is the ground truth, this doc is the interpretation layer.** If a ticker appears here but the trade log shows it's been closed since, trust the log.
 - **Themes accrete; picks rotate.** When evaluating whether IOF would buy a new name, check theme alignment first.
-- **"Held" in Q2 2026 doesn't mean still held today.** This doc dates to April 21 2026. Always cross-reference against trade log for activity since.
+- **"Held" here means present in the 2026-08-30 portfolio table.** The quarterly narrative still dates to the Q2 2026 report (April 21); holdings and closures were reconciled against the trade log + portfolio table on 2026-08-30. Always cross-reference the trade log for activity since.
 - **CoreWeave + Nvidia exits are the loudest signals in this 3-quarter window** — note how IOF telegraphed both via thesis weakening across quarters before fully exiting. Watch for similar gradual thesis erosion as an exit-prediction pattern.
 - **The "Discovery tier" picks are the speculation slots.** When you see thematic discussion without a held ticker (e.g., utilities, miners), the actionable name is gated.

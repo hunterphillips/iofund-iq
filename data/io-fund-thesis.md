@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-05-20
+last_updated: 2026-08-30
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -15,7 +15,7 @@ This is the reasoning behind the trades: what I/O Fund believes about AI right n
 
 AI has moved past the "buy anything with a GPU" phase. The questions now are about efficiency, power, and who actually makes money.
 
-Six themes shape the thesis right now:
+Eight themes shape the thesis right now:
 
 - **Accelerators are judged on unit economics now, not raw compute.** Tokens per watt and dollars per token are the numbers that matter. Each generation is a big step: GB300 is about 50× the performance per watt of H200, and Rubin is roughly 10× the inference performance per watt of Blackwell.
 - **Cooling is a real constraint again.** Rubin racks draw 180–230 kW and can't be air-cooled. Nvidia is moving to warm-water cooling to push another 10% or so of GPU density.
@@ -23,29 +23,30 @@ Six themes shape the thesis right now:
 - **Networking is shifting to optics.** Copper gives way to silicon photonics and then co-packaged optics, which cut interconnect power sharply.
 - **AI is finally monetizing at scale.** OpenAI is past $25B in ARR and Anthropic past $30B, and agentic tooling is inflecting.
 - **Energy is the hard bottleneck.** A large share of new power for data centers will come from behind-the-meter sources: fuel cells, gas turbines, miners, and eventually small reactors.
+- **Token demand is running ahead of every forecast.** Google processed more than 330× the tokens in May 2026 that it did two years earlier, and Dell's 2028 estimate was revised up 57× and has already been passed. Agentic and reasoning workloads drive it, and the margin on those tokens climbs each chip generation: roughly 58% on Blackwell, 78% on Rubin, 90% on Feynman.
+- **Capex is heading toward $1 trillion, and the suppliers capture more of it than the spenders.** 2026 hyperscaler capex is guided to $732.5B, up 79% year over year, with 2027 estimates around $1T. Semiconductor earnings are set to grow about 97% in 2026 against 17% for the hyperscalers doing the spending. The conclusion the fund acts on: own the companies receiving the capex, not the ones writing the checks.
 
-The biggest move of the quarter was closing Nvidia, a bold call given how central the stock is. The reasoning was a confirmed Rubin delay tied to HBM4 validation, custom silicon taking inference share, and the CUDA moat mattering less for inference than it does for training.
+The biggest move of the spring was closing Nvidia, a bold call given how central the stock is. The reasoning was a confirmed Rubin delay tied to HBM4 validation, custom silicon taking inference share, and the CUDA moat mattering less for inference than it does for training. The bigger story since: over the summer the fund exited Big Tech entirely and even closed Broadcom, its top accelerator pick after the Nvidia exit, and rotated the proceeds into the suppliers. Memory and storage names now make up over a third of the portfolio.
 
 ## What's held now
 
-As of Q2 2026, adjusted for trades since the report:
+As of late August 2026, per the fund's portfolio table:
 
 | Trend | Positions |
 |---|---|
-| Accelerators | AVGO (the top pick now that Nvidia is out), AMD, ARM, TSM |
-| Memory | MU, SNDK |
-| Networking | LITE, AAOI, COHR, ALAB, VRT |
-| Big Tech | META, GOOG |
-| Software | PLTR (about half trimmed in May near $133.51), NET |
+| Networking | LITE (now the largest position), AAOI, SITM, CRDO (re-entered in July), COHR, MXL, ALAB |
+| Memory & storage | SNDK, SIMO, MU, MTSI, STX, WDC |
+| Accelerators | AMD, plus a small Nvidia starter position re-opened in August |
+| Software | NET |
 | Energy | BE (up roughly 1,300% from the April 2025 entries), GEV |
 
-A few names recently left the portfolio. Nvidia was closed. CoreWeave was dropped once its projected debt load got too heavy. Reddit was closed in May, after the "scarce data asset" thesis had run its course. Utilities like Talen and the Bitcoin miners come up as themes, but the actual positions sit in the gated Discovery tier rather than the held portfolio.
+The departures tell the sharper story. Nvidia was closed in April. Reddit went in May. Meta was closed in May, briefly re-bought in late July, then closed again two days later when its Q2 report showed free cash flow down 91% with capex consuming nearly all of operating cash flow. Alphabet and the rest of the Palantir position went in June. ARM was a quick June momentum trade, in and out inside three weeks. Broadcom, the top accelerator pick just a quarter earlier, was closed in late July. CoreWeave was dropped once its projected debt load got too heavy. Utilities like Talen and the Bitcoin miners come up as themes, but the actual positions sit in the gated Discovery tier rather than the held portfolio.
 
 ## How the thinking has moved
 
 Across the last three quarters, the themes have held and grown while the individual picks rotated. The team rarely drops a theme outright. It is more likely to broaden one it already holds, adding adjacent names and new sub-angles. Networking led in Q4, then energy grew into a near-dominant slice by Q2. Memory started as a footnote inside the accelerator story and became its own section. Cooling went from a passing mention to a real thesis once Rubin made air cooling impossible. CPUs showed up as a brand-new angle with the ARM "AGI CPU" idea.
 
-The picks move around underneath that. Nvidia went from the #1 accelerator to closed. Broadcom got promoted into the top accelerator slot as Nvidia exited. Micron was promoted every quarter as the memory re-rating played out. CoreWeave and Nvidia are the instructive exits: in both, the thesis weakened visibly across several quarters before the position was finally cut.
+The picks move around underneath that. Nvidia went from the #1 accelerator to closed. Broadcom got promoted into the top accelerator slot as Nvidia exited, then was closed itself three months later as the fund moved away from the biggest spenders altogether. Micron was promoted every quarter as the memory re-rating played out. CoreWeave and Nvidia are the instructive exits: in both, the thesis weakened visibly across several quarters before the position was finally cut. AAOI shows the other side, the networking thesis compounding in place: the position is up roughly 800% since the November 2025 entry, and the fund kept adding on dips through the summer.
 
 ## How they decide
 
@@ -53,9 +54,9 @@ Reading three quarters of reports, the entries and exits fall into a few recogni
 
 They add when a new product cycle is inflecting (Astera on Scorpio, Vertiv on Rubin cooling), when a written-off sector starts to turn (Micron while memory was still seen as cyclical, AAOI after the market gave up on it), or when capacity is selling out (gas turbines booked to 2028, NAND sold out for 2026).
 
-They exit on a structural shift that breaks the specific thesis (Credo was dropped once Rubin pushed toward optics), on a valuation that ran ahead while fundamentals softened (AppLovin), or on balance-sheet risk (CoreWeave's debt). And they'll track a name for a long time without buying it when the thesis is valid but the valuation is extreme. Palantir sat on that list before they finally took a position.
+They exit on a structural shift that breaks the specific thesis (Credo was dropped once Rubin pushed toward optics, then re-entered in July once connectivity demand argued otherwise), on a valuation that ran ahead while fundamentals softened (AppLovin), on balance-sheet risk (CoreWeave's debt), or when capital spending and free cash flow break down behind a muddled story (Meta). And they'll track a name for a long time without buying it when the thesis is valid but the valuation is extreme. Palantir sat on that list before they finally took a position.
 
-The most-cited macro signal is Big Tech capex. The 2025 estimates climbed from $250B to $365B to $435B over the year, and 2026 went from $583B to $600B in three months. Rising capex revisions are treated as the upstream tell for hardware demand.
+The most-cited macro signal is Big Tech capex. The 2025 estimates climbed from $250B to $365B to $435B over the year, and 2026 climbed from $583B to a guided $732.5B, with 2027 estimates around $1 trillion. Rising capex revisions are treated as the upstream tell for hardware demand.
 
 ## The watch list
 

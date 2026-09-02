@@ -24,7 +24,13 @@
  * shared activeThreadId + the list.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { UIMessage } from "ai";
 import { ChatThread } from "./chat-thread";
 import { SparkleGlyph } from "./sparkle-glyph";
@@ -48,14 +54,25 @@ interface SearchHit extends ChatThreadSummary {
 
 export function AssistantModal({ onClose }: { onClose: () => void }) {
   const { activeThreadId, setActiveThreadId } = useActiveThread();
-  const { threads, loading, error, reload, createThread, deleteThread } =
-    useChatThreads();
+  const {
+    threads,
+    loading,
+    error,
+    reload,
+    createThread,
+    renameThread,
+    deleteThread,
+  } = useChatThreads();
 
   const [selection, setSelection] = useState<Selection>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
   const [msgError, setMsgError] = useState<string | null>(null);
   // Mobile-only: whether the sidebar overlay is showing.
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Sidebar row affordances, lifted so only one row can be open at a time:
+  // which row's overflow menu is showing, and which row is being retitled.
+  const [menuThreadId, setMenuThreadId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   // Conversation search. A non-empty query switches the sidebar list to search
   // results (title + message-text matches, with a snippet). Debounced fetch;
@@ -155,8 +172,31 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
     [setActiveThreadId],
   );
 
+  const handleStartRename = useCallback((id: string) => {
+    setMenuThreadId(null);
+    setRenamingId(id);
+  }, []);
+
+  // Commit an inline retitle. A blank or unchanged title just leaves edit mode,
+  // which also covers the Escape path (it restores the original value, then blurs).
+  const handleRenameThread = useCallback(
+    async (id: string, title: string) => {
+      setRenamingId(null);
+      const trimmed = title.trim();
+      const current = threads.find((t) => t.id === id)?.title?.trim() ?? "";
+      if (!trimmed || trimmed === current) return;
+      try {
+        await renameThread(id, trimmed);
+      } catch {
+        // The hook already rolled the optimistic title back.
+      }
+    },
+    [threads, renameThread],
+  );
+
   const handleDeleteThread = useCallback(
     async (id: string) => {
+      setMenuThreadId(null);
       // Snapshot the next-best selection BEFORE the row leaves the list.
       const remaining = threads.filter((t) => t.id !== id);
       try {
@@ -271,7 +311,15 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
                       thread={t}
                       snippet={t.snippet}
                       active={t.id === currentThreadId}
+                      menuOpen={menuThreadId === t.id}
+                      renaming={renamingId === t.id}
                       onSelect={() => handleSelectThread(t.id)}
+                      onToggleMenu={() =>
+                        setMenuThreadId((cur) => (cur === t.id ? null : t.id))
+                      }
+                      onCloseMenu={() => setMenuThreadId(null)}
+                      onStartRename={() => handleStartRename(t.id)}
+                      onRename={(title) => handleRenameThread(t.id, title)}
                       onDelete={() => handleDeleteThread(t.id)}
                     />
                   ))}
@@ -288,7 +336,15 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
                     key={t.id}
                     thread={t}
                     active={t.id === currentThreadId}
+                    menuOpen={menuThreadId === t.id}
+                    renaming={renamingId === t.id}
                     onSelect={() => handleSelectThread(t.id)}
+                    onToggleMenu={() =>
+                      setMenuThreadId((cur) => (cur === t.id ? null : t.id))
+                    }
+                    onCloseMenu={() => setMenuThreadId(null)}
+                    onStartRename={() => handleStartRename(t.id)}
+                    onRename={(title) => handleRenameThread(t.id, title)}
                     onDelete={() => handleDeleteThread(t.id)}
                   />
                 ))}
@@ -350,21 +406,74 @@ export function AssistantModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** One conversation row in the sidebar; reveals a delete affordance on hover.
- *  With `snippet` (search results), the matching text replaces the timestamp. */
+/** One conversation row in the sidebar. Hover (or tap, on touch) reveals an
+ *  overflow menu — Rename / Delete — rather than a bare delete icon, so more
+ *  actions can be added without crowding the row.
+ *  With `snippet` (search results), the matching text replaces the timestamp.
+ *  While `renaming`, the row becomes an inline title input. */
 function ThreadRow({
   thread,
   snippet,
   active,
+  menuOpen,
+  renaming,
   onSelect,
+  onToggleMenu,
+  onCloseMenu,
+  onStartRename,
+  onRename,
   onDelete,
 }: {
   thread: ChatThreadSummary;
   snippet?: string | null;
   active: boolean;
+  menuOpen: boolean;
+  renaming: boolean;
   onSelect: () => void;
+  onToggleMenu: () => void;
+  onCloseMenu: () => void;
+  onStartRename: () => void;
+  onRename: (title: string) => void;
   onDelete: () => void;
 }) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const title = thread.title?.trim() || "Untitled conversation";
+
+  if (renaming) {
+    return (
+      <li>
+        <form
+          className="py-0.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const value = new FormData(e.currentTarget).get("title");
+            onRename(typeof value === "string" ? value : "");
+          }}
+        >
+          <input
+            name="title"
+            defaultValue={title}
+            autoFocus
+            maxLength={200}
+            aria-label="Conversation title"
+            onFocus={(e) => e.currentTarget.select()}
+            onKeyDown={(e) => {
+              // Escape restores the original value and blurs; the blur handler
+              // then commits a no-op, so there's one exit path, not two.
+              if (e.key === "Escape") {
+                e.stopPropagation(); // don't also close the modal
+                e.currentTarget.value = title;
+                e.currentTarget.blur();
+              }
+            }}
+            onBlur={(e) => onRename(e.currentTarget.value)}
+            className="w-full h-[46px] rounded-lg border border-muted-deep bg-surface-2 px-3 text-sm text-cream focus:outline-none"
+          />
+        </form>
+      </li>
+    );
+  }
+
   return (
     <li className="group relative">
       <button
@@ -377,7 +486,7 @@ function ThreadRow({
         <span
           className={`w-full truncate text-sm ${active ? "text-cream" : "text-muted"}`}
         >
-          {thread.title?.trim() || "Untitled conversation"}
+          {title}
         </span>
         {snippet ? (
           <span className="w-full truncate text-xs text-muted-deep">
@@ -390,17 +499,152 @@ function ThreadRow({
         )}
       </button>
       <button
+        ref={triggerRef}
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          onDelete();
+          onToggleMenu();
         }}
-        aria-label="Delete conversation"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 grid place-items-center w-7 h-7 rounded-md text-muted-deep opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-cream hover:bg-surface transition-opacity"
+        aria-label={`Conversation options — ${title}`}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        // Always visible on touch, where there's no hover to reveal it.
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 grid place-items-center w-7 h-7 rounded-md text-muted-deep hover:text-cream hover:bg-surface transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 ${
+          menuOpen ? "md:opacity-100 text-cream" : ""
+        }`}
       >
-        <TrashGlyph />
+        <KebabGlyph />
       </button>
+      {menuOpen && triggerRef.current ? (
+        <RowMenu
+          anchor={triggerRef.current}
+          onClose={onCloseMenu}
+          onRename={onStartRename}
+          onDelete={onDelete}
+        />
+      ) : null}
     </li>
+  );
+}
+
+/** Overflow menu for a conversation row. Positioned `fixed` off the trigger's
+ *  rect because the sidebar list scrolls — an absolutely-positioned child would
+ *  be clipped by its `overflow-y-auto`. Delete asks once; a thread can't be
+ *  recovered. */
+function RowMenu({
+  anchor,
+  onClose,
+  onRename,
+  onDelete,
+}: {
+  anchor: HTMLElement;
+  onClose: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const width = 176;
+    const height = ref.current?.offsetHeight ?? (confirming ? 116 : 80);
+    const rect = anchor.getBoundingClientRect();
+    const fitsBelow = window.innerHeight - rect.bottom > height + 12;
+    setPos({
+      top: fitsBelow ? rect.bottom + 6 : Math.max(8, rect.top - height - 6),
+      left: Math.max(
+        8,
+        Math.min(rect.right - width, window.innerWidth - width - 8),
+      ),
+    });
+  }, [anchor, confirming]);
+
+  // Close on outside click, Escape, or any scroll/resize that would strand the
+  // menu away from its row. The trigger counts as "inside" so its own click
+  // toggles rather than close-then-reopen.
+  useEffect(() => {
+    function onPointerDown(e: MouseEvent) {
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || anchor.contains(target)) return;
+      onClose();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation(); // don't also close the modal
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey, true);
+    window.addEventListener("scroll", onClose, true);
+    window.addEventListener("resize", onClose);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("scroll", onClose, true);
+      window.removeEventListener("resize", onClose);
+    };
+  }, [anchor, onClose]);
+
+  return (
+    <div
+      ref={ref}
+      role="menu"
+      style={{
+        top: pos?.top ?? -9999,
+        left: pos?.left ?? -9999,
+        visibility: pos ? "visible" : "hidden",
+      }}
+      className="fixed z-50 w-44 rounded-lg border border-border bg-surface py-1 shadow-lg"
+    >
+      {confirming ? (
+        <>
+          <p className="px-3 py-1.5 text-xs text-muted">
+            Delete this conversation?
+          </p>
+          <MenuItem onSelect={onDelete} tone="danger">
+            <TrashGlyph />
+            Delete
+          </MenuItem>
+          <MenuItem onSelect={onClose}>Cancel</MenuItem>
+        </>
+      ) : (
+        <>
+          <MenuItem onSelect={onRename}>
+            <PencilGlyph />
+            Rename
+          </MenuItem>
+          <MenuItem onSelect={() => setConfirming(true)} tone="danger">
+            <TrashGlyph />
+            Delete
+          </MenuItem>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({
+  children,
+  onSelect,
+  tone,
+}: {
+  children: React.ReactNode;
+  onSelect: () => void;
+  tone?: "danger";
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onSelect}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2 ${
+        tone === "danger" ? "text-cat-memory" : "text-cream"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -448,6 +692,24 @@ function MenuGlyph() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
       <path d="M3 6h18M3 12h18M3 18h18" />
+    </svg>
+  );
+}
+
+function KebabGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.75" />
+      <circle cx="12" cy="12" r="1.75" />
+      <circle cx="19" cy="12" r="1.75" />
+    </svg>
+  );
+}
+
+function PencilGlyph() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }

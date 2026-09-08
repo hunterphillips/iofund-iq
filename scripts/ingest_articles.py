@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Discover new IOF articles via RSS, distill via AI Gateway, persist to Postgres.
+"""Discover I/O Fund articles via the member API and persist distillations.
 
-Idempotent: every RSS item is checked against the articles table by URL; only
-missing ones are fetched + distilled. Non-analytical posts (webinar replays,
+Idempotent: every API post is checked against the articles table by URL; only
+missing ones are distilled. Non-analytical posts (webinar replays,
 invitations, and "no webinar" scheduling notices) are filtered two ways: a cheap
 title regex at discovery time (before any LLM spend) and an LLM catch-all that
 emits SKIP for administrative content the title filter misses. The distilled body
@@ -27,37 +27,24 @@ Required env (loaded from .env when present, falls back to process env):
 Optional env:
     LLM_PROVIDER           — "gateway" (default) or "claude-cli" (see scripts/llm.py)
     INGEST_MAX_PER_RUN     — int cap on new distillations per run (default unlimited)
+    INGEST_MAX_PAGES       — newest API pages to scan (default 3, 100 posts each)
+    INGEST_SINCE           — YYYY-MM-DD floor on pub_date (default: newest ingested − 7d)
     INGEST_DRY_RUN         — "1" skips DB writes and LLM calls; prints what would distill
 """
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
-import urllib.error
-import urllib.request
-from datetime import datetime
-from email.utils import parsedate_to_datetime
-from pathlib import Path
-from urllib.parse import urlparse
-from xml.etree import ElementTree as ET
+from datetime import date, timedelta
 
 import psycopg
 import yaml
 
 import llm
+from iof_api import IofApiError, api_get, load_dotenv_if_present, require_env, sign_in
 
-FIREBASE_API_KEY = os.environ.get(
-    "IOF_FIREBASE_API_KEY", "AIzaSyBbWVb0wkR8tHpNezOqdU49hpgjjzzU6k0"
-)
-SIGNIN_URL = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
-RSS_URL = "https://io-fund.com/rss.xml"
 DISTILL_MODEL = "anthropic/claude-sonnet-4-6"
-UA = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-)
 
 # Administrative / non-analytical posts, skipped at discovery (free, before any
 # LLM spend): webinar replays, invitations, and scheduling notices like "No
@@ -118,109 +105,99 @@ def log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
 
-def load_dotenv_if_present() -> None:
-    """Lightweight .env loader — script root, then repo root."""
-    here = Path(__file__).resolve().parent
-    for d in (here, here.parent):
-        env_path = d / ".env"
-        if not env_path.is_file():
-            continue
-        for line in env_path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            os.environ.setdefault(key, value)
+def fetch_posts(id_token: str, max_pages: int = 3, per_page: int = 100) -> list[dict]:
+    """Return the newest entitled posts, bounded for routine polling."""
+    posts: list[dict] = []
+    page = 1
+    while page <= max_pages:
+        payload = api_get(
+            "/posts",
+            id_token,
+            {
+                "post-plan": "advance",
+                "per_page": per_page,
+                "page": page,
+                "orderby": "date",
+                "order": "desc",
+            },
+        )
+        data = payload.get("data")
+        if not isinstance(data, list):
+            sys.exit("ERROR: posts response missing data list")
+        posts.extend(data)
+        pagination = payload.get("pagination") or {}
+        if not isinstance(pagination, dict) or not pagination.get("has_next"):
+            break
+        current = int(pagination.get("current_page") or page)
+        page = current + 1
+    return posts
 
 
-def require_env(name: str) -> str:
-    value = os.environ.get(name)
-    if not value:
-        sys.exit(f"ERROR: {name} is not set")
-    return value
-
-
-def sign_in(email: str, password: str) -> str:
-    """Returns a fresh Firebase idToken."""
-    req = urllib.request.Request(
-        SIGNIN_URL,
-        data=json.dumps(
-            {"email": email, "password": password, "returnSecureToken": True}
-        ).encode(),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        body = json.loads(resp.read())
-    return body["idToken"]
-
-
-def fetch_rss() -> bytes:
-    req = urllib.request.Request(RSS_URL, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read()
-
-
-def parse_rss(xml_bytes: bytes) -> list[dict]:
-    """Returns a list of raw RSS items (url, title, pub_date, guid)."""
-    root = ET.fromstring(xml_bytes)
-    items: list[dict] = []
-    for it in root.iter("item"):
-        title = (it.findtext("title") or "").strip()
-        link = (it.findtext("link") or "").strip()
-        guid = (it.findtext("guid") or "").strip()
-        pub_raw = it.findtext("pubDate") or ""
-        try:
-            pub_date = parsedate_to_datetime(pub_raw).date().isoformat()
-        except (TypeError, ValueError):
-            pub_date = ""
-        if not (title and link and pub_date):
-            continue
-        items.append({"title": title, "url": link, "guid": guid, "pub_date": pub_date})
-    return items
-
-
-def classify_item(item: dict) -> dict | None:
-    """Enrich + filter. Returns dict with {url, title, slug, pub_date, category, premium}
-    or None if the item should be skipped (e.g. webinar / administrative notice).
-    """
-    if NON_ANALYTICAL_TITLE_RE.search(item["title"]):
+def post_to_item(post: dict) -> dict | None:
+    """Validate, filter, and normalize one member-API post."""
+    if post.get("status") != "publish":
         return None
-    parsed = urlparse(item["url"])
-    parts = [p for p in parsed.path.split("/") if p]
+    title = post.get("title")
+    slug = post.get("slug")
+    relative_url = post.get("url")
+    date_raw = post.get("date")
+    if not all(isinstance(v, str) and v.strip() for v in (title, slug, date_raw)):
+        return None
+    if not isinstance(relative_url, str) or not relative_url.startswith("/"):
+        return None
+    try:
+        pub_date = date.fromisoformat(date_raw[:10]).isoformat()
+    except ValueError:
+        return None
+    if NON_ANALYTICAL_TITLE_RE.search(title):
+        return None
+
+    parts = [part for part in relative_url.split("/") if part]
     if not parts:
         return None
     category = parts[0]
-    slug = parts[-1]
+    taxonomies = post.get("taxonomies") or {}
+    post_plans = taxonomies.get("post-plan") if isinstance(taxonomies, dict) else None
+    plan = None
+    if isinstance(post_plans, list) and post_plans and isinstance(post_plans[0], dict):
+        raw_plan = post_plans[0].get("slug")
+        plan = raw_plan.strip() if isinstance(raw_plan, str) else None
     return {
-        "url": item["url"],
-        "title": item["title"],
-        "slug": slug,
-        "pub_date": item["pub_date"],
+        "url": f"https://io-fund.com{relative_url}",
+        "title": title.strip(),
+        "slug": slug.strip(),
+        "pub_date": pub_date,
         "category": category,
-        "premium": category == "premium",
+        "premium": plan != "free",
+        "plan": plan,
+        "content_html": post.get("content") if isinstance(post.get("content"), str) else "",
     }
+
+
+def discovery_cutoff(conn: psycopg.Connection) -> str | None:
+    """Oldest pub_date (ISO) this run will distill, or None for no floor.
+
+    The member API exposes the whole back-catalogue, so the URL diff alone
+    would pull in every post ever published the first time it runs. Default
+    floor is the newest already-ingested pub_date minus 7 days (late edits and
+    reorderings still land); `INGEST_SINCE=YYYY-MM-DD` overrides it, e.g. for a
+    deliberate historical backfill. No floor when the table is empty.
+    """
+    override = os.environ.get("INGEST_SINCE", "").strip()
+    if override:
+        return date.fromisoformat(override).isoformat()
+    with conn.cursor() as cur:
+        cur.execute("SELECT max(pub_date) FROM articles")
+        latest = cur.fetchone()[0]
+    if latest is None:
+        return None
+    return (latest - timedelta(days=7)).isoformat()
 
 
 def existing_urls(conn: psycopg.Connection) -> set[str]:
     with conn.cursor() as cur:
         cur.execute("SELECT url FROM articles")
         return {row[0] for row in cur.fetchall()}
-
-
-def fetch_article_html(url: str, id_token: str) -> str:
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": UA,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Cookie": f"io_fund_session_token={id_token}",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read().decode("utf-8", errors="replace")
 
 
 # HTML → plain-text extractor (ported from .claude/skills/iofund-fetch/fetch.py).
@@ -385,6 +362,7 @@ def main() -> int:
     dry_run = os.environ.get("INGEST_DRY_RUN") == "1"
     max_per_run_raw = os.environ.get("INGEST_MAX_PER_RUN", "").strip()
     max_per_run = int(max_per_run_raw) if max_per_run_raw else None
+    max_pages = int(os.environ.get("INGEST_MAX_PAGES", "3"))
 
     db_url = require_env("DATABASE_URL")
 
@@ -395,22 +373,31 @@ def main() -> int:
     else:
         ai_key = ""
 
-    log("fetch: GET /rss.xml")
-    xml_bytes = fetch_rss()
+    log("auth: signing in to Firebase")
+    id_token = sign_in(user, password)
+    log("fetch: GET /api/v1/posts")
+    try:
+        raw_posts = fetch_posts(id_token, max_pages=max_pages)
+    except IofApiError as exc:
+        sys.exit(f"ERROR: {exc}")
 
-    log("parse: RSS items")
-    raw_items = parse_rss(xml_bytes)
-    classified = [c for c in (classify_item(i) for i in raw_items) if c is not None]
+    classified = [c for c in (post_to_item(p) for p in raw_posts) if c is not None]
     log(
-        f"parse: {len(raw_items)} items · "
-        f"{len(raw_items) - len(classified)} filtered (webinar / admin notices / no path) · "
+        f"parse: {len(raw_posts)} posts · "
+        f"{len(raw_posts) - len(classified)} filtered (unpublished / admin / malformed) · "
         f"{len(classified)} candidates"
     )
 
     with psycopg.connect(db_url) as conn:
         seen = existing_urls(conn)
+        since = discovery_cutoff(conn)
         new_items = [c for c in classified if c["url"] not in seen]
-        log(f"diff: {len(new_items)} new · {len(classified) - len(new_items)} already ingested")
+        too_old = [c for c in new_items if since and c["pub_date"] < since]
+        new_items = [c for c in new_items if c not in too_old]
+        log(
+            f"diff: {len(new_items)} new · {len(classified) - len(new_items) - len(too_old)} "
+            f"already ingested · {len(too_old)} older than cutoff {since or 'none'}"
+        )
 
         if max_per_run is not None and len(new_items) > max_per_run:
             log(f"cap: trimming to most-recent {max_per_run} of {len(new_items)}")
@@ -426,17 +413,12 @@ def main() -> int:
         if not new_items:
             return 0
 
-        log("auth: signing in to Firebase")
-        id_token = sign_in(user, password)
-
         ok_count = 0
         fail_count = 0
         for idx, item in enumerate(new_items, 1):
             label = f"[{idx}/{len(new_items)}] {item['pub_date']} {item['slug']}"
             try:
-                log(f"{label}: fetch")
-                html = fetch_article_html(item["url"], id_token)
-                text = html_to_text(html)
+                text = html_to_text(item["content_html"])
                 if len(text) < 500:
                     log(f"{label}: skip — body too short ({len(text)} chars)")
                     fail_count += 1

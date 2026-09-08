@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-"""Poll IOF's /premium/trades page and upsert rows into Postgres `trades`.
+"""Poll I/O Fund's member API and upsert trade notifications into Postgres.
 
-Source of truth is the JSON embedded in the page's __NEXT_DATA__ script tag
-(io-fund.com is a Next.js app). We extract `pageProps.notifications` — a
-1k+ item list of trade alerts — and upsert each into Postgres keyed by
-`iof:<notification.id>`. Analyst is taken from `pageProps.author.data.name`
-(currently Knox Ridley — the human attribution shown next to each alert in
-the IOF UI; the per-notification `user.name` is the system service account
-that pushes alerts via the API and is NOT what we want).
+The Firebase idToken is sent directly as a bearer token to
+`/api/v1/trade-notifications`; no browser session or device registration is
+created. Stable upstream IDs are stored as `iof:<notification.id>`.
 
 Run locally:
     pip install -r scripts/requirements.txt
     python3 scripts/ingest_trades.py
+    python3 scripts/ingest_trades.py --dry-run
 
 Required env (loaded from .env when present, falls back to process env):
     IO_FUND_USERNAME      — IOF email (the operator's IOF subscription)
@@ -27,6 +24,7 @@ forwarder → webhook → immediate ingest) — same data flow, lower latency.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -35,24 +33,22 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
 
 import psycopg
 
 import llm
+from iof_api import IofApiError, UA, api_get, load_dotenv_if_present, require_env, sign_in
 
 POSITION_CLOSE_RE = re.compile(r"close|stop hit", re.IGNORECASE)
 POSITION_TRIM_RE = re.compile(r"trim|half", re.IGNORECASE)
 
-FIREBASE_API_KEY = os.environ.get(
-    "IOF_FIREBASE_API_KEY", "AIzaSyBbWVb0wkR8tHpNezOqdU49hpgjjzzU6k0"
-)
-SIGNIN_URL = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
-TRADES_URL = "https://io-fund.com/premium/trades"
-UA = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-)
+ANALYST_NAME = os.environ.get("IOF_ANALYST_NAME", "Knox Ridley")
+ALERT_TYPE_TO_ACTION = {
+    "buy": "BUY",
+    "sell": "SELL",
+    "hedge": "HEDGE",
+    "cover_hedge": "COVER-HEDGE",
+}
 
 # --- Position metadata enrichment --------------------------------------------
 # New tickers that IOF buys after the last positions-bootstrap.yaml snapshot are
@@ -77,106 +73,61 @@ POSITION_THEMES = [
     "Other",
 ]
 
-NEXT_DATA_RE = re.compile(
-    r'<script id="__NEXT_DATA__" type="application/json">(.+?)</script>',
-    re.DOTALL,
-)
-
-
 def log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
 
-def load_dotenv_if_present() -> None:
-    """Lightweight .env loader — script root, then repo root."""
-    here = Path(__file__).resolve().parent
-    for d in (here, here.parent):
-        env_path = d / ".env"
-        if not env_path.is_file():
-            continue
-        for line in env_path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            os.environ.setdefault(key, value)
+def _notification_data(payload: dict) -> list[dict]:
+    # The live API returns the page under `items`; accept `data` too in case
+    # the backend ever aligns it with the `/posts` envelope.
+    data = payload.get("items")
+    if not isinstance(data, list):
+        data = payload.get("data")
+    if not isinstance(data, list):
+        sys.exit("ERROR: trade-notifications response missing items list")
+    return data
 
 
-def require_env(name: str) -> str:
-    value = os.environ.get(name)
-    if not value:
-        sys.exit(f"ERROR: {name} is not set")
-    return value
+def fetch_notifications(id_token: str) -> list[dict]:
+    """Fetch all trade notifications, expanding pagination if necessary."""
+    first = api_get("/trade-notifications", id_token)
+    data = _notification_data(first)
+    pagination = first.get("pagination") or {}
+    if not isinstance(pagination, dict) or int(pagination.get("total_pages") or 1) <= 1:
+        return data
 
-
-def sign_in(email: str, password: str) -> str:
-    """Returns a fresh Firebase idToken."""
-    req = urllib.request.Request(
-        SIGNIN_URL,
-        data=json.dumps(
-            {"email": email, "password": password, "returnSecureToken": True}
-        ).encode(),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        body = json.loads(resp.read())
-    return body["idToken"]
-
-
-def fetch_trades_html(id_token: str) -> str:
-    """Fetches the /premium/trades page with a Firebase session cookie."""
-    req = urllib.request.Request(
-        TRADES_URL,
-        headers={
-            "User-Agent": UA,
-            "Cookie": f"io_fund_session_token={id_token}",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read().decode("utf-8", errors="replace")
-
-
-def extract_page(html: str) -> tuple[list[dict], str | None]:
-    """Returns (notifications, page_author_name).
-
-    page_author_name is the human attribution shown on each row in the UI
-    (currently "Knox Ridley"). Falls back to None if the author field is
-    absent or shaped unexpectedly.
-    """
-    match = NEXT_DATA_RE.search(html)
-    if not match:
-        sys.exit("ERROR: __NEXT_DATA__ script tag not found on trades page")
-    payload = json.loads(match.group(1))
-    page_props = payload.get("props", {}).get("pageProps", {})
-    notifications = page_props.get("notifications")
-    if not isinstance(notifications, list):
-        sys.exit("ERROR: pageProps.notifications missing or wrong shape")
-    author = page_props.get("author") or {}
-    analyst = (author.get("data") or {}).get("name")
-    # `name` is sometimes a rich-text block — collapse if so.
-    if isinstance(analyst, list):
-        analyst = "".join(
-            seg.get("text", "")
-            for seg in analyst
-            if isinstance(seg, dict)
-        ).strip() or None
-    return notifications, analyst
+    notifications: list[dict] = []
+    page = 1
+    while True:
+        payload = api_get(
+            "/trade-notifications",
+            id_token,
+            {"page": page, "per_page": 500},
+        )
+        notifications.extend(_notification_data(payload))
+        current = int((payload.get("pagination") or {}).get("current_page") or page)
+        total = int((payload.get("pagination") or {}).get("total_pages") or current)
+        if current >= total:
+            break
+        page = current + 1
+    return notifications
 
 
 def notification_to_row(item: dict, analyst: str | None) -> dict | None:
-    """Map one __NEXT_DATA__ entry to a trades-table row.
+    """Map one member-API notification to a trades-table row.
 
     Returns None if the row is malformed.
     """
-    n = item.get("notification") or {}
-    nid = n.get("id")
-    created_at = n.get("created_at")
-    ticker = n.get("ticker")
-    action = n.get("type")
-    if not (nid and created_at and ticker and action):
+    nid = item.get("id")
+    created_at = item.get("created_at")
+    ticker = item.get("stock_ticker") or item.get("stock_symbol")
+    alert_type = item.get("alert_type")
+    if nid is None or not isinstance(created_at, str) or not ticker or not alert_type:
+        return None
+
+    action = ALERT_TYPE_TO_ACTION.get(str(alert_type).strip().lower())
+    if action is None:
+        log(f"parse: unknown alert_type {alert_type!r} for notification {nid!r}; skipping")
         return None
 
     # `created_at` is ISO 8601 UTC ("2026-05-18T16:42:16.000000Z").
@@ -184,18 +135,24 @@ def notification_to_row(item: dict, analyst: str | None) -> dict | None:
 
     # `price` is integer cents (int); divide for dollars. Some early test
     # rows had price 0 — keep them rather than dropping.
-    raw_price = n.get("price")
+    raw_price = item.get("stock_price")
     price = None
-    if isinstance(raw_price, (int, float)):
+    if isinstance(raw_price, (int, float)) and not isinstance(raw_price, bool):
         price = raw_price / 100
+    else:
+        try:
+            fallback = item.get("price")
+            price = float(fallback) if fallback not in (None, "") else None
+        except (TypeError, ValueError):
+            price = None
 
     return {
         "id": f"iof:{nid}",
         "trade_date": trade_date,
-        "ticker": ticker,
+        "ticker": str(ticker).strip().upper(),
         "action": action,
         "price": price,
-        "note": n.get("stop_notes"),
+        "note": item.get("stop_notes") or item.get("note"),
         "analyst": analyst,
     }
 
@@ -493,11 +450,16 @@ def reconcile_legacy_rows(conn: psycopg.Connection, analyst: str | None) -> tupl
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Fetch + parse; skip DB writes"
+    )
+    args = parser.parse_args()
+
     load_dotenv_if_present()
 
     user = require_env("IO_FUND_USERNAME")
     password = require_env("IO_FUND_PASSWORD")
-    db_url = require_env("DATABASE_URL")
     # Optional: enables LLM theme classification during enrichment. Absent →
     # company-only enrichment still runs (graceful degradation).
     ai_key = os.environ.get("AI_GATEWAY_API_KEY")
@@ -505,11 +467,12 @@ def main() -> int:
     log("auth: signing in to Firebase")
     id_token = sign_in(user, password)
 
-    log("fetch: GET /premium/trades")
-    html = fetch_trades_html(id_token)
-
-    log("parse: extracting __NEXT_DATA__")
-    notifications, analyst = extract_page(html)
+    log("fetch: GET /api/v1/trade-notifications")
+    try:
+        notifications = fetch_notifications(id_token)
+    except IofApiError as exc:
+        sys.exit(f"ERROR: {exc}")
+    analyst = os.environ.get("IOF_ANALYST_NAME", ANALYST_NAME)
     log(f"parse: {len(notifications)} notifications · analyst={analyst!r}")
 
     rows: list[dict] = []
@@ -518,6 +481,12 @@ def main() -> int:
         if row is not None:
             rows.append(row)
     log(f"parse: {len(rows)} valid rows")
+
+    if args.dry_run:
+        log("dry-run: no DB writes")
+        return 0
+
+    db_url = require_env("DATABASE_URL")
 
     with psycopg.connect(db_url) as conn:
         purged, fixed = reconcile_legacy_rows(conn, analyst)

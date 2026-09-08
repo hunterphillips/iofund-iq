@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "name": "Advance-Portfolio",
+  "range": "A1:L14",
+  "count": 14,
+  "data": [
+    {"ticker": "SYN1", "company": "Synthetic Systems One", "type": "Long-Term", "market_cap": "1.0 B", "allocation": "12%", "current_price": "$90.00", "first_entry": "$40.00", "gains": "125%", "newest_entry": "", "newest_gains": "", "date_of_entry": "1/2/26", "microtrend": "AI Networking"},
+    {"ticker": "", "company": "", "type": "", "market_cap": "", "allocation": "", "current_price": "", "first_entry": "", "gains": "", "newest_entry": "$55.00", "newest_gains": "64%", "date_of_entry": "2/3/26", "microtrend": ""},
+    {"ticker": "SYN2", "company": "Synthetic Devices Two", "type": "Momentum", "market_cap": "2.0 B", "allocation": "11%", "current_price": "$80.00", "first_entry": "$50.00", "gains": "60%", "newest_entry": "", "newest_gains": "", "date_of_entry": "2/4/26", "microtrend": "AI Energy"},
+    {"ticker": "SYN3", "company": "#N/A", "type": "Long-Term", "market_cap": "3.0 B", "allocation": "10.5%", "current_price": "$70.00", "first_entry": "$45.00", "gains": "55%", "newest_entry": "", "newest_gains": "", "date_of_entry": "3/5/26", "microtrend": "AI Software"},
+    {"ticker": "SYN4", "company": "Synthetic Memory Four", "type": "Momentum", "market_cap": "4.0 B", "allocation": "10%", "current_price": "$60.00", "first_entry": "$35.00", "gains": "71%", "newest_entry": "", "newest_gains": "", "date_of_entry": "4/6/26", "microtrend": "AI Memory"},
+    {"ticker": "SYN5", "company": "Synthetic Compute Five", "type": "Long-Term", "market_cap": "5.0 B", "allocation": "9.8%", "current_price": "$50.00", "first_entry": "$30.00", "gains": "67%", "newest_entry": "", "newest_gains": "", "date_of_entry": "5/7/26", "microtrend": "Semis/AI Accelerator"},
+    {"ticker": "SYN6", "company": "Synthetic Network Six", "type": "Momentum", "market_cap": "6.0 B", "allocation": "9.5%", "current_price": "$45.00", "first_entry": "$25.00", "gains": "80%", "newest_entry": "", "newest_gains": "", "date_of_entry": "6/8/26", "microtrend": "AI Networking"},
+    {"ticker": "SYN7", "company": "Synthetic Power Seven", "type": "Long-Term", "market_cap": "7.0 B", "allocation": "9%", "current_price": "$40.00", "first_entry": "$20.00", "gains": "100%", "newest_entry": "", "newest_gains": "", "date_of_entry": "7/9/26", "microtrend": "AI Energy"},
+    {"ticker": "SYN8", "company": "Synthetic Data Eight", "type": "Momentum", "market_cap": "8.0 B", "allocation": "8.5%", "current_price": "$35.00", "first_entry": "$18.00", "gains": "94%", "newest_entry": "", "newest_gains": "", "date_of_entry": "7/10/26", "microtrend": "AI Software"},
+    {"ticker": "SYN9", "company": "Synthetic Storage Nine", "type": "Long-Term", "market_cap": "9.0 B", "allocation": "8%", "current_price": "$30.00", "first_entry": "$15.00", "gains": "100%", "newest_entry": "", "newest_gains": "", "date_of_entry": "8/11/26", "microtrend": "Semiconductors"},
+    {"ticker": "SYN10", "company": "Synthetic Assets Ten", "type": "Momentum", "market_cap": "10.0 B", "allocation": "8.0%", "current_price": "$25.00", "first_entry": "$12.00", "gains": "108%", "newest_entry": "", "newest_gains": "", "date_of_entry": "8/12/26", "microtrend": "Cryptocurrency"},
+    {"ticker": "", "company": "#N/A", "type": "Momentum", "market_cap": "#N/A", "allocation": "3.70%", "current_price": "#N/A", "first_entry": "$42.50", "gains": "#N/A", "newest_entry": "", "newest_gains": "", "date_of_entry": "8/24/26", "microtrend": "AI Semi Equipment"},
+    {"ticker": "DISCLAIMER", "company": "Not a position", "type": "", "market_cap": "", "allocation": "", "current_price": "", "first_entry": "", "gains": "", "newest_entry": "", "newest_gains": "", "date_of_entry": "", "microtrend": ""},
+    {"ticker": "*", "company": "junk known ticker should fail token validation", "type": "", "market_cap": "", "allocation": "", "current_price": "", "first_entry": "", "gains": "", "newest_entry": "", "newest_gains": "", "date_of_entry": "", "microtrend": ""}
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "items": [
+    {
+      "id": 501,
+      "alert_type": "buy",
+      "stock_ticker": "SYN1",
+      "stock_symbol": "SYN1",
+      "stock_price": 12345,
+      "stop_price": null,
+      "stop_notes": "Initial synthetic entry",
+      "price": "123.45",
+      "note": "Initial synthetic entry",
+      "created_at": "2026-08-01T14:30:00+00:00"
+    },
+    {
+      "id": 502,
+      "alert_type": "sell",
+      "stock_ticker": "SYN2",
+      "stock_price": 987,
+      "stop_notes": "Closed synthetic position",
+      "created_at": "2026-08-02T15:00:00+00:00"
+    },
+    {
+      "id": 503,
+      "alert_type": "hedge",
+      "stock_symbol": "HEDGE1",
+      "stock_price": null,
+      "price": "42.75",
+      "note": "Synthetic hedge",
+      "created_at": "2026-08-03T16:00:00+00:00"
+    },
+    {
+      "id": 504,
+      "alert_type": "cover_hedge",
+      "stock_ticker": "HEDGE1",
+      "stock_price": null,
+      "price": null,
+      "stop_notes": "Synthetic hedge cover",
+      "created_at": "2026-08-04T17:00:00+00:00"
+    },
+    {
+      "id": 505,
+      "alert_type": "rebalance",
+      "stock_ticker": "SYN3",
+      "stock_price": 1000,
+      "stop_notes": "Unsupported synthetic alert",
+      "created_at": "2026-08-05T18:00:00+00:00"
+    }
+  ],
+  "pagination": {
+    "total": 5,
+    "total_pages": 1,
+    "current_page": 1,
+    "per_page": 5,
+    "has_next": false
+  }
+}

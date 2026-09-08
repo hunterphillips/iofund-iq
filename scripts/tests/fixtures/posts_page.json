@@ -1,0 +1,51 @@
+{
+  "data": [
+    {
+      "id": 801,
+      "date": "2026-08-20T14:00:00+00:00",
+      "slug": "synthetic-networking-overview",
+      "url": "/ai-stocks/synthetic-networking-overview",
+      "title": "Synthetic Networking Overview",
+      "content": "<!-- wp:paragraph --><p>A fictional networking supplier increased test revenue by 18%.</p><!-- /wp:paragraph --><!-- wp:heading --><h2>Outlook</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Management expects another synthetic product cycle next year.</p><!-- /wp:paragraph -->",
+      "status": "publish",
+      "taxonomies": {"post-plan": [{"slug": "free"}]}
+    },
+    {
+      "id": 802,
+      "date": "2026-08-21T15:30:00Z",
+      "slug": "synthetic-chip-analysis",
+      "url": "/premium/synthetic-chip-analysis",
+      "title": "Synthetic Chip Analysis",
+      "content": "<!-- wp:paragraph --><p>A made-up chip vendor shipped 250 prototype units.</p><!-- /wp:paragraph -->",
+      "status": "publish",
+      "taxonomies": {"post-plan": [{"slug": "advance"}]}
+    },
+    {
+      "id": 803,
+      "date": "2026-08-22T16:00:00+00:00",
+      "slug": "synthetic-draft",
+      "url": "/premium/synthetic-draft",
+      "title": "Synthetic Draft",
+      "content": "<p>This draft must not be discovered.</p>",
+      "status": "draft",
+      "taxonomies": {"post-plan": [{"slug": "advance"}]}
+    },
+    {
+      "id": 804,
+      "date": "2026-08-23T17:00:00+00:00",
+      "slug": "synthetic-webinar-replay",
+      "url": "/premium/synthetic-webinar-replay",
+      "title": "Webinar Replay: Synthetic Research Session",
+      "content": "<p>This administrative post must not be distilled.</p>",
+      "status": "publish",
+      "taxonomies": {"post-plan": [{"slug": "advance"}]}
+    }
+  ],
+  "pagination": {
+    "total": 4,
+    "total_pages": 1,
+    "current_page": 1,
+    "per_page": 100,
+    "has_next": false
+  }
+}

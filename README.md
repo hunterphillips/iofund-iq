@@ -7,8 +7,8 @@ An AI layer over an [I/O Investment Fund](https://io-fund.com) subscription: cha
 ## What it does
 
 - **Chat.** Ask "what's the view on optical networking?" or "why did they close NVDA?" The agent searches distilled article summaries, the live trade log, and real-time quotes, then answers with sources. Pick Sonnet or Opus per message; stop a response mid-stream and your message returns to the composer; search past conversations from the sidebar.
-- **Ingests trades.** A cron polls trade alerts and upserts them into Postgres (1,290+ indexed). Each trade updates a live positions snapshot.
-- **Distills articles.** A daily cron fetches each new paywalled article and summarizes it with Sonnet 4.6.
+- **Ingests trades.** A cron polls the fund's trade-alert API and upserts them into Postgres (1,300+ indexed). Each trade updates a live positions snapshot.
+- **Distills articles.** A daily cron pulls each new paywalled article from the fund's member API and summarizes it with Sonnet 4.6.
 - **Portfolio gap analysis.** Connect a Robinhood account (official Agentic Trading MCP, per-user OAuth, read-only) or paste a brokerage screenshot, and see where your holdings sit against the fund's, by theme. Weights are computed from live Yahoo Finance prices.
 - **Weekly digest.** A Friday cron summarizes the week's trades and articles with Opus 4.8, and opens a PR against the thesis doc when new activity contradicts it. Emailed via Resend.
 - **MCP service.** Outside agents and apps can plug into the same capabilities through a key-authenticated MCP endpoint at `/api/mcp`: the fund book, trade log, digests, article search, gap analysis, live quotes. Read-only by construction, and fund content is gated on the key holder's own subscription. Setup and tool list in `chat/README.md`.
@@ -20,7 +20,7 @@ An AI layer over an [I/O Investment Fund](https://io-fund.com) subscription: cha
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                   The user's I/O Fund subscription              │
-│           (https://io-fund.com  · Firebase auth)                │
+│      (io-fund.com/api/v1 · Firebase bearer token, read-only)    │
 └────────────────────────────┬────────────────────────────────────┘
                              │  polls
                              ▼

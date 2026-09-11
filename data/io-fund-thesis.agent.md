@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-08-30
+last_distilled: 2026-09-11
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -45,20 +45,19 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | Networking | **LITE** | 11.5 | Capacity-constrained on EMLs. Pricing power. CW-laser + SiPho alt-route winner. Added into July weakness | InP supply |
 | Networking | **AAOI** | 10.1 | IOF early call; +~800% since November 2025 entry. Repeatedly added on dips (May–Jul) | High momentum, less fundamentals visibility |
 | Networking | **SITM** | 9.5 | Precision-timing chips for AI clusters; built 3%→9.5% across May–Jul buys | Thesis thinly covered in distilled corpus |
-| Memory | **SNDK** | 8.9 | NAND tightening; inference to drive demand + visibility for years (FQ4 article) | Volatile; trimmed 5% in June, re-added July |
+| Memory | **SNDK** | 8.9 | NAND tightening; inference to drive demand + visibility for years (FQ4 article) | Volatile; trimmed 5% in June, re-added July, trimmed 5% again 9/8 |
 | Memory | **SIMO** | 7.4 | NAND-controller side of the memory thesis; built across four buys May–Jul | Thesis thinly covered in distilled corpus |
-| Networking | **CRDO** | 5.2 | Re-entered 7/24 (4%) + 7/27 add — reversal of the Q1 drop; AEC/connectivity demand back in favor | Re-entry thesis not yet articulated in articles |
 | Software | **NET** | 5.2 | Edge inference positioning unique. 5% buy 7/27 rebuilt the position | Not GAAP profitable after 16 yrs |
-| Memory | **MTSI** | 4.5 | RF/optical semis (MACOM); diversified AI optics drove +40% QoQ data-center growth (FQ3 article). PDF categorizes under Memory | Trade-driven entry 6/25 |
+| Memory | **MTSI** | 4.5 | RF/optical semis (MACOM); diversified AI optics drove +40% QoQ data-center growth (FQ3 article). PDF categorizes under Memory. 2% add 9/8 | Trade-driven entry 6/25 |
 | Memory | **MU** | 4.5 | "Doors blown off." Secular re-rating thesis intact; trimmed three times into strength May–Jul | Cyclical-vs-secular debate |
 | Energy | **GEV** | 4.5 | Order book sold out through 2028. Gas-turbine supply locked through 2030. 7% trim 7/22 was risk management | Slower growth profile |
-| Networking | **MXL** | 4.4 | Built 2%→~4.4% across three buys May–Jul; optical/connectivity theme | Thesis thinly covered in distilled corpus |
+| Networking | **MXL** | 4.4 | Built 2%→~4.4% across three buys May–Jul; optical/connectivity theme. 2% add 9/8 | Thesis thinly covered in distilled corpus |
 | Accelerators | **AMD** | 4.4 | >60% DC annual growth 3–5 yrs (mgmt). MI400/Helios H2 2026 catalyst | CoWoS allocation only ~7% of 2026 supply |
 | Networking | **COHR** | 4.3 | InP capacity doubling; $3B quarterly AI-optics revenue in sight (Q4 article) | Debt leverage |
 | Energy | **BE** | 4.3 | Time-to-power thesis. ~1,300% from initial entries (Apr 2025); trimmed twice into strength | Premium valuation |
+| Semicap | **LRCX** | 4.0 | New 4% buy 9/8 @ $319.74 — wafer-fab equipment (Lam); picks-and-shovels leverage to the memory/NAND capex buildout (theme 8, own the suppliers) | Thesis not yet covered in distilled corpus; trade-driven entry |
 | Memory | **STX** | 4.0 | HDD/storage leg of the late-July memory rotation (3% buy 7/27) | Thesis not yet covered in distilled corpus |
-| Memory | **WDC** | 3.9 | HDD/storage leg of the late-July memory rotation (3% buy 7/27) | Thesis not yet covered in distilled corpus |
-| Networking | **ALAB** | 3.2 | Closed 7/24 @ $293.90, re-entered 8/6 @ $335.02 (4%) — quick round trip back in on Scorpio momentum | Tough comps; churny trade history |
+| Networking | **ALAB** | 3.2 | Closed 7/24 @ $293.90, re-entered 8/6 @ $335.02 (4%) — quick round trip back in on Scorpio momentum; 1% trim 9/8 | Tough comps; churny trade history |
 | Accelerators | **NVDA** | 0.2 | Starter re-entry per the 2026-08-30 portfolio table (no alert in trade log) | Position too small to signal conviction yet |
 
 ### Closed / removed in Q2 2026
@@ -79,6 +78,8 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 - **AVGO** — fully closed 2026-07-27 @ $380.66. Had been the post-Nvidia #1 accelerator pick; 3–4% trims in May/June preceded the exit.
 - **SMH hedge** — covered 2026-07-28 @ $526.52.
 - **DDOG** — 5% buy 7/24 @ $245.26, closed 8/6 @ $232.91. Two-week round trip.
+- **CRDO** — re-entered 2026-07-24 (4%) + 7/27 add (the Q1 drop had reversed), then **fully closed 2026-09-08 @ $170.76**. Second exit; the July re-entry lasted ~6 weeks.
+- **WDC** — HDD/storage leg of the late-July memory rotation (3% buy 7/27), **fully closed 2026-09-08 @ $483.99**. Short-lived storage position.
 - **TSM / VRT** — listed as Q2 picks but absent from the tracked portfolio table; treat as exited (no closure alert in the trade log).
 
 ### Thematic but not held (utilities + miners)
@@ -98,9 +99,9 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | **AMD** | ✓ #3 accelerator | ✓ "element of surprise" | ✓ "underestimated/misunderstood" | Consistent hold; thesis around H2 2026 MI400 |
 | **TSM** | ✓ #5 (5/10 fundamentals) | ✓ multi-year visibility | ✓ CoWoS linchpin | Absent from portfolio table since summer 2026; treat as exited |
 | **MU** | ✓ #4 accelerator | ↑ memory crown from compute | ↑ "doors blown off" | Still held; trimmed 3× into strength May–Jul 2026 |
-| **SNDK** | — | + Added (market leader 2026) | ✓ "thing in motion" | Held; now the largest memory weight (8.9%) |
-| **ALAB** | ✓ tied #1 networking | ✓ Scorpio-X | ✓ bouncing off lows | Closed 2026-07-24, re-entered 2026-08-06 (4%) — churny but back in |
-| **CRDO** | ✓ tied #1 networking | ✗ **dropped** | — | Dropped on copper-to-optics shift; **re-entered 2026-07-24 (4% + 2% add)** — the drop reversed |
+| **SNDK** | — | + Added (market leader 2026) | ✓ "thing in motion" | Held; now the largest memory weight (8.9%); trimmed 5% again 2026-09-08 |
+| **ALAB** | ✓ tied #1 networking | ✓ Scorpio-X | ✓ bouncing off lows | Closed 2026-07-24, re-entered 2026-08-06 (4%), 1% trim 2026-09-08 — churny but back in |
+| **CRDO** | ✓ tied #1 networking | ✗ **dropped** | — | Dropped on copper-to-optics shift; re-entered 2026-07-24 (4% + 2% add), then ✗ **fully closed again 2026-09-08 @ $170.76** — the July re-entry round-tripped in ~6 weeks |
 | **LITE** | ✓ #4 networking | ↑ EMLs power 400G/800G | ↑ capacity-constrained | Strongly promoted; now the largest position (11.5%) after July adds |
 | **COHR** | — | + Added (InP capacity doubling) | ✓ slow and steady | New Q1; held |
 | **AAOI** | — | — | + **Added** | +~800% since November 2025 entry; added on every dip May–Jul |
@@ -118,7 +119,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 | **GEV** | ✓ #2 energy | ✓ nat gas behemoth | ✓ held (order book to 2028) | Consistent hold; 7% trim 2026-07-22 |
 | Bitcoin Miner | ✓ #3 energy (Discovery) | ✓ Discovery only | ✓ Discovery only | Gated to Discovery tier across all 3 |
 
-**Post-Q2 entrants (no Top-15 column yet):** SIMO, SITM, MXL (built via repeated small buys May–Jul); MTSI (6/25); STX + WDC (the 7/27 storage rotation); short-lived round trips INOD (Jun), GLW (Jun–Jul), DDOG (Jul–Aug).
+**Post-Q2 entrants (no Top-15 column yet):** SIMO, SITM, MXL (built via repeated small buys May–Jul); MTSI (6/25); STX (the 7/27 storage rotation); LRCX (new 4% buy 9/8 — wafer-fab equipment); short-lived round trips INOD (Jun), GLW (Jun–Jul), DDOG (Jul–Aug), WDC (the 7/27 storage rotation, closed 9/8).
 
 > Cross-reference any of these against the trade log (`query_trades`) for entry/exit prices and dates.
 

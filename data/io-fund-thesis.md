@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-08-30
+last_updated: 2026-09-11
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -30,17 +30,18 @@ The biggest move of the spring was closing Nvidia, a bold call given how central
 
 ## What's held now
 
-As of late August 2026, per the fund's portfolio table:
+As of early September 2026, per the fund's portfolio table:
 
 | Trend | Positions |
 |---|---|
-| Networking | LITE (now the largest position), AAOI, SITM, CRDO (re-entered in July), COHR, MXL, ALAB |
-| Memory & storage | SNDK, SIMO, MU, MTSI, STX, WDC |
+| Networking | LITE (now the largest position), AAOI, SITM, COHR, MXL, ALAB |
+| Memory & storage | SNDK, SIMO, MU, MTSI, STX |
 | Accelerators | AMD, plus a small Nvidia starter position re-opened in August |
+| Semiconductor equipment | LRCX (added in September) |
 | Software | NET |
 | Energy | BE (up roughly 1,300% from the April 2025 entries), GEV |
 
-The departures tell the sharper story. Nvidia was closed in April. Reddit went in May. Meta was closed in May, briefly re-bought in late July, then closed again two days later when its Q2 report showed free cash flow down 91% with capex consuming nearly all of operating cash flow. Alphabet and the rest of the Palantir position went in June. ARM was a quick June momentum trade, in and out inside three weeks. Broadcom, the top accelerator pick just a quarter earlier, was closed in late July. CoreWeave was dropped once its projected debt load got too heavy. Utilities like Talen and the Bitcoin miners come up as themes, but the actual positions sit in the gated Discovery tier rather than the held portfolio.
+The departures tell the sharper story. Nvidia was closed in April. Reddit went in May. Meta was closed in May, briefly re-bought in late July, then closed again two days later when its Q2 report showed free cash flow down 91% with capex consuming nearly all of operating cash flow. Alphabet and the rest of the Palantir position went in June. ARM was a quick June momentum trade, in and out inside three weeks. Broadcom, the top accelerator pick just a quarter earlier, was closed in late July. CoreWeave was dropped once its projected debt load got too heavy. Credo was closed again in September, months after its July re-entry, and Western Digital was closed the same day, having joined only in the summer storage rotation. Utilities like Talen and the Bitcoin miners come up as themes, but the actual positions sit in the gated Discovery tier rather than the held portfolio.
 
 ## How the thinking has moved
 
@@ -54,7 +55,7 @@ Reading three quarters of reports, the entries and exits fall into a few recogni
 
 They add when a new product cycle is inflecting (Astera on Scorpio, Vertiv on Rubin cooling), when a written-off sector starts to turn (Micron while memory was still seen as cyclical, AAOI after the market gave up on it), or when capacity is selling out (gas turbines booked to 2028, NAND sold out for 2026).
 
-They exit on a structural shift that breaks the specific thesis (Credo was dropped once Rubin pushed toward optics, then re-entered in July once connectivity demand argued otherwise), on a valuation that ran ahead while fundamentals softened (AppLovin), on balance-sheet risk (CoreWeave's debt), or when capital spending and free cash flow break down behind a muddled story (Meta). And they'll track a name for a long time without buying it when the thesis is valid but the valuation is extreme. Palantir sat on that list before they finally took a position.
+They exit on a structural shift that breaks the specific thesis (Credo was dropped once Rubin pushed toward optics, re-entered in July once connectivity demand argued otherwise, then closed again in September), on a valuation that ran ahead while fundamentals softened (AppLovin), on balance-sheet risk (CoreWeave's debt), or when capital spending and free cash flow break down behind a muddled story (Meta). And they'll track a name for a long time without buying it when the thesis is valid but the valuation is extreme. Palantir sat on that list before they finally took a position.
 
 The most-cited macro signal is Big Tech capex. The 2025 estimates climbed from $250B to $365B to $435B over the year, and 2026 climbed from $583B to a guided $732.5B, with 2027 estimates around $1 trillion. Rising capex revisions are treated as the upstream tell for hardware demand.
 

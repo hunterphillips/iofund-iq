@@ -3,7 +3,7 @@ purpose: I/O Fund's current investment thesis, per-ticker conviction history, th
 note: Agent-only doc read by the chat assistant via read_doc('thesis') and scanned for drift by scripts/digest_week.py. NOT shown on the website — the human-facing page reads io-fund-thesis.md.
 load_priority: high
 audience: agent
-last_distilled: 2026-09-11
+last_distilled: 2026-09-18
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025  # Oct 28 2025
@@ -32,6 +32,7 @@ This doc is the **why** layer behind IOF's trades. For *what* they hold, query t
 6. **Energy = supreme bottleneck.** McKinsey: 25–33% of new generation from BTM by 2030. Behind-the-meter, fuel cells, gas turbines, miners, SMRs.
 7. **Token demand shattering forecasts = inference infra supercycle.** Token processing (clearest inference proxy) exceeding even heavily revised forecasts by 10–100×. Google tokens +330× over two years (May 2024→May 2026); Dell's 2028 estimate revised up 57× yet already exceeded; reasoning/agentic workloads (up to 15× more tokens/user, coding agents 1,000× more than code chats) are the driver. Tokens-per-watt is the defining upgrade metric (MS data-center net margins: ~58% Blackwell, ~78% Rubin, ~90% Feynman).
 8. **Capex accelerates toward $1T; suppliers capture the flow-through.** 2026 hyperscaler capex guidance now $732.5B (+79% YoY), tracking ~$1T in 2027 (Goldman models $1.01T). Semiconductor EPS growth (97% projected 2026) runs ~6× hyperscaler EPS growth; memory + networking grow faster than capex itself. IOF's position: own the suppliers receiving capex, not the hyperscalers spending it.
+9. **Demand broadens beyond hyperscalers — enterprise, neocloud & OEMs become co-equal drivers.** Enterprise + neocloud now rival hyperscaler demand: Nvidia's ACIE segment (AI clouds/industrial/enterprise) grew 138.5% YoY to $40.3B vs. hyperscalers' 101.2% to $48.7B. Dell projects 200 GW of new data-center capacity through 2030 with enterprise/neocloud contributing half (100 GW), implying a ~$1T AI-infra TAM over four years across 6,500 enterprise/neocloud customers (most added in the last three quarters). Agentic AI is creating a structural CPU cycle — each GPU call needs more orchestration compute — pulling traditional servers + storage up alongside AI servers (Dell FQ2: AI servers $16.4B/+100% YoY, but traditional servers $10.5B/+122% YoY; storage the primary margin lever). Ready-to-deploy rack OEMs (Dell, SMCI, HPE) capture the flow-through; liquid cooling crosses 50% penetration (53% forecast for 2026, first time above 50%) and 2027 is a multi-vendor rack-scale inflection (Rubin, AMD Helios, Arm AGI CPU, Nvidia Vera).
 
 ### Headline moves
 - **Closed Nvidia (2026-04-27 @ $209.67).** Bold call given Nvidia's centrality. Reasons: (a) confirmed Rubin delay tied to HBM4 validation, (b) custom silicon gaining inference share, (c) CUDA moat erodes in inference (vLLM, SGLang, ONNX, TensorRT-LLM less defensible than CUDA training stack). A ~0.2% starter re-entry shows in the 2026-08-30 portfolio table.

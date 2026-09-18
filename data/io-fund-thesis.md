@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-09-11
+last_updated: 2026-09-18
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -15,7 +15,7 @@ This is the reasoning behind the trades: what I/O Fund believes about AI right n
 
 AI has moved past the "buy anything with a GPU" phase. The questions now are about efficiency, power, and who actually makes money.
 
-Eight themes shape the thesis right now:
+Nine themes shape the thesis right now:
 
 - **Accelerators are judged on unit economics now, not raw compute.** Tokens per watt and dollars per token are the numbers that matter. Each generation is a big step: GB300 is about 50× the performance per watt of H200, and Rubin is roughly 10× the inference performance per watt of Blackwell.
 - **Cooling is a real constraint again.** Rubin racks draw 180–230 kW and can't be air-cooled. Nvidia is moving to warm-water cooling to push another 10% or so of GPU density.
@@ -25,6 +25,7 @@ Eight themes shape the thesis right now:
 - **Energy is the hard bottleneck.** A large share of new power for data centers will come from behind-the-meter sources: fuel cells, gas turbines, miners, and eventually small reactors.
 - **Token demand is running ahead of every forecast.** Google processed more than 330× the tokens in May 2026 that it did two years earlier, and Dell's 2028 estimate was revised up 57× and has already been passed. Agentic and reasoning workloads drive it, and the margin on those tokens climbs each chip generation: roughly 58% on Blackwell, 78% on Rubin, 90% on Feynman.
 - **Capex is heading toward $1 trillion, and the suppliers capture more of it than the spenders.** 2026 hyperscaler capex is guided to $732.5B, up 79% year over year, with 2027 estimates around $1T. Semiconductor earnings are set to grow about 97% in 2026 against 17% for the hyperscalers doing the spending. The conclusion the fund acts on: own the companies receiving the capex, not the ones writing the checks.
+- **Demand is broadening beyond the hyperscalers.** Enterprise and neocloud buyers are now co-equal drivers of the buildout, not a hyperscaler-only story. Nvidia's non-hyperscaler compute is growing about 138% year over year against 101% for the hyperscalers, and Dell counts roughly 6,500 enterprise and neocloud customers with half of its 200 GW pipeline through 2030 sitting outside Big Tech. Dell's own quarter shows the same shape: AI servers up 100% year over year, traditional servers up 122%, with storage the primary margin lever.
 
 The biggest move of the spring was closing Nvidia, a bold call given how central the stock is. The reasoning was a confirmed Rubin delay tied to HBM4 validation, custom silicon taking inference share, and the CUDA moat mattering less for inference than it does for training. The bigger story since: over the summer the fund exited Big Tech entirely and even closed Broadcom, its top accelerator pick after the Nvidia exit, and rotated the proceeds into the suppliers. Memory and storage names now make up over a third of the portfolio.
 

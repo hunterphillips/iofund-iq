@@ -1,7 +1,7 @@
 ---
 purpose: What I/O Fund believes right now, how its thinking has shifted, and the reasoning behind the moves
 audience: subscriber
-last_updated: 2026-09-11
+last_updated: 2026-10-03
 quarters_covered: [Q4-2025, Q1-2026, Q2-2026]
 sources:
   - https://io-fund.com/premium/the-io-funds-top-15-ai-stocks-for-q4-2025
@@ -34,7 +34,7 @@ As of early September 2026, per the fund's portfolio table:
 
 | Trend | Positions |
 |---|---|
-| Networking | LITE (now the largest position), AAOI, SITM, COHR, MXL, ALAB |
+| Networking | LITE (now the largest position), AAOI, SITM, COHR, MXL (trimmed roughly two-thirds in October), ALAB |
 | Memory & storage | SNDK, SIMO, MU, MTSI, STX |
 | Accelerators | AMD, plus a small Nvidia starter position re-opened in August |
 | Semiconductor equipment | LRCX (added in September) |

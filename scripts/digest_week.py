@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Generate the weekly IOF digest, optionally open a doc-update PR, email it.
+"""Generate the weekly IOF digest, update the thesis docs on drift, email it.
 
 Runs weekly via .github/workflows/weekly-digest.yml (Friday 21:00 UTC).
 Reads past-7d trades + articles from Postgres, drafts a structured digest
 via AI Gateway (Sonnet 4.6), writes data/digests/YYYY-MM-DD.md, commits.
 Then: second LLM call checks for staleness in data/io-fund-thesis.agent.md
 (the agent doc, which holds the per-ticker picks table the drift check reads).
+Both drift calls also see the current held-positions table (the daily portfolio
+ingest's authoritative weights), so weights are never inferred from alert text.
 If drift is found, a third call regenerates the human-facing io-fund-thesis.md
-page from the same evidence in its own editorial voice, and a single PR proposes
-edits to both docs so they stay in sync automatically. Finally emails the summary via
-Resend to hkphillips42@gmail.com.
+page from the same evidence in its own editorial voice, and both docs are
+committed straight to main (no PR review step since 2026-10-17). Finally
+emails the summary via Resend to hkphillips42@gmail.com.
 
 This is the ONLY outbound email from the system per the locked scope
 decision (2026-05-19).
@@ -19,17 +21,15 @@ Required env:
     AI_GATEWAY_API_KEY    — Vercel AI Gateway (required when LLM_PROVIDER=gateway;
                             optional fallback when LLM_PROVIDER=claude-cli — see scripts/llm.py)
     RESEND_API_KEY        — Resend transactional email (skip with DIGEST_SKIP_EMAIL=1)
-    GITHUB_TOKEN          — gh CLI auth (auto-injected on GHA; locally:
-                            export GITHUB_TOKEN=$(gh auth token))
 
 Optional env:
     LLM_PROVIDER            — "gateway" (default) or "claude-cli" (headless Claude
                               Code on the operator's subscription; CI auths via
                               CLAUDE_CODE_OAUTH_TOKEN)
-    DIGEST_DRY_RUN          — "1" skips DB writes, LLM calls, PR, email
+    DIGEST_DRY_RUN          — "1" skips DB writes, LLM calls, commits, email
     DIGEST_FORCE_OVERWRITE  — "1" overwrites today's digest file if present
-    DIGEST_SKIP_EMAIL       — "1" runs the digest + (optional) PR but no email
-    DIGEST_SKIP_PR          — "1" runs the digest + email but no staleness PR
+    DIGEST_SKIP_EMAIL       — "1" runs the digest + thesis update but no email
+    DIGEST_SKIP_THESIS      — "1" runs the digest + email but no thesis drift check
     DIGEST_RECIPIENT        — override default recipient (the operator's email)
 """
 from __future__ import annotations
@@ -157,6 +157,28 @@ def fetch_week_articles(conn: psycopg.Connection, start: date, end: date) -> lis
         return [dict(zip(cols, row)) for row in cur.fetchall()]
 
 
+def fetch_held_positions(conn: psycopg.Connection) -> list[dict]:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT ticker, category, baseline_weight_pct, source
+            FROM positions
+            WHERE status = 'held'
+            ORDER BY baseline_weight_pct DESC NULLS LAST, ticker
+            """
+        )
+        cols = [d[0] for d in cur.description]
+        return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def _position_lines(positions: list[dict]) -> list[str]:
+    lines = []
+    for p in positions:
+        wt = f"{p['baseline_weight_pct']}%" if p.get("baseline_weight_pct") is not None else "weight unknown"
+        lines.append(f"- {p['ticker']} · {p.get('category') or 'uncategorized'} · {wt} · source={p.get('source')}")
+    return lines
+
+
 def _build_digest_user_msg(
     run_date: date,
     start: date,
@@ -257,8 +279,7 @@ def _run(cmd: list[str], *, cwd: Path, check: bool = True) -> subprocess.Complet
 def commit_and_push_digest(repo_root: Path, target: Path, run_date: date) -> None:
     """Stage + commit + push the digest file. Idempotent — if nothing to commit, skip.
 
-    Must run BEFORE staleness PR creation so the PR branch forks off a main
-    that already has the digest landed.
+    Runs before the thesis update so the digest lands as its own commit.
     """
     _run(
         ["git", "config", "user.name", "github-actions[bot]"],
@@ -287,15 +308,21 @@ STALENESS_SYSTEM_PROMPT = """You are reviewing whether I/O Fund's published thes
 
 You will be given:
 1. The current data/io-fund-thesis.agent.md content (load-bearing — describes IOF's current investment thesis, per-ticker conviction, themes, headline moves).
-2. This week's IOF trades (table format).
-3. This week's distilled IOF articles (with thesis + key numbers).
+2. The current held-positions table from the fund's portfolio sheet. This is authoritative for what is held and at what weight.
+3. This week's IOF trades (table format).
+4. This week's distilled IOF articles (with thesis + key numbers).
 
 Your task: identify whether the thesis doc is now stale or contradicted by this week's activity. Drift means "the doc is now demonstrably wrong or missing a load-bearing fact," not "I could phrase this better."
 
 Drift you SHOULD flag:
 - A ticker the doc lists as ✓ held that has been fully closed or majorly trimmed (≥50%) in the trade log. Example: doc says "RDDT — held, thesis stable" but trade log shows "RDDT · SELL — closed" this week → drift, propose updating the picks table and timeline.
+- A position opened this week (a BUY on a ticker absent from the doc's picks table) → drift, add it to the picks table and the post-Q2 entrants line.
+- A hedge opened or covered this week (HEDGE / COVER-HEDGE rows) → drift, record whether a hedge is active.
+- Picks-table weights that disagree with the held-positions table → update them to the table's weights whenever you are already editing the file for another reason.
 - Numbers in the doc that a new article supersedes with materially different figures (e.g., doc says "+1000% from entry" but article gives "+1,300% from entry") → drift, update the number.
 - A new theme appearing in 2+ articles this week that's absent from the doc's "Active themes" section.
+
+Weights: take every weight from the held-positions table. Never derive a weight from an alert's percentage ("3% Trim", "Bought 2%"); those notes are ambiguous between portfolio points and a share of the position. A ticker is a major trim only if the table shows its weight fell by half or more, or the note says closed.
 
 Drift you should NOT flag:
 - A single new article on a single ticker (one data point isn't a theme).
@@ -317,7 +344,7 @@ The structured thesis data was just updated to reflect this week's I/O Fund acti
 
 You will be given:
 1. The current human-facing thesis page (full file).
-2. The changes detected this week (with citations) and this week's trades.
+2. The changes detected this week (with citations), this week's trades, and the current held-positions table (authoritative for what is held and position size).
 
 Rules:
 - Touch ONLY what the changes require: a position that was opened, trimmed, or closed; a number a new article materially supersedes; a clearly new theme. Leave everything else byte-identical.
@@ -338,6 +365,7 @@ def check_staleness(
     thesis_md: str,
     trades: list[dict],
     articles: list[dict],
+    positions: list[dict],
 ) -> tuple[str | None, str | None]:
     """Returns (proposed_thesis_md, evidence_md) if drift detected; (None, None) otherwise."""
     user_msg_parts = [
@@ -345,6 +373,9 @@ def check_staleness(
         "",
         "=== CURRENT data/io-fund-thesis.md ===",
         thesis_md,
+        "",
+        f"=== CURRENT HELD POSITIONS ({len(positions)}, authoritative weights) ===",
+        *_position_lines(positions),
         "",
         f"=== THIS WEEK'S TRADES ({len(trades)}) ===",
     ]
@@ -407,6 +438,7 @@ def update_human_thesis(
     human_md: str,
     evidence: str,
     trades: list[dict],
+    positions: list[dict],
 ) -> str | None:
     """Regenerate the human-facing thesis page from the drift evidence, in its own
     voice. Returns the proposed page, or None if nothing on it needs to change.
@@ -434,6 +466,9 @@ def update_human_thesis(
             "",
             f"=== THIS WEEK'S TRADES ({len(trades)}) ===",
             *trade_lines,
+            "",
+            f"=== CURRENT HELD POSITIONS ({len(positions)}, authoritative weights) ===",
+            *_position_lines(positions),
         ]
     )
 
@@ -458,17 +493,17 @@ def update_human_thesis(
     return proposed[fm_match.start():].strip() + "\n"
 
 
-def open_thesis_pr(
+def commit_thesis_update(
     repo_root: Path,
     run_date: date,
     proposed_agent: str,
     proposed_human: str | None,
     evidence: str,
 ) -> str | None:
-    """Creates a branch, commits whichever thesis docs actually changed (the agent
-    decoder and/or the human-facing page), pushes, opens a PR. Returns PR URL or None.
+    """Writes whichever thesis docs actually changed (the agent decoder and/or the
+    human-facing page), commits them to main with the evidence in the commit body,
+    pushes. Returns the commit URL, or None if nothing changed.
     """
-    branch = f"digest/{run_date.isoformat()}-thesis-update"
     agent_path = repo_root / "data" / "io-fund-thesis.agent.md"
     human_path = repo_root / "data" / "io-fund-thesis.md"
 
@@ -480,66 +515,43 @@ def open_thesis_pr(
         pending.append((human_path, proposed_human))
 
     if not pending:
-        log("staleness: proposed docs are byte-equal to current; skipping PR")
+        log("staleness: proposed docs are byte-equal to current; nothing to commit")
         return None
 
-    _run(["git", "checkout", "-b", branch], cwd=repo_root)
-    try:
-        for path, content in pending:
-            path.write_text(content)
-            _run(["git", "add", str(path.relative_to(repo_root))], cwd=repo_root)
-        changed = ", ".join(p.name for p, _ in pending)
-        _run(
-            ["git", "commit", "-m", f"Digest {run_date.isoformat()}: propose thesis update ({changed})"],
-            cwd=repo_root,
-        )
-        _run(["git", "push", "-u", "origin", branch], cwd=repo_root)
-
-        title = f"Thesis update — week of {run_date.isoformat()}"
-        body = (
-            f"Automated proposal from `weekly-digest.yml` for the week ending {run_date.isoformat()}.\n\n"
-            f"Updated: {changed}\n\n"
-            f"## Evidence\n\n{evidence}\n\n"
-            "## Review checklist\n"
-            "- [ ] Each proposed change cites real article URLs / trade rows from this week\n"
-            "- [ ] Only sections justified by this week's activity are modified\n"
-            "- [ ] The human page (`io-fund-thesis.md`) keeps its plain editorial voice (no agent/decoder language)\n"
-            "- [ ] Frontmatter dates bumped (`last_distilled` on the agent doc, `last_updated` on the human page)\n"
-            "- [ ] Digest itself (`data/digests/...md`) already landed on main in a prior commit\n"
-        )
-        result = subprocess.run(
-            ["gh", "pr", "create", "--base", "main", "--head", branch,
-             "--title", title, "--body", body],
-            cwd=repo_root, capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            log(f"gh pr create failed: {result.stderr.strip()}")
-            return None
-        url = result.stdout.strip()
-        log(f"opened PR: {url}")
-        return url
-    finally:
-        # Always switch back to main, even on failure.
-        _run(["git", "checkout", "main"], cwd=repo_root, check=False)
+    for path, content in pending:
+        path.write_text(content)
+        _run(["git", "add", str(path.relative_to(repo_root))], cwd=repo_root)
+    changed = ", ".join(p.name for p, _ in pending)
+    _run(
+        ["git", "commit",
+         "-m", f"Digest {run_date.isoformat()}: update thesis ({changed})",
+         "-m", f"Evidence:\n\n{evidence}"],
+        cwd=repo_root,
+    )
+    _run(["git", "push"], cwd=repo_root)
+    sha = _run(["git", "rev-parse", "HEAD"], cwd=repo_root).stdout.strip()
+    url = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/commit/{sha}"
+    log(f"staleness: thesis update committed + pushed: {url}")
+    return url
 
 
 def render_email_html(
     digest_body: str,
     run_date: date,
     digest_blob_url: str,
-    pr_url: str | None,
+    thesis_url: str | None,
 ) -> str:
     """Render digest markdown to inline-styled HTML for Gmail-compatible delivery."""
     rendered = md_lib.markdown(
         digest_body,
         extensions=["fenced_code", "tables"],
     )
-    pr_block = (
+    thesis_block = (
         f'<p style="margin-top:1.5em;padding:0.75em;background:#fff8e1;'
         f'border-left:3px solid #d4af37;font-size:0.95em">'
-        f'<strong>Doc update proposed:</strong> '
-        f'<a href="{pr_url}" style="color:#7a5a00">{pr_url}</a></p>'
-        if pr_url
+        f'<strong>Thesis docs updated:</strong> '
+        f'<a href="{thesis_url}" style="color:#7a5a00">{thesis_url}</a></p>'
+        if thesis_url
         else ""
     )
     return (
@@ -550,7 +562,7 @@ def render_email_html(
         f"Week ending {run_date.isoformat()} · "
         f'<a href="{digest_blob_url}" style="color:#8a8a92">View on GitHub</a></p>'
         f"{rendered}"
-        f"{pr_block}"
+        f"{thesis_block}"
         '<hr style="border:none;border-top:1px solid #eee;margin-top:2em">'
         '<p style="color:#aaa;font-size:0.75em">'
         "Generated by <code>scripts/digest_week.py</code> — "
@@ -615,6 +627,7 @@ def main() -> int:
     with psycopg.connect(db_url) as conn:
         trades = fetch_week_trades(conn, start, end)
         articles = fetch_week_articles(conn, start, end)
+        positions = fetch_held_positions(conn)
 
     log(f"db: {len(trades)} trades · {len(articles)} articles")
 
@@ -639,28 +652,26 @@ def main() -> int:
     log(f"write: {target}")
     write_digest(repo_root, run_date, digest_body, force=force)
 
-    # Commit + push the digest BEFORE staleness PR so the PR branch forks
-    # off a main that already has the digest landed.
     commit_and_push_digest(repo_root, target, run_date)
 
-    pr_url: str | None = None
-    if os.environ.get("DIGEST_SKIP_PR") == "1":
-        log("staleness: skipped via DIGEST_SKIP_PR=1")
+    thesis_url: str | None = None
+    if os.environ.get("DIGEST_SKIP_THESIS") == "1":
+        log("staleness: skipped via DIGEST_SKIP_THESIS=1")
     else:
         log("staleness: checking thesis drift")
         agent_path = repo_root / "data" / "io-fund-thesis.agent.md"
         agent_md = agent_path.read_text()
         proposed_agent, evidence = check_staleness(
-            ai_key, run_date, agent_md, trades, articles
+            ai_key, run_date, agent_md, trades, articles, positions
         )
         if proposed_agent and evidence:
             log("staleness: drift detected; updating human page from same evidence")
             human_md = (repo_root / "data" / "io-fund-thesis.md").read_text()
             proposed_human = update_human_thesis(
-                ai_key, run_date, human_md, evidence, trades
+                ai_key, run_date, human_md, evidence, trades, positions
             )
-            log("staleness: opening PR")
-            pr_url = open_thesis_pr(
+            log("staleness: committing thesis update")
+            thesis_url = commit_thesis_update(
                 repo_root, run_date, proposed_agent, proposed_human, evidence
             )
         else:
@@ -677,7 +688,7 @@ def main() -> int:
     blob_url = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/blob/main/{rel}"
 
     subject = f"IOFund digest — week of {run_date.isoformat()}"
-    html = render_email_html(digest_body, run_date, blob_url, pr_url)
+    html = render_email_html(digest_body, run_date, blob_url, thesis_url)
     text = digest_body  # plain-text fallback is the raw markdown
 
     log(f"email: sending to {recipient}")
